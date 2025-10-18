@@ -1,0 +1,72 @@
+# application.yml - 主配置文件
+spring:
+  profiles:
+    active: dev
+  application:
+    name: ihdrs-backend
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+      enabled: true
+  jpa:
+    open-in-view: false  # 关闭懒加载警告
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# 文件存储配置
+file:
+  upload:
+    path: ./uploads/
+    max-size: 5242880  # 5MB
+    allowed-types: image/png,image/jpeg,image/jpg
+  model:
+    path: ./models/
+
+# Flask 模型服务配置
+model-service:
+  base-url: http://localhost:5000
+  timeout: 30s
+  max-retries: 3
+  retry-delay: 1s
+
+# JWT 配置
+jwt:
+  secret: ihdrs_jwt_secret_key_2025_very_long_string_for_security
+  expiration: 86400 # 24小时
+
+# 识别配置
+recognition:
+  min-confidence-threshold: 0.8
+  max-retries: 3
+  cache-expire: 86400  # 1天
+
+logging:
+  level:
+    com.ihdrs.backend: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/ihdrs-backend.log
+    max-size: 100MB
+    max-history: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true

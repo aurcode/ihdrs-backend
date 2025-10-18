@@ -1,0 +1,77 @@
+# application-test.yml - 测试环境配置
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  # 测试数据库配置 - 使用H2内存数据库
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  # H2控制台配置
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  # Redis配置 - 使用嵌入式Redis
+  redis:
+    host: localhost
+    port: 6370  # 使用不同端口避免冲突
+    database: 1
+    timeout: 3000ms
+
+# JWT配置
+jwt:
+  secret: test_jwt_secret_key_for_testing_only_very_long_string
+  expiration: 3600  # 测试环境1小时
+
+# 模型服务配置
+model-service:
+  base-url: http://localhost:5001  # 测试端口
+  timeout: 10s
+  max-retries: 1
+  retry-delay: 500ms
+
+# 文件存储配置
+file:
+  upload:
+    path: ./test-uploads/
+  model:
+    path: ./test-models/
+
+# 日志配置
+logging:
+  level:
+    com.ihdrs.backend: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
