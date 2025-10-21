@@ -165,6 +165,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessageBox } from 'element-plus'
+import { routes as constantRoutes } from '@/router'
 import { useDark, useToggle, useFullscreen } from '@vueuse/core'
 import {
   ArrowDown,
@@ -188,8 +189,13 @@ const sidebarCollapsed = ref(false)
 const cachedViews = ref([])
 
 // 主题相关
-const isDark = useDark()
-const toggleTheme = useToggle(isDark)
+const isDark = useDark({
+  initialValue: "light"
+})
+const toggleTheme = () => {
+  isDark.value = !isDark.value
+}
+
 
 // 全屏相关
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
@@ -220,25 +226,14 @@ const breadcrumbItems = computed(() => {
 
 // 菜单路由过滤
 const menuRoutes = computed(() => {
-  const routes = router.getRoutes()
-  return routes.filter(route => {
-    return route.path === '/' || (
-        route.meta &&
-        route.meta.title &&
-        !route.meta.hideInMenu &&
-        hasPermission(route)
-    )
-  }).map(route => {
-    if (route.children) {
-      route.children = route.children.filter(child =>
-          child.meta &&
-          child.meta.title &&
-          !child.meta.hideInMenu &&
-          hasPermission(child)
-      )
-    }
-    return route
-  })
+  return constantRoutes
+      .filter(route => !route.meta?.hideInMenu && hasPermission(route))
+      .map(route => {
+        const children = route.children?.filter(
+            child => !child.meta?.hideInMenu && hasPermission(child)
+        )
+        return { ...route, children }
+      })
 })
 
 // 权限检查
@@ -521,7 +516,7 @@ watch(route, (to) => {
   }
 
   .app-main {
-    background: #000b14;
+    background: #000000;
   }
 }
 </style>

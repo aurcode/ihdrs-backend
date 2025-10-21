@@ -6,7 +6,7 @@ import { ElMessage } from 'element-plus'
 import NProgress from 'nprogress'
 
 // 路由配置
-const routes = [
+export const routes = [
     {
         path: '/login',
         name: 'Login',

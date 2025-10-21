@@ -15,6 +15,7 @@
     "@element-plus/icons-vue": "^2.1.0",
     "@vueuse/core": "^13.9.0",
     "axios": "^1.6.0",
+    "dayjs": "^1.11.18",
     "echarts": "^5.4.0",
     "element-plus": "^2.4.0",
     "js-cookie": "^3.0.0",
