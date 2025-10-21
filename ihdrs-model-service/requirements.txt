@@ -1,0 +1,34 @@
+# Flask Web Framework
+Flask==2.3.2
+Flask-CORS
+
+# Deep Learning
+#tensorflow
+keras
+numpy
+opencv-python
+
+# Image Processing
+Pillow
+scikit-image
+
+# Data Processing
+pandas
+matplotlib
+seaborn
+
+# API and Validation
+marshmallow
+python-dotenv
+
+# Logging and Monitoring
+loguru
+
+# Testing
+pytest
+pytest-flask
+
+# Other utilities
+requests
+python-dateutil
+psutil

@@ -1,0 +1,130 @@
+// variables.scss - 样式变量
+// ==============================================
+// 颜色系统
+// ==============================================
+
+// 主色
+$primary-color: #409EFF;
+$primary-color-light: #79bbff;
+$primary-color-lighter: #a0cfff;
+$primary-color-dark: #337ecc;
+
+// 辅助色
+$success-color: #67C23A;
+$warning-color: #E6A23C;
+$danger-color: #F56C6C;
+$info-color: #909399;
+
+// 中性色
+$color-white: #FFFFFF;
+$color-black: #000000;
+
+// 文本色
+$text-color-primary: #303133;
+$text-color-regular: #606266;
+$text-color-secondary: #909399;
+$text-color-placeholder: #C0C4CC;
+
+// 边框色
+$border-color-base: #DCDFE6;
+$border-color-light: #E4E7ED;
+$border-color-lighter: #EBEEF5;
+$border-color-extra-light: #F2F6FC;
+$border-color-dark: #D3D4D6;
+
+// 背景色
+$background-color-base: #FFFFFF;
+$background-color-page: #F2F3F5;
+
+// 暗色主题
+$dark-background-color-base: #1f2937;
+$dark-background-color-page: #111827;
+$dark-text-color-primary: #f9fafb;
+$dark-text-color-regular: #d1d5db;
+$dark-text-color-secondary: #9ca3af;
+$dark-border-color-base: #374151;
+
+// ==============================================
+// 字体系统
+// ==============================================
+
+$font-family-primary: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+$font-family-code: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+
+// 字体大小
+$font-size-extra-small: 10px;
+$font-size-small: 12px;
+$font-size-medium: 14px;
+$font-size-base: 16px;
+$font-size-large: 18px;
+$font-size-extra-large: 20px;
+$font-size-title: 24px;
+
+// 字重
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
+$font-weight-extra-bold: 700;
+
+// ==============================================
+// 间距系统
+// ==============================================
+
+$spacing-mini: 4px;
+$spacing-small: 8px;
+$spacing-medium: 16px;
+$spacing-large: 24px;
+$spacing-extra-large: 32px;
+
+// ==============================================
+// 边框圆角
+// ==============================================
+
+$border-radius-small: 2px;
+$border-radius-base: 4px;
+$border-radius-large: 6px;
+$border-radius-round: 20px;
+$border-radius-circle: 50%;
+
+// ==============================================
+// 阴影
+// ==============================================
+
+$box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+$box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+$box-shadow-dark: 0 2px 16px 0 rgba(0, 0, 0, 0.12);
+
+// ==============================================
+// Z-index 层级
+// ==============================================
+
+$z-index-normal: 1;
+$z-index-top: 1000;
+$z-index-popper: 2000;
+$z-index-message: 3000;
+
+// ==============================================
+// 断点
+// ==============================================
+
+$breakpoint-mobile: 768px;
+$breakpoint-tablet: 992px;
+$breakpoint-desktop: 1200px;
+
+// ==============================================
+// 动画
+// ==============================================
+
+$transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+$transition-fade: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+$transition-border: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+$transition-color: color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+
+// ==============================================
+// 组件尺寸
+// ==============================================
+
+$header-height: 60px;
+$sidebar-width: 220px;
+$sidebar-collapsed-width: 64px;

@@ -1,0 +1,430 @@
+// 全局样式文件
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+
+// 重置样式
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: $font-family-primary;
+  font-size: $font-size-base;
+  color: $text-color-primary;
+  background-color: $background-color-base;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// 链接样式
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: $primary-color-light;
+  }
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: $border-color-lighter;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $border-color-base;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: $border-color-dark;
+  }
+}
+
+// 工具类
+.clearfix {
+  &::after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.pull-left {
+  float: left;
+}
+
+.pull-right {
+  float: right;
+}
+
+// 布局工具类
+.full-height {
+  height: 100vh;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// 间距工具类
+@for $i from 0 through 10 {
+  .mt-#{$i * 5} {
+    margin-top: #{$i * 5}px !important;
+  }
+
+  .mb-#{$i * 5} {
+    margin-bottom: #{$i * 5}px !important;
+  }
+
+  .ml-#{$i * 5} {
+    margin-left: #{$i * 5}px !important;
+  }
+
+  .mr-#{$i * 5} {
+    margin-right: #{$i * 5}px !important;
+  }
+
+  .pt-#{$i * 5} {
+    padding-top: #{$i * 5}px !important;
+  }
+
+  .pb-#{$i * 5} {
+    padding-bottom: #{$i * 5}px !important;
+  }
+
+  .pl-#{$i * 5} {
+    padding-left: #{$i * 5}px !important;
+  }
+
+  .pr-#{$i * 5} {
+    padding-right: #{$i * 5}px !important;
+  }
+}
+
+// 响应式工具类
+.mobile-hidden {
+  @include mobile {
+    display: none !important;
+  }
+}
+
+.tablet-hidden {
+  @include tablet {
+    display: none !important;
+  }
+}
+
+.desktop-hidden {
+  @include desktop {
+    display: none !important;
+  }
+}
+
+// 动画类
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+// 卡片样式
+.app-card {
+  background: $background-color-base;
+  border-radius: $border-radius-base;
+  box-shadow: $box-shadow-light;
+  padding: $spacing-large;
+  margin-bottom: $spacing-medium;
+  border: 1px solid $border-color-lighter;
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: $box-shadow-base;
+  }
+
+  &.no-padding {
+    padding: 0;
+  }
+
+  &.no-margin {
+    margin-bottom: 0;
+  }
+}
+
+// 按钮样式增强
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Element Plus 样式覆盖
+.el-card {
+  border: 1px solid $border-color-lighter;
+  box-shadow: $box-shadow-light;
+
+  .el-card__header {
+    background-color: $background-color-page;
+    border-bottom: 1px solid $border-color-lighter;
+  }
+}
+
+.el-table {
+  .el-table__header {
+    th {
+      background-color: $background-color-page;
+      color: $text-color-primary;
+      font-weight: 600;
+    }
+  }
+
+  .el-table__row {
+    &:hover {
+      background-color: $background-color-page;
+    }
+  }
+}
+
+.el-pagination {
+  .el-pager li {
+    &.is-active {
+      background-color: $primary-color;
+      color: $color-white;
+    }
+  }
+}
+
+// 页面容器
+.page-container {
+  padding: $spacing-large;
+  background-color: $background-color-page;
+  min-height: calc(100vh - 120px);
+
+  .page-header {
+    margin-bottom: $spacing-large;
+    padding-bottom: $spacing-medium;
+    border-bottom: 1px solid $border-color-lighter;
+
+    .page-title {
+      font-size: $font-size-extra-large;
+      font-weight: 600;
+      color: $text-color-primary;
+      margin-bottom: $spacing-small;
+    }
+
+    .page-description {
+      color: $text-color-regular;
+      font-size: $font-size-medium;
+    }
+  }
+
+  .page-content {
+    .content-card {
+      background: $background-color-base;
+      border-radius: $border-radius-base;
+      padding: $spacing-large;
+      box-shadow: $box-shadow-light;
+      border: 1px solid $border-color-lighter;
+    }
+  }
+}
+
+// 统计卡片
+.stat-card {
+  background: $background-color-base;
+  border-radius: $border-radius-base;
+  padding: $spacing-large;
+  box-shadow: $box-shadow-light;
+  border: 1px solid $border-color-lighter;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $box-shadow-base;
+  }
+
+  .stat-icon {
+    font-size: 48px;
+    margin-bottom: $spacing-medium;
+  }
+
+  .stat-value {
+    font-size: $font-size-extra-large;
+    font-weight: 600;
+    color: $text-color-primary;
+    margin-bottom: $spacing-small;
+  }
+
+  .stat-label {
+    color: $text-color-regular;
+    font-size: $font-size-medium;
+  }
+
+  &.primary {
+    .stat-icon {
+      color: $primary-color;
+    }
+  }
+
+  &.success {
+    .stat-icon {
+      color: $success-color;
+    }
+  }
+
+  &.warning {
+    .stat-icon {
+      color: $warning-color;
+    }
+  }
+
+  &.danger {
+    .stat-icon {
+      color: $danger-color;
+    }
+  }
+}
+
+// 表单样式增强
+.form-container {
+  .form-item-large {
+    .el-form-item__label {
+      font-weight: 600;
+      color: $text-color-primary;
+    }
+  }
+}
+
+// 加载状态
+.loading-container {
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 空状态
+.empty-container {
+  text-align: center;
+  padding: $spacing-extra-large;
+  color: $text-color-placeholder;
+
+  .empty-icon {
+    font-size: 80px;
+    margin-bottom: $spacing-medium;
+  }
+
+  .empty-text {
+    font-size: $font-size-large;
+    margin-bottom: $spacing-small;
+  }
+
+  .empty-description {
+    font-size: $font-size-medium;
+    color: $text-color-secondary;
+  }
+}
+
+// 暗色主题
+.dark {
+  .app-card {
+    background: $dark-background-color-base;
+    border-color: $dark-border-color-base;
+    color: $dark-text-color-primary;
+  }
+
+  .page-container {
+    background-color: $dark-background-color-page;
+    color: $dark-text-color-primary;
+
+    .page-header {
+      border-bottom-color: $dark-border-color-base;
+
+      .page-title {
+        color: $dark-text-color-primary;
+      }
+
+      .page-description {
+        color: $dark-text-color-regular;
+      }
+    }
+  }
+
+  .stat-card {
+    background: $dark-background-color-base;
+    border-color: $dark-border-color-base;
+    color: $dark-text-color-primary;
+
+    .stat-value {
+      color: $dark-text-color-primary;
+    }
+
+    .stat-label {
+      color: $dark-text-color-regular;
+    }
+  }
+}

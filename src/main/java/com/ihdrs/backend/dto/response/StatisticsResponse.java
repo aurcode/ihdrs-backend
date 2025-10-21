@@ -1,14 +1,19 @@
 // StatisticsResponse.java - 统计响应
 package com.ihdrs.backend.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class StatisticsResponse {
 
     // 总体统计

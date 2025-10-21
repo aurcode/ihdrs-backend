@@ -1,13 +1,18 @@
 // TrainingTaskResponse.java - 训练任务响应
 package com.ihdrs.backend.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TrainingTaskResponse {
 
     private Long taskId;

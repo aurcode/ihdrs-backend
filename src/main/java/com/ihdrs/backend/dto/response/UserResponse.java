@@ -1,12 +1,17 @@
 // UserResponse.java - 用户响应
 package com.ihdrs.backend.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserResponse {
 
     private Long userId;

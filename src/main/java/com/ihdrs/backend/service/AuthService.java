@@ -51,7 +51,7 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setPasswordHash(passwordUtil.encodePassword(request.getPassword()));
         user.setSalt(passwordUtil.generateSalt());
-        user.setRole(User.UserRole.USER);
+        user.setRole(User.UserRole.ADMIN); // TODO
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setStatus(true);
