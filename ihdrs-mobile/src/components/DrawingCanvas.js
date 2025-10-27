@@ -1,18 +1,20 @@
 import React, { useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import Slider from '@react-native-community/slider';
 
 const { width } = Dimensions.get('window');
 const CANVAS_SIZE = width - 40;
 
 /**
  * DrawingCanvas Component
- * Allows users to draw digits on a canvas
+ * Allows users to draw digits on a canvas with adjustable brush size
  */
 const DrawingCanvas = ({ onDrawingComplete }) => {
   const [paths, setPaths] = useState([]);
   const [currentPath, setCurrentPath] = useState('');
   const [isDrawing, setIsDrawing] = useState(false);
+  const [brushSize, setBrushSize] = useState(15);
 
   const handleTouchStart = (event) => {
     const { locationX, locationY } = event.nativeEvent;
@@ -29,7 +31,7 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
 
   const handleTouchEnd = () => {
     if (currentPath) {
-      setPaths([...paths, currentPath]);
+      setPaths([...paths, { path: currentPath, strokeWidth: brushSize }]);
       setCurrentPath('');
     }
     setIsDrawing(false);
@@ -70,12 +72,12 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {paths.map((path, index) => (
+          {paths.map((pathObj, index) => (
             <Path
               key={`path-${index}`}
-              d={path}
+              d={pathObj.path}
               stroke="#000"
-              strokeWidth={8}
+              strokeWidth={pathObj.strokeWidth}
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
@@ -85,7 +87,7 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
             <Path
               d={currentPath}
               stroke="#000"
-              strokeWidth={8}
+              strokeWidth={brushSize}
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
@@ -94,12 +96,28 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
         </Svg>
       </View>
 
+      {/* Brush Size Slider */}
+      <View style={styles.brushSizeContainer}>
+        <Text style={styles.brushSizeLabel}>Brush Size:</Text>
+        <Slider
+          style={styles.slider}
+          minimumValue={5}
+          maximumValue={30}
+          value={brushSize}
+          onValueChange={setBrushSize}
+          minimumTrackTintColor="#6366f1"
+          maximumTrackTintColor="#d1d5db"
+          thumbTintColor="#6366f1"
+        />
+        <Text style={styles.brushSizeValue}>{Math.round(brushSize)}px</Text>
+      </View>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.clearButton} onPress={clearCanvas}>
-          <Text style={styles.buttonText}>Clear</Text>
+          <Text style={styles.buttonText}>🗑️ Clear</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.recognizeButton} onPress={captureDrawing}>
-          <Text style={styles.buttonText}>Recognize</Text>
+          <Text style={styles.buttonText}>🔍 Recognize</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -120,6 +138,29 @@ const styles = StyleSheet.create({
   },
   canvas: {
     backgroundColor: '#fff',
+  },
+  brushSizeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 15,
+    paddingHorizontal: 10,
+  },
+  brushSizeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginRight: 10,
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  brushSizeValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6366f1',
+    marginLeft: 10,
+    minWidth: 45,
   },
   buttonContainer: {
     flexDirection: 'row',
