@@ -6,7 +6,7 @@ Flask-CORS
 #tensorflow
 keras
 numpy
-opencv-python
+opencv-python-headless
 
 # Image Processing
 Pillow

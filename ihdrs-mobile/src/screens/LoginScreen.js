@@ -13,19 +13,19 @@ import {
 import authService from '../services/authService';
 
 const LoginScreen = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter both username and password');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await authService.login(email, password);
+      const response = await authService.login(username, password);
       
       if (response.success) {
         Alert.alert('Success', 'Login successful!');
@@ -41,7 +41,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
   };
 
   const useDemoCredentials = () => {
-    setEmail('demo@example.com');
+    setUsername('testuser');
     setPassword('password');
   };
 
@@ -56,13 +56,13 @@ const LoginScreen = ({ onLoginSuccess }) => {
           <Text style={styles.subtitle}>Sign in to start recognizing text</Text>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Username</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              placeholder="Enter your username"
+              value={username}
+              onChangeText={setUsername}
+              keyboardType="username-address"
               autoCapitalize="none"
               editable={!loading}
             />
@@ -89,7 +89,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
 
             <View style={styles.demoCredentials}>
               <Text style={styles.demoTitle}>Demo Credentials:</Text>
-              <Text style={styles.demoText}>Email: demo@example.com</Text>
+              <Text style={styles.demoText}>Username: testuser</Text>
               <Text style={styles.demoText}>Password: password</Text>
               <TouchableOpacity
                 style={styles.demoButton}

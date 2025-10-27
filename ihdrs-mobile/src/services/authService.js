@@ -19,14 +19,14 @@ class AuthService {
 
   /**
    * Login user
-   * @param {string} email - User email
+   * @param {string} username - User username
    * @param {string} password - User password
    * @returns {Promise} Login result with token and user data
    */
-  async login(email, password) {
+  async login(username, password) {
     try {
       const response = await this.api.post('/auth/login', {
-        email,
+        username,
         password,
       });
 
