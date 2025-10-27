@@ -32,3 +32,6 @@ pytest-flask
 requests
 python-dateutil
 psutil
+
+# Extra for avoid error
+tensorflow
