@@ -12,6 +12,11 @@ export const API_CONFIG = {
   ENDPOINTS: {
     RECOGNIZE: '/recognition/recognize',
     HEALTH: '/health',
+    MODELS: {
+      BASE: '/models',
+      LIST: '/models/list',
+      ACTIVE: '/models/active',
+    },
   },
   
   // Request timeout in milliseconds

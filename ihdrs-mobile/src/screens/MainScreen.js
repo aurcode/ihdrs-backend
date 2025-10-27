@@ -25,7 +25,16 @@ const MainScreen = ({ user, onLogout }) => {
     setResult(null);
 
     try {
-      const response = await recognitionService.recognizeDigit(base64Image);
+      const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
+      const response = await recognitionService.recognizeDigit(
+        base64Image,
+        inputType,
+        null,
+        {
+          platform: 'mobile',
+          appVersion: '1.0.0',
+        }
+      );
       
       if (response.success) {
         const recognitionData = response.data.data;
@@ -38,6 +47,7 @@ const MainScreen = ({ user, onLogout }) => {
           confidence: recognitionData.confidence,
           probabilities: recognitionData.probabilities,
           timestamp: new Date().toLocaleTimeString(),
+          inputType: inputType,
         };
         setHistory([historyItem, ...history]);
       } else {
