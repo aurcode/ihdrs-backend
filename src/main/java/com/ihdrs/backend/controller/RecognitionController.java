@@ -2,6 +2,7 @@
 package com.ihdrs.backend.controller;
 
 import com.ihdrs.backend.common.Result;
+import com.ihdrs.backend.common.utils.JwtUtil;
 import com.ihdrs.backend.dto.request.RecognitionRequest;
 import com.ihdrs.backend.dto.response.RecognitionResponse;
 import com.ihdrs.backend.service.RecognitionService;
@@ -23,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class RecognitionController {
 
     private final RecognitionService recognitionService;
+    private final JwtUtil jwtUtil;
 
     @Operation(summary = "数字识别", description = "识别手写数字图片（无需登录）")
     @PostMapping("/recognize")
@@ -36,17 +38,30 @@ public class RecognitionController {
         return recognitionService.recognize(request, userId);
     }
 
+    @Operation(summary = "获取识别历史记录", description = "获取当前用户的识别记录历史")
+    @GetMapping("/history")
+    public Result<?> getHistory(HttpServletRequest httpRequest,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "10") int size) {
+
+        Long userId = getUserIdFromRequest(httpRequest);
+        if (userId == null) {
+            return Result.error(401, "未登录用户无法查看历史记录");
+        }
+
+        return recognitionService.getHistory(userId, page, size);
+    }
+
+
     /**
      * 从请求中获取用户ID
      */
-    private Long getUserIdFromRequest(HttpServletRequest request) {
-        // 这里可以从JWT Token中解析用户ID
-        // 暂时返回null表示匿名用户
+    public Long getUserIdFromRequest(HttpServletRequest request) {
         String authorization = request.getHeader("Authorization");
         if (authorization != null && authorization.startsWith("Bearer ")) {
-            // TODO: 从Token中解析用户ID
-            return null;
+            String token = authorization.substring(7);
+            return jwtUtil.getUserIdFromToken(token);
         }
-        return null;
+        return null; // 未登录或Token无效
     }
 }

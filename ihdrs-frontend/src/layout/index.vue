@@ -43,7 +43,7 @@
                 <el-menu-item
                     v-for="child in route.children"
                     :key="child.path"
-                    :index="child.path"
+                    :index="normalizeChildPath(route, child)"
                 >
                   <el-icon>
                     <component :is="child.meta?.icon" />
@@ -55,7 +55,7 @@
               <!-- 单菜单的情况 -->
               <el-menu-item
                   v-else
-                  :index="route.children?.[0]?.path || route.path"
+                  :index="normalizePath(route)"
               >
                 <el-icon>
                   <component :is="route.meta?.icon || route.children?.[0]?.meta?.icon" />
@@ -276,6 +276,21 @@ const handleLogout = async () => {
   } catch {
     // 用户取消操作
   }
+}
+
+// 确保菜单路径为绝对路径
+const normalizePath = (route) => {
+  const path = route.children?.[0]?.path || route.path
+  if (!path.startsWith('/')) {
+    const parentPath = route.path === '/' ? '' : route.path
+    return `${parentPath}/${path}`.replace(/\/+/g, '/')
+  }
+  return path
+}
+
+const normalizeChildPath = (parent, child) => {
+  if (child.path.startsWith('/')) return child.path
+  return `${parent.path}/${child.path}`.replace(/\/+/g, '/')
 }
 
 // 监听路由变化

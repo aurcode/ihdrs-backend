@@ -1,3 +1,5 @@
+// views/dashboard/index.vue
+
 <template>
   <div class="dashboard-container">
     <!-- 统计卡片 -->

@@ -35,6 +35,11 @@ export default defineConfig({
         port: 3000,
         open: true,
         proxy: {
+            '/flask': {
+                target: 'http://localhost:5000',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/flask/, '')
+            },
             '/api': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,

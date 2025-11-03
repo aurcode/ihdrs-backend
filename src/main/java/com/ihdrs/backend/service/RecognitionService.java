@@ -19,6 +19,10 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import java.util.stream.Collectors;
+import java.util.List;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -185,5 +189,38 @@ public class RecognitionService {
         record.setClientInfo(request.getClientInfo());
 
         return recordRepository.save(record);
+    }
+
+    /**
+     * 获得识别记录
+     */
+    @Transactional(readOnly = true)
+    public Result<?> getHistory(Long userId, int page, int size) {
+        try {
+            PageRequest pageable = PageRequest.of(page, size);
+            Page<RecognitionRecord> recordPage =
+                    recordRepository.findByUserIdOrderByCreateTimeDesc(userId, pageable);
+
+            List<RecognitionResponse> records = recordPage.getContent().stream()
+                    .map(record -> RecognitionResponse.builder()
+                            .recordId(record.getRecordId())
+                            .recognitionResult(record.getRecognitionResult())
+                            .confidence(record.getConfidence())
+                            .processingTime(record.getProcessingTime())
+                            .message("历史记录")
+                            .needRewrite(false)
+                            .build())
+                    .collect(Collectors.toList());
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("total", recordPage.getTotalElements());
+            result.put("pages", recordPage.getTotalPages());
+            result.put("records", records);
+
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("获取识别历史失败", e);
+            return Result.error(500, "获取识别历史失败: " + e.getMessage());
+        }
     }
 }

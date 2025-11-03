@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "vite-plugin-vue-setup-extend": "^0.4.0"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0"
   }
 }

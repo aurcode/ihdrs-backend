@@ -47,35 +47,42 @@ export const routes = [
     {
         path: '/recognition',
         component: () => import('@/layout/index.vue'),
-        redirect: '/recognition/history',
+        redirect: '/recognition/write',
         meta: {
             title: '识别管理',
             icon: 'View',
-            requireAuth: true
-        }/*,
+        },
         children: [
             {
-                path: 'history',
-                name: 'RecognitionHistory',
-                component: () => import('@/views/recognition/history.vue'),
+                path: '/recognition/write',
+                name: 'RecognitionWrite',
+                component: () => import('@/views/recognition/HandwritingRecognition.vue'),
                 meta: {
-                    title: '识别记录',
-                    icon: 'List',
-                    requireAuth: true
+                    title: '手写识别',
+                    icon: 'EditPen'
+                }
+            }/*,
+            {
+                path: '/recognition/history',
+                name: 'RecognitionHistory',
+                component: () => import('@/views/recognition/History.vue'),
+                meta: {
+                    title: '识别历史',
+                    icon: 'Document',
+                    roles: ['USER', 'ADMIN']
                 }
             },
             {
-                path: 'feedback',
-                name: 'FeedbackManage',
-                component: () => import('@/views/recognition/feedback.vue'),
+                path: '/recognition/feedback',
+                name: 'RecognitionFeedback',
+                component: () => import('@/views/recognition/Feedback.vue'),
                 meta: {
-                    title: '用户反馈',
-                    icon: 'ChatDotRound',
-                    requireAuth: true,
+                    title: '反馈管理',
+                    icon: 'ChatLineRound',
                     roles: ['ADMIN']
                 }
-            }
-        ]*/
+            }*/
+        ]
     },
     {
         path: '/models',
