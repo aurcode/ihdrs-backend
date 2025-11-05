@@ -35,7 +35,7 @@ service.interceptors.request.use(
         }
 
         // 打印请求信息
-        console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, config.data || config.params)
+        console.log(`${config.method?.toUpperCase()} ${config.url}`, config.data || config.params)
 
         return config
     },
@@ -53,7 +53,7 @@ service.interceptors.response.use(
 
         const { data } = response
 
-        console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, data)
+        console.log(`${response.config.method?.toUpperCase()} ${response.config.url}`, data)
 
         // 根据后端返回的统一格式处理
         if (data.code === 200) {

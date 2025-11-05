@@ -41,7 +41,16 @@ export const routes = [
                     icon: 'DataBoard',
                     requireAuth: true
                 }
-            }
+            }/*,{
+                path: 'profile',
+                name: 'Profile',
+                component: () => import('@/views/profile/index.vue'),
+                meta: {
+                    title: '个人资料',
+                    requireAuth: true,
+                    hideInMenu: true
+                }
+            }*/
         ]
     },
     {
@@ -58,16 +67,16 @@ export const routes = [
                 name: 'RecognitionWrite',
                 component: () => import('@/views/recognition/HandwritingRecognition.vue'),
                 meta: {
-                    title: '手写识别',
+                    title: '手写识别功能',
                     icon: 'EditPen'
                 }
-            }/*,
+            },
             {
                 path: '/recognition/history',
                 name: 'RecognitionHistory',
-                component: () => import('@/views/recognition/History.vue'),
+                component: () => import('@/views/recognition/HistoryManagement.vue'),
                 meta: {
-                    title: '识别历史',
+                    title: '识别历史管理',
                     icon: 'Document',
                     roles: ['USER', 'ADMIN']
                 }
@@ -75,13 +84,13 @@ export const routes = [
             {
                 path: '/recognition/feedback',
                 name: 'RecognitionFeedback',
-                component: () => import('@/views/recognition/Feedback.vue'),
+                component: () => import('@/views/recognition/FeedbackManagement.vue'),
                 meta: {
-                    title: '反馈管理',
+                    title: '用户反馈管理',
                     icon: 'ChatLineRound',
                     roles: ['ADMIN']
                 }
-            }*/
+            }
         ]
     },
     {

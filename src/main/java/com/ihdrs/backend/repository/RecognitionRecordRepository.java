@@ -5,6 +5,7 @@ import com.ihdrs.backend.entity.RecognitionRecord;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,78 +19,72 @@ import java.util.Optional;
 public interface RecognitionRecordRepository extends JpaRepository<RecognitionRecord, Long> {
 
     /**
-     * 根据用户ID分页查询识别记录
+     * 统计用户识别总数
      */
-    Page<RecognitionRecord> findByUserIdOrderByCreateTimeDesc(Long userId, Pageable pageable);
+    @Query("SELECT COUNT(r) FROM RecognitionRecord r WHERE r.userId = :userId")
+    Long countByUserId(@Param("userId") Long userId);
 
     /**
-     * 根据用户ID和时间范围查询识别记录
+     * 统计用户在指定时间段内的识别次数
      */
-    Page<RecognitionRecord> findByUserIdAndCreateTimeBetweenOrderByCreateTimeDesc(
-            Long userId, LocalDateTime startTime, LocalDateTime endTime, Pageable pageable);
+    @Query("SELECT COUNT(r) FROM RecognitionRecord r WHERE r.userId = :userId AND r.createTime BETWEEN :startTime AND :endTime")
+    Long countByUserIdAndCreateTimeBetween(@Param("userId") Long userId,
+                                           @Param("startTime") LocalDateTime startTime,
+                                           @Param("endTime") LocalDateTime endTime);
 
     /**
-     * 根据会话ID查询识别记录
+     * 统计用户各数字识别次数
      */
-    List<RecognitionRecord> findBySessionIdOrderByCreateTimeDesc(String sessionId);
+    @Query("SELECT r.recognitionResult, COUNT(r) FROM RecognitionRecord r WHERE r.userId = :userId GROUP BY r.recognitionResult")
+    List<Object[]> countByUserIdAndRecognitionResult(@Param("userId") Long userId);
 
     /**
-     * 查询指定时间段内的识别记录数量
+     * 计算用户平均置信度
      */
-    @Query("SELECT COUNT(r) FROM RecognitionRecord r WHERE r.createTime BETWEEN :startTime AND :endTime")
-    Long countByCreateTimeBetween(@Param("startTime") LocalDateTime startTime,
-                                  @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT AVG(r.confidence) FROM RecognitionRecord r WHERE r.userId = :userId")
+    BigDecimal avgConfidenceByUserId(@Param("userId") Long userId);
 
     /**
-     * 查询指定时间段内的平均置信度
+     * 获取用户最高置信度
      */
-    @Query("SELECT AVG(r.confidence) FROM RecognitionRecord r WHERE r.createTime BETWEEN :startTime AND :endTime")
-    BigDecimal avgConfidenceByCreateTimeBetween(@Param("startTime") LocalDateTime startTime,
-                                                @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT MAX(r.confidence) FROM RecognitionRecord r WHERE r.userId = :userId")
+    BigDecimal maxConfidenceByUserId(@Param("userId") Long userId);
 
     /**
-     * 查询指定时间段内的平均处理时间
+     * 获取用户最低置信度
      */
-    @Query("SELECT AVG(r.processingTime) FROM RecognitionRecord r WHERE r.createTime BETWEEN :startTime AND :endTime AND r.processingTime IS NOT NULL")
-    Double avgProcessingTimeByCreateTimeBetween(@Param("startTime") LocalDateTime startTime,
-                                                @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT MIN(r.confidence) FROM RecognitionRecord r WHERE r.userId = :userId")
+    BigDecimal minConfidenceByUserId(@Param("userId") Long userId);
 
-    /**
-     * 统计各数字的识别次数
-     */
-    @Query("SELECT r.recognitionResult, COUNT(r) FROM RecognitionRecord r WHERE r.createTime BETWEEN :startTime AND :endTime GROUP BY r.recognitionResult")
-    List<Object[]> countByRecognitionResultAndCreateTimeBetween(@Param("startTime") LocalDateTime startTime,
-                                                                @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT COUNT(r) FROM RecognitionRecord r WHERE r.userId = :userId AND r.isCorrect = true")
+    Long countCorrectByUserId(@Param("userId") Long userId);
 
-    /**
-     * 统计各输入类型的使用次数
-     */
-    @Query("SELECT r.inputType, COUNT(r) FROM RecognitionRecord r WHERE r.createTime BETWEEN :startTime AND :endTime GROUP BY r.inputType")
-    List<Object[]> countByInputTypeAndCreateTimeBetween(@Param("startTime") LocalDateTime startTime,
-                                                        @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT AVG(r.processingTime) FROM RecognitionRecord r WHERE r.userId = :userId")
+    Double avgProcessingTimeByUserId(@Param("userId") Long userId);
 
-    /**
-     * 查询指定模型的识别记录统计
-     */
-    @Query("SELECT COUNT(r), AVG(r.confidence), AVG(r.processingTime) FROM RecognitionRecord r WHERE r.modelId = :modelId AND r.createTime BETWEEN :startTime AND :endTime")
-    List<Object[]> getModelStatistics(@Param("modelId") Long modelId,
-                                      @Param("startTime") LocalDateTime startTime,
-                                      @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT COUNT(r) FROM RecognitionRecord r WHERE r.userId = :userId AND r.createTime >= :startTime")
+    Long countByUserIdAndCreateTimeAfter(@Param("userId") Long userId, @Param("startTime") LocalDateTime startTime);
 
-    /**
-     * 查询准确率（需要有is_correct字段）
-     */
-    @Query("SELECT COUNT(r), SUM(CASE WHEN r.isCorrect = true THEN 1 ELSE 0 END) FROM RecognitionRecord r WHERE r.createTime BETWEEN :startTime AND :endTime AND r.isCorrect IS NOT NULL")
-    List<Object[]> getAccuracyStatistics(@Param("startTime") LocalDateTime startTime,
-                                         @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT r FROM RecognitionRecord r WHERE " +
+            "(:result IS NULL OR r.recognitionResult = :result) " +
+            "AND (:startTime IS NULL OR r.createTime >= :startTime) " +
+            "AND (:endTime IS NULL OR r.createTime <= :endTime) " +
+            "ORDER BY r.createTime DESC")
+    Page<RecognitionRecord> findAllWithFilters(@Param("result") Integer result,
+                                               @Param("startTime") LocalDateTime startTime,
+                                               @Param("endTime") LocalDateTime endTime,
+                                               Pageable pageable);
 
-    /**
-     * 根据图片哈希查找相似记录
-     */
-    Optional<RecognitionRecord> findByImageHash(String imageHash);
+    @Query("SELECT r FROM RecognitionRecord r WHERE " +
+            "(:userId IS NULL OR r.userId = :userId) " +
+            "AND (:result IS NULL OR r.recognitionResult = :result) " +
+            "AND (:startTime IS NULL OR r.createTime >= :startTime) " +
+            "AND (:endTime IS NULL OR r.createTime <= :endTime) " +
+            "ORDER BY r.createTime DESC")
+    Page<RecognitionRecord> findAllWithFiltersAndUser(@Param("result") Integer result,
+                                                      @Param("userId") Long userId,
+                                                      @Param("startTime") LocalDateTime startTime,
+                                                      @Param("endTime") LocalDateTime endTime,
+                                                      Pageable pageable);
 
-    /**
-     * 查询置信度低于阈值的记录
-     */
-    Page<RecognitionRecord> findByConfidenceLessThanOrderByCreateTimeDesc(BigDecimal threshold, Pageable pageable);
 }

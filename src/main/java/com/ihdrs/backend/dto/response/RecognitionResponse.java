@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -14,10 +15,15 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class RecognitionResponse {
 
+    private Long userId;
     private Long recordId;
     private Integer recognitionResult;
     private BigDecimal confidence;
     private Integer processingTime; // 处理时间（毫秒）
     private String message; // 提示信息
     private Boolean needRewrite; // 是否需要重写（置信度低时）
+    private LocalDateTime createTime;
+    private String imagePath;
+    private String inputType;
+    private Boolean isCorrect;
 }

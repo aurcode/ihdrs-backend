@@ -96,17 +96,17 @@ INSERT INTO recognition_records (
       (3, 1, 7, 0.9845, NULL, '/uploads/2025/11/digit7.png', 'a7b9c8d5e0f11223344556677889900a', 'UPLOAD', 132,
        JSON_OBJECT('device', 'Windows 10', 'browser', 'Edge', 'version', '142.0'), 1, 'session_001'),
 
-      (3, 1, 2, 0.8794, NULL, '/uploads/2025/11/digit2.png', 'b8f5c9e3a1d04567bb123abc9d0e1f2a', 'CANVAS', 95,
+      (2, 1, 2, 0.8794, NULL, '/uploads/2025/11/digit2.png', 'b8f5c9e3a1d04567bb123abc9d0e1f2a', 'CANVAS', 95,
        JSON_OBJECT('device', 'Android', 'app_version', '1.2.3'), 1, 'session_002'),
 
-      (3, 1, 9, 0.7563, NULL, '/uploads/2025/11/digit9.png', 'd4a7b9f3e8c01234aabbccddeeff0011', 'CAMERA', 188,
+      (1, 1, 9, 0.7563, NULL, '/uploads/2025/11/digit9.png', 'd4a7b9f3e8c01234aabbccddeeff0011', 'CAMERA', 188,
        JSON_OBJECT('device', 'iPhone 14', 'os', 'iOS 18'), 0, 'session_003'),
 
       (3, 1, 0, 0.9931, NULL, '/uploads/2025/11/digit0.png', 'aabbccddeeff00112233445566778899', 'CANVAS', 81,
        JSON_OBJECT('device', 'Windows 11', 'browser', 'Chrome', 'version', '142.0.0'), 1, 'session_004'),
 
       (3, 1, 5, 0.6238, NULL, '/uploads/2025/11/digit5.png', '1234567890abcdef1234567890abcdef', 'UPLOAD', 142,
-       JSON_OBJECT('device', 'MacBook Pro', 'os', 'macOS 15'), NULL, 'session_005');
+       JSON_OBJECT('device', 'MacBook Pro', 'os', 'macOS 15'), 1, 'session_005');
 
 -- 创建训练任务表
 CREATE TABLE IF NOT EXISTS `training_tasks` (
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS `feedback_data` (
                                                `feedback_type` enum('WRONG_RESULT','LOW_CONFIDENCE','OTHER') DEFAULT 'WRONG_RESULT' COMMENT '反馈类型',
                                                `feedback_reason` varchar(500) COMMENT '反馈原因',
                                                `quality_score` int DEFAULT NULL COMMENT '图像质量评分（1-5）',
-                                               `status` enum('PENDING','REVIEWED','ACCEPTED','REJECTED') DEFAULT 'PENDING' COMMENT '反馈状态',
+                                               `status` enum('PENDING','ACCEPTED','REJECTED') DEFAULT 'PENDING' COMMENT '反馈状态',
                                                `reviewer_id` bigint DEFAULT NULL COMMENT '审核者ID',
                                                `review_time` datetime DEFAULT NULL COMMENT '审核时间',
                                                `review_note` varchar(500) COMMENT '审核备注',
@@ -156,6 +156,31 @@ CREATE TABLE IF NOT EXISTS `feedback_data` (
                                                KEY `idx_status` (`status`),
                                                KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='反馈数据表';
+
+INSERT INTO `feedback_data`
+(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
+VALUES
+    (1, 1, 3, 5, 'WRONG_RESULT', '识别结果偏差较大', 4, 'PENDING');
+
+INSERT INTO `feedback_data`
+(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
+VALUES
+    (2, 2, 7, 7, 'LOW_CONFIDENCE', '模型置信度很低，建议二次校验', 3, 'PENDING');
+
+INSERT INTO `feedback_data`
+(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
+VALUES
+    (3, 2, 9, 9, 'OTHER', '图像边缘模糊，可能需要增强处理', 2, 'PENDING');
+
+INSERT INTO `feedback_data`
+(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
+VALUES
+    (4, 1, 4, 1, 'WRONG_RESULT', '系统误识别为4', 5, 'PENDING');
+
+INSERT INTO `feedback_data`
+(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
+VALUES
+    (5, 2, 6, 6, 'LOW_CONFIDENCE', '识别置信度低于设定阈值', 3, 'PENDING');
 
 -- 创建训练日志表
 CREATE TABLE IF NOT EXISTS `training_logs` (
@@ -214,8 +239,8 @@ ALTER TABLE `recognition_records` ADD CONSTRAINT `fk_records_user` FOREIGN KEY (
 ALTER TABLE `recognition_records` ADD CONSTRAINT `fk_records_model` FOREIGN KEY (`model_id`) REFERENCES `models` (`model_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `training_tasks` ADD CONSTRAINT `fk_tasks_creator` FOREIGN KEY (`creator_id`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `training_tasks` ADD CONSTRAINT `fk_tasks_model` FOREIGN KEY (`model_id`) REFERENCES `models` (`model_id`) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_record` FOREIGN KEY (`record_id`) REFERENCES `recognition_records` (`record_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_record` FOREIGN KEY (`record_id`) REFERENCES `recognition_records` (`record_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `training_logs` ADD CONSTRAINT `fk_logs_task` FOREIGN KEY (`task_id`) REFERENCES `training_tasks` (`task_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `operation_logs` ADD CONSTRAINT `fk_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;

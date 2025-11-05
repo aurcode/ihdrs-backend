@@ -12,8 +12,12 @@ import com.ihdrs.backend.entity.Model;
 import com.ihdrs.backend.entity.RecognitionRecord;
 import com.ihdrs.backend.repository.ModelRepository;
 import com.ihdrs.backend.repository.RecognitionRecordRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -21,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import java.util.List;
 
@@ -195,32 +202,107 @@ public class RecognitionService {
      * 获得识别记录
      */
     @Transactional(readOnly = true)
-    public Result<?> getHistory(Long userId, int page, int size) {
+    public Result<?> getAllHistory(int page, int size,
+                                   Integer result,
+                                   Long userId, LocalDateTime startTime, LocalDateTime endTime) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<RecognitionRecord> recordPage =
+                recordRepository.findAllWithFiltersAndUser(result, userId, startTime, endTime, pageable);
+
+        List<RecognitionResponse> records = recordPage.getContent().stream()
+                .map(record -> RecognitionResponse.builder()
+                        .recordId(record.getRecordId())
+                        .recognitionResult(record.getRecognitionResult())
+                        .confidence(record.getConfidence())
+                        .processingTime(record.getProcessingTime())
+                        .message("历史记录")
+                        .needRewrite(false)
+                        .createTime(record.getCreateTime())
+                        .imagePath(record.getImagePath())
+                        .inputType(record.getInputType() != null ? record.getInputType().name() : null)
+                        .isCorrect(record.getIsCorrect())
+                        .userId(record.getUserId())
+                        .build())
+                .toList();
+
+        Map<String, Object> resultData = new HashMap<>();
+        resultData.put("total", recordPage.getTotalElements());
+        resultData.put("pages", recordPage.getTotalPages());
+        resultData.put("records", records);
+
+        return Result.success(resultData);
+    }
+
+    @Transactional
+    public Result<Void> deleteRecord(Long recordId, Long requestUserId) {
         try {
-            PageRequest pageable = PageRequest.of(page, size);
-            Page<RecognitionRecord> recordPage =
-                    recordRepository.findByUserIdOrderByCreateTimeDesc(userId, pageable);
+            RecognitionRecord record = recordRepository.findById(recordId).orElse(null);
+            if (record == null) {
+                return Result.error(404, "识别记录不存在");
+            }
 
-            List<RecognitionResponse> records = recordPage.getContent().stream()
-                    .map(record -> RecognitionResponse.builder()
-                            .recordId(record.getRecordId())
-                            .recognitionResult(record.getRecognitionResult())
-                            .confidence(record.getConfidence())
-                            .processingTime(record.getProcessingTime())
-                            .message("历史记录")
-                            .needRewrite(false)
-                            .build())
-                    .collect(Collectors.toList());
+            // 如果是记录所有者，允许删除，管理员需要另行判断
+            Long ownerId = record.getUserId();
+            if (ownerId == null) {
+                // 匿名记录，仅管理员允许删除
+                return Result.error(403, "无法删除匿名记录（仅管理员可操作）");
+            }
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("total", recordPage.getTotalElements());
-            result.put("pages", recordPage.getTotalPages());
-            result.put("records", records);
-
-            return Result.success(result);
+            // 如果不是同一用户，需要判断是否是管理员
+            // TODO
+            recordRepository.deleteById(recordId);
+            return Result.success("删除成功", null);
         } catch (Exception e) {
-            log.error("获取识别历史失败", e);
-            return Result.error(500, "获取识别历史失败: " + e.getMessage());
+            log.error("删除识别记录失败", e);
+            return Result.error(500, "删除识别记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量删除识别记录
+     */
+    @Transactional
+    public Result<Void> batchDeleteRecords(List<Long> recordIds, Long userId) {
+        try {
+            if (recordIds == null || recordIds.isEmpty()) {
+                return Result.error(400, "记录ID列表不能为空");
+            }
+
+            recordRepository.deleteAllById(recordIds);
+
+            log.info("批量删除识别记录成功 - 用户ID: {}, 删除数量: {}", userId, recordIds.size());
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("批量删除识别记录失败", e);
+            return Result.error(500, "批量删除失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取识别统计信息
+     */
+    public Result<Object> getStatistics(Long userId) {
+        try {
+            Long total = recordRepository.countByUserId(userId);
+            Long correct = recordRepository.countCorrectByUserId(userId);
+            Double avgTime = recordRepository.avgProcessingTimeByUserId(userId);
+            Long today = recordRepository.countByUserIdAndCreateTimeAfter(
+                    userId, LocalDateTime.now().toLocalDate().atStartOfDay());
+
+            double accuracy = total > 0 ? (correct.doubleValue() / total.doubleValue() * 100) : 0;
+
+            var statistics = new java.util.HashMap<String, Object>();
+            statistics.put("total", total);
+            statistics.put("accuracy", String.format("%.1f", accuracy));
+            statistics.put("avgTime", avgTime != null ? avgTime.intValue() : 0);
+            statistics.put("today", today);
+
+            return Result.success(statistics);
+        } catch (Exception e) {
+            log.error("获取统计信息失败", e);
+            return Result.error(500, "获取统计信息失败");
         }
     }
 }

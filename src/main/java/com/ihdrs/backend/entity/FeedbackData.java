@@ -88,6 +88,6 @@ public class FeedbackData {
     }
 
     public enum FeedbackStatus {
-        PENDING, REVIEWED, ACCEPTED, REJECTED
+        PENDING, ACCEPTED, REJECTED
     }
 }

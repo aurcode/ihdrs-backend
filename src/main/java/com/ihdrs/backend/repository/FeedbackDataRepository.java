@@ -5,6 +5,7 @@ import com.ihdrs.backend.entity.FeedbackData;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -30,29 +31,25 @@ public interface FeedbackDataRepository extends JpaRepository<FeedbackData, Long
      */
     List<FeedbackData> findByRecordId(Long recordId);
 
-    /**
-     * 查询指定时间段内的反馈数量
-     */
-    @Query("SELECT COUNT(f) FROM FeedbackData f WHERE f.createTime BETWEEN :startTime AND :endTime")
-    Long countByCreateTimeBetween(@Param("startTime") LocalDateTime startTime,
-                                  @Param("endTime") LocalDateTime endTime);
+    @Modifying
+    @Query("UPDATE FeedbackData f SET f.status = :status, f.reviewerId = :reviewerId, " +
+            "f.reviewTime = :reviewTime, f.reviewNote = :reviewNote " +
+            "WHERE f.feedbackId IN :feedbackIds")
+    void batchUpdateStatus(@Param("feedbackIds") List<Long> feedbackIds,
+                           @Param("status") FeedbackData.FeedbackStatus status,
+                           @Param("reviewerId") Long reviewerId,
+                           @Param("reviewTime") LocalDateTime reviewTime,
+                           @Param("reviewNote") String reviewNote);
 
-    /**
-     * 统计各反馈类型数量
-     */
-    @Query("SELECT f.feedbackType, COUNT(f) FROM FeedbackData f WHERE f.createTime BETWEEN :startTime AND :endTime GROUP BY f.feedbackType")
-    List<Object[]> countByFeedbackTypeAndCreateTimeBetween(@Param("startTime") LocalDateTime startTime,
-                                                           @Param("endTime") LocalDateTime endTime);
+    @Query("SELECT COUNT(f) FROM FeedbackData f WHERE f.status = :status")
+    Long countByStatus(@Param("status") FeedbackData.FeedbackStatus status);
 
-    /**
-     * 查询已接受的反馈数据（用于重新训练）
-     */
-    @Query("SELECT f FROM FeedbackData f WHERE f.status = 'ACCEPTED' ORDER BY f.createTime DESC")
-    List<FeedbackData> findAcceptedFeedback();
+    Page<FeedbackData> findByFeedbackTypeAndStatusOrderByCreateTimeDesc(
+            FeedbackData.FeedbackType feedbackType,
+            FeedbackData.FeedbackStatus status,
+            Pageable pageable);
 
-    /**
-     * 统计用户反馈的准确率改进
-     */
-    @Query("SELECT f.originalResult, f.correctResult, COUNT(f) FROM FeedbackData f WHERE f.status = 'ACCEPTED' GROUP BY f.originalResult, f.correctResult")
-    List<Object[]> getFeedbackAccuracyImprovement();
+    Page<FeedbackData> findByFeedbackTypeOrderByCreateTimeDesc(
+            FeedbackData.FeedbackType feedbackType,
+            Pageable pageable);
 }
