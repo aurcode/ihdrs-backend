@@ -102,19 +102,19 @@ export const routes = [
             icon: 'Setting',
             requireAuth: true,
             roles: ['ADMIN']
-        }/*,
+        },
         children: [
             {
                 path: 'list',
                 name: 'ModelList',
-                component: () => import('@/views/models/list.vue'),
+                component: () => import('@/views/models/ModelManagement.vue'),
                 meta: {
                     title: '模型列表',
                     icon: 'List',
                     requireAuth: true,
                     roles: ['ADMIN']
                 }
-            },
+            }/*,
             {
                 path: 'training',
                 name: 'ModelTraining',
@@ -125,8 +125,8 @@ export const routes = [
                     requireAuth: true,
                     roles: ['ADMIN']
                 }
-            }
-        ]*/
+            }*/
+        ]
     },
     {
         path: '/users',

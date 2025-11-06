@@ -142,6 +142,18 @@
           </template>
         </el-table-column>
 
+        <el-table-column label="模型名称" width="150">
+          <template #default="{ row }">
+            <span>{{ row.modelName || '未知' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="模型版本" width="150">
+          <template #default="{ row }">
+            <span>{{ row.modelVersion || '未知' }}</span>
+          </template>
+        </el-table-column>
+
         <el-table-column prop="feedbackReason" label="反馈原因" min-width="200" show-overflow-tooltip />
 
         <el-table-column label="质量评分" width="120" align="center">
@@ -251,6 +263,12 @@
           <el-tag :type="getStatusTag(currentFeedback.status)">
             {{ getStatusText(currentFeedback.status) }}
           </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="模型名称">
+          {{ currentFeedback.modelName || currentFeedback.recordInfo?.modelName || '未知' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="模型版本">
+          {{ currentFeedback.modelVersion || currentFeedback.recordInfo?.modelVersion || '未知' }}
         </el-descriptions-item>
         <el-descriptions-item label="反馈原因" :span="2">
           {{ currentFeedback.feedbackReason || '无' }}

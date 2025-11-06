@@ -24,6 +24,9 @@ public interface RecognitionRecordRepository extends JpaRepository<RecognitionRe
     @Query("SELECT COUNT(r) FROM RecognitionRecord r WHERE r.userId = :userId")
     Long countByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT COUNT(r) FROM RecognitionRecord r WHERE r.modelId = :modelId")
+    Long countByModelId(@Param("modelId") Long modelId);
+
     /**
      * 统计用户在指定时间段内的识别次数
      */

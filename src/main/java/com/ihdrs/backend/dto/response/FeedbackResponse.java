@@ -33,6 +33,11 @@ public class FeedbackResponse {
     // 关联的识别记录信息
     private RecognitionRecordInfo recordInfo;
 
+    // 模型信息字段
+    private Long modelId;
+    private String modelName;
+    private String modelVersion;
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -41,5 +46,10 @@ public class FeedbackResponse {
         private String imagePath;
         private String confidence;
         private LocalDateTime recognitionTime;
+
+        // 模型信息字段
+        private Long modelId;
+        private String modelName;
+        private String modelVersion;
     }
 }

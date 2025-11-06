@@ -26,4 +26,9 @@ public class RecognitionResponse {
     private String imagePath;
     private String inputType;
     private Boolean isCorrect;
+
+    // 模型信息字段
+    private Long modelId;
+    private String modelName;
+    private String modelVersion;
 }

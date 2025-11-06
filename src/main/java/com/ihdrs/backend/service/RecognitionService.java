@@ -212,19 +212,32 @@ public class RecognitionService {
                 recordRepository.findAllWithFiltersAndUser(result, userId, startTime, endTime, pageable);
 
         List<RecognitionResponse> records = recordPage.getContent().stream()
-                .map(record -> RecognitionResponse.builder()
-                        .recordId(record.getRecordId())
-                        .recognitionResult(record.getRecognitionResult())
-                        .confidence(record.getConfidence())
-                        .processingTime(record.getProcessingTime())
-                        .message("历史记录")
-                        .needRewrite(false)
-                        .createTime(record.getCreateTime())
-                        .imagePath(record.getImagePath())
-                        .inputType(record.getInputType() != null ? record.getInputType().name() : null)
-                        .isCorrect(record.getIsCorrect())
-                        .userId(record.getUserId())
-                        .build())
+                .map(record -> {
+                    RecognitionResponse.RecognitionResponseBuilder builder = RecognitionResponse.builder()
+                            .recordId(record.getRecordId())
+                            .recognitionResult(record.getRecognitionResult())
+                            .confidence(record.getConfidence())
+                            .processingTime(record.getProcessingTime())
+                            .message("历史记录")
+                            .needRewrite(false)
+                            .createTime(record.getCreateTime())
+                            .imagePath(record.getImagePath())
+                            .inputType(record.getInputType() != null ? record.getInputType().name() : null)
+                            .isCorrect(record.getIsCorrect())
+                            .userId(record.getUserId())
+                            .modelId(record.getModelId());
+
+                    // 新增:查询模型信息
+                    if (record.getModelId() != null) {
+                        modelRepository.findById(record.getModelId())
+                                .ifPresent(model -> {
+                                    builder.modelName(model.getModelName());
+                                    builder.modelVersion(model.getModelVersion());
+                                });
+                    }
+
+                    return builder.build();
+                })
                 .toList();
 
         Map<String, Object> resultData = new HashMap<>();

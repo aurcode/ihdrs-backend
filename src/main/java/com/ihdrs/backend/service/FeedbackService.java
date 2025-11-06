@@ -9,6 +9,7 @@ import com.ihdrs.backend.dto.response.FeedbackResponse;
 import com.ihdrs.backend.entity.FeedbackData;
 import com.ihdrs.backend.entity.RecognitionRecord;
 import com.ihdrs.backend.repository.FeedbackDataRepository;
+import com.ihdrs.backend.repository.ModelRepository;
 import com.ihdrs.backend.repository.RecognitionRecordRepository;
 import com.ihdrs.backend.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,6 +40,7 @@ public class FeedbackService {
     private final FeedbackDataRepository feedbackRepository;
     private final RecognitionRecordRepository recordRepository;
     private final UserRepository userRepository;
+    private final ModelRepository modelRepository;
 
     /**
      * 提交用户反馈
@@ -368,13 +370,33 @@ public class FeedbackService {
         if (feedback.getRecordId() != null) {
             recordRepository.findById(feedback.getRecordId())
                     .ifPresent(record -> {
-                        FeedbackResponse.RecognitionRecordInfo recordInfo =
+                        // 创建 RecognitionRecordInfo 的 Builder
+                        FeedbackResponse.RecognitionRecordInfo.RecognitionRecordInfoBuilder recordInfoBuilder =
                                 FeedbackResponse.RecognitionRecordInfo.builder()
                                         .imagePath(record.getImagePath())
                                         .confidence(record.getConfidence().toString())
                                         .recognitionTime(record.getCreateTime())
-                                        .build();
-                        builder.recordInfo(recordInfo);
+                                        .modelId(record.getModelId());
+
+                        // 查询模型信息并同时填充到 recordInfo 和顶层字段
+                        if (record.getModelId() != null) {
+                            modelRepository.findById(record.getModelId())
+                                    .ifPresent(model -> {
+                                        // 填充到 RecognitionRecordInfo
+                                        recordInfoBuilder.modelName(model.getModelName());
+                                        recordInfoBuilder.modelVersion(model.getModelVersion());
+
+                                        // 同时填充到 FeedbackResponse 顶层
+                                        builder.modelId(model.getModelId());
+                                        builder.modelName(model.getModelName());
+                                        builder.modelVersion(model.getModelVersion());
+
+                                        log.debug("查询到模型信息: modelId={}, modelName={}, modelVersion={}",
+                                                model.getModelId(), model.getModelName(), model.getModelVersion());
+                                    });
+                        }
+
+                        builder.recordInfo(recordInfoBuilder.build());
                     });
         }
 

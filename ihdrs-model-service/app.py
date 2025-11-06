@@ -43,7 +43,9 @@ def create_app(config_name=None):
     from api.recognition import recognition_bp
     from api.training import training_bp
     from api.health import health_bp
+    from api.model import model_bp
 
+    app.register_blueprint(model_bp, url_prefix='/api')
     app.register_blueprint(recognition_bp, url_prefix='/api')
     app.register_blueprint(training_bp, url_prefix='/api')
     app.register_blueprint(health_bp)

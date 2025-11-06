@@ -146,6 +146,18 @@
           </template>
         </el-table-column>
 
+        <el-table-column label="模型名称" width="150">
+          <template #default="{ row }">
+            <span>{{ row.modelName }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="模型版本" width="150">
+          <template #default="{ row }">
+            <span>{{ row.modelVersion }}</span>
+          </template>
+        </el-table-column>
+
         <el-table-column label="输入方式" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getInputTypeTag(row.inputType)">
