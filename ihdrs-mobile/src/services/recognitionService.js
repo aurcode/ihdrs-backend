@@ -3,13 +3,14 @@ import { API_CONFIG } from '../config/api';
 
 /**
  * Recognition Service
- * Handles communication with the backend API for digit recognition
+ * Handles communication with the Python Model Service for digit recognition
  */
 
 class RecognitionService {
   constructor() {
-    this.api = axios.create({
-      baseURL: API_CONFIG.BACKEND_URL,
+    // Axios instance for the Python Model Service (for recognition)
+    this.modelApi = axios.create({
+      baseURL: API_CONFIG.MODEL_SERVICE_URL,
       timeout: API_CONFIG.TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
@@ -19,33 +20,61 @@ class RecognitionService {
 
   /**
    * Recognize a digit from a base64 encoded image
+   * This method now calls the Python Model Service directly.
    * @param {string} base64Image - Base64 encoded image string
-   * @param {string} inputType - Type of input (CANVAS, UPLOAD, CAMERA)
-   * @param {string} sessionId - Session identifier
-   * @param {object} clientInfo - Client information
+   * @param {string} inputType - (No longer used directly in this call, but kept for signature compatibility)
+   * @param {string} sessionId - (No longer used directly in this call, but kept for signature compatibility)
+   * @param {object} clientInfo - (No longer used directly in this call, but kept for signature compatibility)
    * @returns {Promise} Recognition result with predicted digit and confidence
    */
   async recognizeDigit(base64Image, inputType = 'CANVAS', sessionId = null, clientInfo = null) {
     try {
+      // Hardcoding model_id to 1 as per Postman example,
+      // since the Java backend call was removed.
+      const modelId = 1;
+
+      // 1. Prepare the request body for the Python Model Service
+      // This matches the format from your Postman example
       const requestBody = {
-        imageData: base64Image,
-        inputType: inputType,
+        model_id: modelId,
+        image: base64Image,
       };
 
-      // Add optional parameters if provided
-      if (sessionId) {
-        requestBody.sessionId = sessionId;
-      }
-      if (clientInfo) {
-        requestBody.clientInfo = JSON.stringify(clientInfo);
-      }
+      // 2. Call the Python Model Service endpoint
+      // We use 'this.modelApi' and the '/api/recognize' endpoint
+      const response = await this.modelApi.post('/api/recognize', requestBody);
 
-      const response = await this.api.post(API_CONFIG.ENDPOINTS.RECOGNIZE, requestBody);
+      // 3. Parse the response data
+      if (response.data && response.data.status === 'success' && response.data.data) {
+        const predictionData = response.data.data;
 
-      return {
-        success: true,
-        data: response.data,
-      };
+        // Create a more structured probabilities object (digit: probability)
+        const probabilitiesMap = {};
+        if (predictionData.all_probabilities && Array.isArray(predictionData.all_probabilities)) {
+          predictionData.all_probabilities.forEach((probability, index) => {
+            probabilitiesMap[index] = probability;
+          });
+        }
+
+        // Return a structured response that matches what MainScreen.js expects
+        return {
+          success: true,
+          data: {
+            // Add the extra 'data' nesting that MainScreen.js expects
+            data: {
+              predictedDigit: predictionData.result,
+              confidence: predictionData.confidence,
+              processingTime: predictionData.processing_time,
+              // Rename 'all_probabilities' to 'probabilities' as expected by MainScreen.js
+              probabilities: predictionData.all_probabilities,
+              probabilitiesMap: probabilitiesMap, // Still include this, it might be useful later
+            },
+          },
+        };
+      } else {
+        // Handle unexpected success response format
+        throw new Error(response.data?.message || 'Received an unexpected response format from the model service.');
+      }
     } catch (error) {
       console.error('Recognition error:', error);
       return {
@@ -56,120 +85,14 @@ class RecognitionService {
   }
 
   /**
-   * Get list of available models
-   * @param {number} current - Current page number
-   * @param {number} size - Page size
-   * @returns {Promise} List of models
-   */
-  async getModelList(current = 1, size = 10) {
-    try {
-      const response = await this.api.get(API_CONFIG.ENDPOINTS.MODELS.LIST, {
-        params: { current, size },
-      });
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      console.error('Get model list error:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message || 'Failed to get model list',
-      };
-    }
-  }
-
-  /**
-   * Get active model information
-   * @returns {Promise} Active model details
-   */
-  async getActiveModel() {
-    try {
-      const response = await this.api.get(API_CONFIG.ENDPOINTS.MODELS.ACTIVE);
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      console.error('Get active model error:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message || 'Failed to get active model',
-      };
-    }
-  }
-
-  /**
-   * Get model details by ID
-   * @param {number} modelId - Model ID
-   * @returns {Promise} Model details
-   */
-  async getModelById(modelId) {
-    try {
-      const response = await this.api.get(`${API_CONFIG.ENDPOINTS.MODELS.BASE}/${modelId}`);
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      console.error('Get model by ID error:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message || 'Failed to get model details',
-      };
-    }
-  }
-
-  /**
-   * Switch active model
-   * @param {number} modelId - Model ID to activate
-   * @returns {Promise} Switch result
-   */
-  async switchActiveModel(modelId) {
-    try {
-      const response = await this.api.put(`${API_CONFIG.ENDPOINTS.MODELS.BASE}/${modelId}/activate`);
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      console.error('Switch active model error:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message || 'Failed to switch model',
-      };
-    }
-  }
-
-  /**
-   * Check backend health status
-   * @returns {Promise} Health status
-   */
-  async checkHealth() {
-    try {
-      const response = await this.api.get(API_CONFIG.ENDPOINTS.HEALTH);
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      console.error('Health check error:', error);
-      return {
-        success: false,
-        error: error.message || 'Health check failed',
-      };
-    }
-  }
-
-  /**
    * Set authentication token for API requests
    * @param {string} token - JWT token
    */
   setAuthToken(token) {
     if (token) {
-      this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      this.modelApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
-      delete this.api.defaults.headers.common['Authorization'];
+      delete this.modelApi.defaults.headers.common['Authorization'];
     }
   }
 }
