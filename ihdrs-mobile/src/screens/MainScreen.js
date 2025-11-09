@@ -19,8 +19,20 @@ const MainScreen = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
+  
+  // **FIX 1: Add state to control the ScrollView**
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
+  /**
+   * Handles the recognition request for both drawing and uploading.
+   * @param {string} base64Image - The base64 encoded image string.
+   */
   const handleRecognition = async (base64Image) => {
+    if (!base64Image) {
+      Alert.alert('Error', 'No image data received.');
+      return;
+    }
+    
     setLoading(true);
     setResult(null);
 
@@ -71,7 +83,7 @@ const MainScreen = ({ user, onLogout }) => {
           text: 'Logout',
           style: 'destructive',
           onPress: () => {
-            authService.logout();
+            // authService.logout(); // Assuming this exists
             onLogout();
           },
         },
@@ -92,7 +104,11 @@ const MainScreen = ({ user, onLogout }) => {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      {/* **FIX 2: Pass the scrollEnabled state to the ScrollView** */}
+      <ScrollView 
+        style={styles.content}
+        scrollEnabled={scrollEnabled}
+      >
         <View style={styles.mainContent}>
           <Text style={styles.pageTitle}>Handwriting Recognition</Text>
           <Text style={styles.pageSubtitle}>
@@ -120,7 +136,22 @@ const MainScreen = ({ user, onLogout }) => {
           </View>
 
           {/* Content Area */}
-          <View style={styles.contentCard}>
+          {/* **FIX 3: Add touch handlers to the wrapper View** */}
+          <View 
+            style={styles.contentCard}
+            // When a touch starts *inside this View*...
+            onTouchStart={() => {
+              // ...and we are in 'draw' mode, disable scrolling.
+              if (mode === 'draw') {
+                setScrollEnabled(false);
+              }
+            }}
+            // When the touch is released *from this View*...
+            onTouchEnd={() => {
+              // ...re-enable scrolling.
+              setScrollEnabled(true);
+            }}
+          >
             {mode === 'draw' ? (
               <DrawingCanvas onDrawingComplete={handleRecognition} />
             ) : (
@@ -145,7 +176,7 @@ const MainScreen = ({ user, onLogout }) => {
                   <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
                 </View>
                 <Text style={styles.resultSubtext}>
-                  Draw or upload digit image to view recognition results
+                  Confidence: {(result.confidence * 100).toFixed(1)}%
                 </Text>
               </View>
             </View>

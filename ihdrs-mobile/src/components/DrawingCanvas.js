@@ -1,20 +1,35 @@
 import React, { useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Dimensions } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Dimensions,
+  Alert, // Import Alert for native alerts
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Slider from '@react-native-community/slider';
+// Import react-native-view-shot to capture the drawing as an image
+import ViewShot from 'react-native-view-shot';
 
 const { width } = Dimensions.get('window');
 const CANVAS_SIZE = width - 40;
+// Define a white background color. ML models work best with non-transparent images.
+const CANVAS_BACKGROUND_COLOR = '#FFFFFF';
 
 /**
  * DrawingCanvas Component
  * Allows users to draw digits on a canvas with adjustable brush size
+ * Captures the drawing as a base64 image for recognition.
  */
 const DrawingCanvas = ({ onDrawingComplete }) => {
   const [paths, setPaths] = useState([]);
   const [currentPath, setCurrentPath] = useState('');
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(15);
+
+  // Create a ref to attach to the ViewShot component
+  const viewShotRef = useRef(null);
 
   const handleTouchStart = (event) => {
     const { locationX, locationY } = event.nativeEvent;
@@ -24,7 +39,7 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
 
   const handleTouchMove = (event) => {
     if (!isDrawing) return;
-    
+
     const { locationX, locationY } = event.nativeEvent;
     setCurrentPath((prevPath) => `${prevPath} L${locationX},${locationY}`);
   };
@@ -43,35 +58,69 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
     setIsDrawing(false);
   };
 
+  /**
+   * Capture the drawing as a base64 encoded image
+   */
   const captureDrawing = async () => {
     if (paths.length === 0 && !currentPath) {
-      alert('Please draw something first!');
+      // Use Alert.alert for cross-platform alerts
+      Alert.alert('Empty Canvas', 'Please draw something first!');
       return;
     }
 
-    // Create a simple representation of the drawing
-    // In a real implementation, you would convert this to a proper image
-    const drawingData = {
-      paths: [...paths, currentPath].filter(p => p),
-      canvasSize: CANVAS_SIZE,
-    };
+    try {
+      // Use the ref to capture the component
+      // This returns a promise that resolves with the base64 string
+      const base64Image = await viewShotRef.current.capture({
+        format: 'png', // Output format
+        quality: 0.9, // Image quality
+        result: 'base64', // Return a base64 string
+        // Note: Your ML model might expect a specific size (e.g., 28x28 for MNIST).
+        // The backend service might handle resizing. If not, you may need to
+        // resize the image here or on the backend.
+        // We pass the full-size canvas capture for now.
+      });
 
-    // For now, we'll pass the drawing data
-    // You might want to convert this to an actual image using a library
-    onDrawingComplete(drawingData);
+      // Pass the base64 string directly to the parent's handler
+      onDrawingComplete(base64Image);
+    } catch (error) {
+      console.error('Failed to capture drawing:', error);
+      Alert.alert('Error', 'Could not capture the drawing. Please try again.');
+    }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.canvasContainer}>
+      {/* Wrap the Svg component in ViewShot.
+          This ViewShot component is what we will capture.
+       */}
+      <ViewShot
+        ref={viewShotRef}
+        style={styles.canvasContainer}
+        options={{ format: 'png', quality: 1.0, result: 'base64' }}
+      >
         <Svg
           height={CANVAS_SIZE}
           width={CANVAS_SIZE}
-          style={styles.canvas}
+          style={styles.canvas} // The background color is now on the container
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          // **FIX:** Add responder props here. This makes the Svg component
+          // the primary touch handler, preventing parent ScrollViews
+          // from intercepting the touch gesture and scrolling.
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
         >
+          {/* Add a white background rectangle.
+              This is crucial so the captured PNG is not transparent.
+           */}
+          <Path
+            d={`M0,0 H${CANVAS_SIZE} V${CANVAS_SIZE} H0 Z`}
+            fill={CANVAS_BACKGROUND_COLOR}
+          />
+
+          {/* Render all completed paths */}
           {paths.map((pathObj, index) => (
             <Path
               key={`path-${index}`}
@@ -83,6 +132,8 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
               fill="none"
             />
           ))}
+
+          {/* Render the current path being drawn */}
           {currentPath && (
             <Path
               d={currentPath}
@@ -94,7 +145,7 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
             />
           )}
         </Svg>
-      </View>
+      </ViewShot>
 
       {/* Brush Size Slider */}
       <View style={styles.brushSizeContainer}>
@@ -112,11 +163,15 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
         <Text style={styles.brushSizeValue}>{Math.round(brushSize)}px</Text>
       </View>
 
+      {/* Action Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.clearButton} onPress={clearCanvas}>
           <Text style={styles.buttonText}>🗑️ Clear</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.recognizeButton} onPress={captureDrawing}>
+        <TouchableOpacity
+          style={styles.recognizeButton}
+          onPress={captureDrawing}
+        >
           <Text style={styles.buttonText}>🔍 Recognize</Text>
         </TouchableOpacity>
       </View>
@@ -130,14 +185,14 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   canvasContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: CANVAS_BACKGROUND_COLOR, // Set background color here
     borderWidth: 2,
     borderColor: '#333',
     borderRadius: 10,
-    overflow: 'hidden',
+    overflow: 'hidden', // Ensures the Svg corners are rounded
   },
   canvas: {
-    backgroundColor: '#fff',
+    // Background color is inherited from the container
   },
   brushSizeContainer: {
     flexDirection: 'row',
