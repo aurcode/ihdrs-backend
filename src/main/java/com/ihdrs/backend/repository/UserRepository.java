@@ -1,4 +1,4 @@
-// UserRepository.java - 用户数据访问
+// UserRepository.java
 package com.ihdrs.backend.repository;
 
 import com.ihdrs.backend.entity.User;
@@ -31,6 +31,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     /**
+     * 检查用户名是否被其他用户占用
+     * @param username 要检查的用户名
+     * @param userId 要排除的用户ID（当前用户）
+     * @return true=已存在（被其他用户占用）, false=可用
+     */
+    boolean existsByUsernameAndUserIdNot(String username, Long userId);
+
+    /**
      * 根据状态分页查询用户
      */
     Page<User> findByStatus(Boolean status, Pageable pageable);
@@ -48,7 +56,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                   @Param("endTime") LocalDateTime endTime);
 
     /**
-     * 查询活跃用户数量（最近30天有登录记录）
+     * 查询活跃用户数量(最近30天有登录记录)
      */
     @Query("SELECT COUNT(u) FROM User u WHERE u.lastLoginTime >= :since")
     Long countActiveUsers(@Param("since") LocalDateTime since);

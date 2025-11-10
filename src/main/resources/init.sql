@@ -268,15 +268,15 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `desc
                                                                                                            ('system_version', '1.0.0', 'STRING', '系统版本', 1)
 ON DUPLICATE KEY UPDATE `config_value` = VALUES(`config_value`);
 
--- 创建默认模型记录（示例）
-INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`) VALUES
-    ('DefaultCNN', 'v1.0.0', 'models/default_cnn_v1.0.0.h5', 'CNN', 0.9200, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1)
+-- 创建默认模型记录
+INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
+    ('DefaultCNN', 'v1.0.0', 'models/default_cnn_v1.0.0.h5', 'CNN', 0.9200, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1, 0.03, 1000000)
 ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
 
-INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`) VALUES
-                                                                                                                                                                            ('ImageClassifier', 'v1.0.0', 'models/best_model_checkpoint.h5', 'CNN', 0.8500, 50000, 8000, 'COMPLETED', '图像分类模型', 2),
-                                                                                                                                                                            ('TextAnalyzer', 'v1.2.3', 'models/text_analyzer_v1.2.3.h5', 'RNN', 0.9100, 45000, 9000, 'COMPLETED', '文本分析模型', 2),
-                                                                                                                                                                            ('FaceDetector', 'v1.1.0', 'models/face_detector_v1.1.0.h5', 'CNN', 0.9500, 30000, 5000, 'DISABLED', '人脸检测模型', 1),
-                                                                                                                                                                            ('SentimentModel', 'v2.0.0', 'models/sentiment_model_v2.0.0.h5', 'LSTM', 0.8800, 40000, 10000, 'COMPLETED', '情感分析模型', 1),
-                                                                                                                                                                            ('SpeechRecognizer', 'v3.5.0', 'models/speech_recognizer_v3.5.0.h5', 'DNN', 0.9300, 70000, 15000, 'DISABLED', '语音识别模型', 2)
+INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
+                                                                                                                                                                            ('ImageClassifier', 'v1.0.0', 'models/best_model_checkpoint.h5', 'CNN', 0.8500, 50000, 8000, 'COMPLETED', '图像分类模型', 2, 0.03, 1100000),
+                                                                                                                                                                            ('TextAnalyzer', 'v1.2.3', 'models/text_analyzer_v1.2.3.h5', 'RNN', 0.9100, 45000, 9000, 'COMPLETED', '文本分析模型', 2, 0.02, 1200000),
+                                                                                                                                                                            ('FaceDetector', 'v1.1.0', 'models/face_detector_v1.1.0.h5', 'CNN', 0.9500, 30000, 5000, 'DISABLED', '人脸检测模型', 1, 0.01, 1100000),
+                                                                                                                                                                            ('SentimentModel', 'v2.0.0', 'models/sentiment_model_v2.0.0.h5', 'LSTM', 0.8800, 40000, 10000, 'COMPLETED', '情感分析模型', 1, 0.05, 1000000),
+                                                                                                                                                                            ('SpeechRecognizer', 'v3.5.0', 'models/speech_recognizer_v3.5.0.h5', 'DNN', 0.9300, 70000, 15000, 'DISABLED', '语音识别模型', 2, 0.04, 900000)
 ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);

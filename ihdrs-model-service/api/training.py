@@ -2,83 +2,73 @@
 from flask import Blueprint, request, jsonify, current_app
 import threading
 import time
+import requests
 from services.training_service import TrainingService
 
 training_bp = Blueprint('training', __name__)
 
 @training_bp.route('/train', methods=['POST'])
 def start_training():
-    """
-    启动模型训练
-
-    请求格式:
-    {
-        "task_name": "CNN_Training_v1",
-        "epochs": 10,
-        "batch_size": 32,
-        "learning_rate": 0.001,
-        "dataset_config": {...},
-        "model_config": {...}
-    }
-    """
+    """启动训练任务"""
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'message': '请求数据不能为空'
-            }), 400
+            return jsonify({"status": "error", "message": "请求数据为空"}), 400
 
-        training_service = TrainingService()
+        task_id = data.get('taskId')
+        task_name = data.get('taskName', 'unnamed')
+        training_config = data.get('trainingConfig', '{}')
+        dataset_config = data.get('datasetConfig', '{}')
 
-        # 验证训练配置
-        validation_error = training_service.validate_training_config(data)
-        if validation_error:
-            return jsonify({
-                'status': 'error',
-                'message': validation_error
-            }), 400
+        # 创建训练服务实例
+        training_service = TrainingService(
+            task_id=task_id,
+            springboot_url=current_app.config.get('SPRINGBOOT_BASE_URL', 'http://localhost:8080')
+        )
 
-        # 在后台线程启动训练
+        # 异步启动训练
         training_thread = threading.Thread(
             target=training_service.start_training,
-            args=(data,),
+            args=(training_config, dataset_config),
             daemon=True
         )
         training_thread.start()
 
         return jsonify({
-            'status': 'success',
-            'message': '训练任务已启动',
-            'data': {
-                'task_name': data.get('task_name', 'unnamed'),
-                'estimated_time': data.get('epochs', 10) * 60  # 估算时间（秒）
+            "status": "success",
+            "message": "训练任务已启动",
+            "data": {
+                "taskId": task_id,
+                "taskName": task_name
             }
         })
 
     except Exception as e:
-        current_app.logger.error(f"启动训练失败: {e}")
+        current_app.logger.error(f"启动训练任务失败: {e}")
         return jsonify({
-            'status': 'error',
-            'message': '训练服务异常',
-            'error': str(e)
+            "status": "error",
+            "message": "启动训练任务失败",
+            "error": str(e)
         }), 500
 
-@training_bp.route('/train/status', methods=['GET'])
-def get_training_status():
-    """获取训练状态"""
+@training_bp.route('/train/cancel', methods=['POST'])
+def cancel_training():
+    """取消训练任务"""
     try:
-        training_service = TrainingService()
-        status = training_service.get_training_status()
+        data = request.get_json()
+        task_id = data.get('taskId')
+
+        # 这里实现取消逻辑（可以使用全局字典存储训练状态）
 
         return jsonify({
-            'status': 'success',
-            'data': status
+            "status": "success",
+            "message": "训练任务已取消"
         })
 
     except Exception as e:
+        current_app.logger.error(f"取消训练任务失败: {e}")
         return jsonify({
-            'status': 'error',
-            'message': '获取训练状态失败',
-            'error': str(e)
+            "status": "error",
+            "message": "取消训练任务失败",
+            "error": str(e)
         }), 500

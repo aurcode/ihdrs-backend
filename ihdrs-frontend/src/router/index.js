@@ -41,7 +41,7 @@ export const routes = [
                     icon: 'DataBoard',
                     requireAuth: true
                 }
-            }/*,{
+            },{
                 path: 'profile',
                 name: 'Profile',
                 component: () => import('@/views/profile/index.vue'),
@@ -50,7 +50,7 @@ export const routes = [
                     requireAuth: true,
                     hideInMenu: true
                 }
-            }*/
+            }
         ]
     },
     {
@@ -114,7 +114,7 @@ export const routes = [
                     requireAuth: true,
                     roles: ['ADMIN']
                 }
-            }/*,
+            },
             {
                 path: 'training',
                 name: 'ModelTraining',
@@ -125,7 +125,7 @@ export const routes = [
                     requireAuth: true,
                     roles: ['ADMIN']
                 }
-            }*/
+            }
         ]
     },
     {

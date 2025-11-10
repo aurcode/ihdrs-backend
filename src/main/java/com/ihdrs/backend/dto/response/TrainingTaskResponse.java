@@ -1,4 +1,5 @@
 // TrainingTaskResponse.java - 训练任务响应
+
 package com.ihdrs.backend.dto.response;
 
 import lombok.AllArgsConstructor;

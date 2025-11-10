@@ -2,7 +2,9 @@
 package com.ihdrs.backend.repository;
 
 import com.ihdrs.backend.entity.TrainingTask;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -66,4 +68,8 @@ public interface TrainingTaskRepository extends JpaRepository<TrainingTask, Long
      */
     @Query("SELECT t FROM TrainingTask t WHERE t.creatorId = :creatorId AND t.finalAccuracy IS NOT NULL ORDER BY t.finalAccuracy DESC")
     List<TrainingTask> findBestTasksByCreator(@Param("creatorId") Long creatorId, Pageable pageable);
+
+    Page<TrainingTask> findByCreatorIdAndStatus(Long creatorId, TrainingTask.TaskStatus taskStatus, Pageable pageable);
+
+    boolean existsByTaskName(@NotBlank(message = "任务名称不能为空") String taskName);
 }

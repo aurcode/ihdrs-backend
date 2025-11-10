@@ -44,6 +44,12 @@ recognition:
   max-retries: 3
   cache-expire: 86400  # 1天
 
+# WebSocket配置
+websocket:
+  training:
+    max-connections: 100
+    message-buffer-size: 8192
+
 logging:
   level:
     com.ihdrs.backend: DEBUG

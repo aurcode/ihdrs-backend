@@ -27,7 +27,7 @@ public class TrainingTask {
     private Long taskId;
 
     @NotBlank(message = "任务名称不能为空")
-    @Column(name = "task_name", nullable = false, length = 100)
+    @Column(name = "task_name", nullable = false, length = 100, unique = true)
     private String taskName;
 
     @NotNull(message = "创建者ID不能为空")

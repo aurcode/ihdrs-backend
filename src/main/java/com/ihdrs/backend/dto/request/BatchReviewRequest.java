@@ -1,3 +1,4 @@
+// BatchReviewRequest.java
 package com.ihdrs.backend.dto.request;
 
 import jakarta.validation.constraints.NotEmpty;

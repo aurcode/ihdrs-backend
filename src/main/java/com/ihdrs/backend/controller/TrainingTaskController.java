@@ -1,4 +1,3 @@
-// TrainingTaskController.java - 训练任务控制器
 package com.ihdrs.backend.controller;
 
 import com.ihdrs.backend.common.PageResult;
@@ -6,6 +5,7 @@ import com.ihdrs.backend.common.Result;
 import com.ihdrs.backend.dto.request.PageRequest;
 import com.ihdrs.backend.dto.request.TrainingTaskRequest;
 import com.ihdrs.backend.dto.response.TrainingTaskResponse;
+import com.ihdrs.backend.dto.response.TrainingLogResponse;
 import com.ihdrs.backend.service.TrainingTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,8 +13,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Map;
 
-@Tag(name = "训练任务管理", description = "深度学习模型训练任务管理接口")
+@Tag(name = "训练管理", description = "训练任务管理接口")
 @RestController
 @RequestMapping("/training")
 @RequiredArgsConstructor
@@ -27,22 +29,31 @@ public class TrainingTaskController {
     @PostMapping("/tasks")
     public Result<TrainingTaskResponse> createTask(
             @Valid @RequestBody TrainingTaskRequest request,
-            @RequestAttribute("userId") Long userId) {
+            @RequestAttribute("userId") Long userId
+    ) {
         return trainingTaskService.createTrainingTask(request, userId);
     }
 
-    @Operation(summary = "获取训练任务列表", description = "分页查询训练任务")
+    @Operation(summary = "获取训练任务列表", description = "分页获取训练任务列表")
     @GetMapping("/tasks")
     public Result<PageResult<TrainingTaskResponse>> getTaskList(
             @Valid PageRequest pageRequest,
-            @RequestParam(required = false) Long creatorId) {
-        return trainingTaskService.getTaskList(pageRequest, creatorId);
+            @RequestParam(required = false) Long creatorId,
+            @RequestParam(required = false) String status
+    ) {
+        return trainingTaskService.getTaskList(pageRequest, creatorId, status);
     }
 
-    @Operation(summary = "获取训练任务详情", description = "根据ID获取训练任务详细信息")
+    @Operation(summary = "获取任务详情", description = "根据ID获取训练任务详情")
     @GetMapping("/tasks/{taskId}")
     public Result<TrainingTaskResponse> getTaskById(@PathVariable Long taskId) {
         return trainingTaskService.getTaskById(taskId);
+    }
+
+    @Operation(summary = "获取训练日志", description = "获取训练过程的详细日志")
+    @GetMapping("/tasks/{taskId}/logs")
+    public Result<List<TrainingLogResponse>> getTaskLogs(@PathVariable Long taskId) {
+        return trainingTaskService.getTaskLogs(taskId);
     }
 
     @Operation(summary = "取消训练任务", description = "取消正在进行的训练任务")
@@ -50,4 +61,33 @@ public class TrainingTaskController {
     public Result<Void> cancelTask(@PathVariable Long taskId) {
         return trainingTaskService.cancelTask(taskId);
     }
+
+    @Operation(summary = "更新任务进度", description = "由Flask服务调用，更新训练进度")
+    @PostMapping("/tasks/{taskId}/progress")
+    public Result<Void> updateProgress(
+            @PathVariable Long taskId,
+            @RequestBody Map<String, Object> progressData
+    ) {
+        return trainingTaskService.updateTaskProgress(taskId, progressData);
+    }
+
+    @Operation(summary = "完成训练任务", description = "由Flask服务调用，标记任务完成")
+    @PostMapping("/tasks/{taskId}/complete")
+    public Result<Void> completeTask(
+            @PathVariable Long taskId,
+            @RequestBody Map<String, Object> resultData
+    ) {
+        return trainingTaskService.completeTask(taskId, resultData);
+    }
+
+    @Operation(summary = "标记任务失败", description = "由Flask调用，标记训练任务失败")
+    @PostMapping("/tasks/{taskId}/fail")
+    public Result<Void> failTask(
+            @PathVariable Long taskId,
+            @RequestBody Map<String, Object> data
+    ) {
+        String errorMessage = (String) data.get("errorMessage");
+        return trainingTaskService.failTask(taskId, errorMessage);
+    }
+
 }

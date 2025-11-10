@@ -47,7 +47,10 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/training/tasks/*/progress",
+                                "/training/tasks/*/complete",
+                                "/training/tasks/*/fail"
                         ).permitAll()
 
                         // 需要USER或ADMIN角色的端点
