@@ -6,7 +6,7 @@ Flask-CORS
 #tensorflow
 keras
 numpy
-opencv-python
+opencv-python-headless
 
 # Image Processing
 Pillow
@@ -32,3 +32,6 @@ pytest-flask
 requests
 python-dateutil
 psutil
+
+# Extra for avoid error
+tensorflow
