@@ -129,6 +129,32 @@ export const routes = [
         ]
     },
     {
+        path: '/dataset',
+        component: () => import('@/layout/index.vue'),
+        redirect: '/dataset/list',
+        meta: { title: '数据集管理', icon: 'Folder' },
+        children: [
+            {
+                path: 'list',
+                name: 'DatasetList',
+                component: () => import('@/views/dataset/DatasetList.vue'),
+                meta: { title: '数据集列表', requireAuth: true }
+            },
+            {
+                path: 'upload',
+                name: 'DatasetUpload',
+                component: () => import('@/views/dataset/DatasetUpload.vue'),
+                meta: { title: '上传数据集', requireAuth: true }
+            },
+            {
+                path: 'detail/:id',
+                name: 'DatasetDetail',
+                component: () => import('@/views/dataset/DatasetDetail.vue'),
+                meta: { title: '数据集详情', requireAuth: true, hideInMenu: true }
+            }
+        ]
+    },
+    {
         path: '/users',
         component: () => import('@/layout/index.vue'),
         redirect: '/users/list',

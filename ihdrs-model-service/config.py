@@ -21,6 +21,7 @@ class Config:
     DATA_PATH = BASE_DIR / 'data'
     LOG_PATH = BASE_DIR / 'logs'
     UPLOAD_PATH = BASE_DIR / 'uploads'
+    SPRINGBOOT_UPLOAD_DATASET_ROOT = r"C:\Users\I\IdeaProjects\ihdrs-backend"
 
     # 模型配置
     DEFAULT_MODEL_NAME = 'default_cnn_v1.0.0.h5'

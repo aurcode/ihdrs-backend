@@ -2,6 +2,8 @@
 
 package com.ihdrs.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihdrs.backend.common.PageResult;
 import com.ihdrs.backend.common.Result;
 import com.ihdrs.backend.config.ModelServiceConfig;
@@ -9,9 +11,11 @@ import com.ihdrs.backend.dto.request.PageRequest;
 import com.ihdrs.backend.dto.request.TrainingTaskRequest;
 import com.ihdrs.backend.dto.response.TrainingTaskResponse;
 import com.ihdrs.backend.dto.response.TrainingLogResponse;
+import com.ihdrs.backend.entity.Dataset;
 import com.ihdrs.backend.entity.TrainingTask;
 import com.ihdrs.backend.entity.TrainingLog;
 import com.ihdrs.backend.entity.Model;
+import com.ihdrs.backend.repository.DatasetRepository;
 import com.ihdrs.backend.repository.TrainingTaskRepository;
 import com.ihdrs.backend.repository.TrainingLogRepository;
 import com.ihdrs.backend.repository.ModelRepository;
@@ -40,6 +44,7 @@ public class TrainingTaskService {
     private final ModelRepository modelRepository;
     private final RestTemplate restTemplate;
     private final ModelServiceConfig modelServiceConfig;
+    private final DatasetRepository datasetRepository;
 
     @Transactional
     public Result<TrainingTaskResponse> createTrainingTask(TrainingTaskRequest request, Long creatorId) {
@@ -91,7 +96,9 @@ public class TrainingTaskService {
                 body.put("taskId", task.getTaskId());
                 body.put("taskName", task.getTaskName());
                 body.put("trainingConfig", task.getTrainingConfig());
+                log.info(task.getTrainingConfig());
                 body.put("datasetConfig", task.getDatasetConfig());
+                log.info(task.getDatasetConfig());
 
                 HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
                 ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
@@ -333,14 +340,28 @@ public class TrainingTaskService {
         );
     }
 
-    private String buildDatasetConfig(TrainingTaskRequest request) {
-        return String.format(
-                "{\"datasetname\": \"%s\", \"useaugmentation\": \"%s\", \"validationsplit\": \"%s\"}",
-                request.getDatasetName(),
-                request.getUseAugmentation(),
-                request.getValidationSplit()
-        );
+    private String buildDatasetConfig(TrainingTaskRequest request) throws JsonProcessingException {
+
+        Dataset dataset = datasetRepository.findById(request.getDatasetId())
+                .orElseThrow(() -> new RuntimeException("数据集不存在"));
+
+        Map<String, Object> config = new HashMap<>();
+        config.put("dataset_id", dataset.getDatasetId());
+        config.put("dataset_name", dataset.getDatasetName());
+        config.put("file_path", dataset.getFilePath());
+        config.put("dataset_type", dataset.getDatasetType());
+        config.put("num_classes", dataset.getNumClasses());
+        config.put("num_samples", dataset.getNumSamples());
+        config.put("train_samples", dataset.getTrainSamples());
+        config.put("test_samples", dataset.getTestSamples());
+        config.put("image_width", dataset.getImageWidth());
+        config.put("image_height", dataset.getImageHeight());
+        config.put("class_names", dataset.getClassNames());
+
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.writeValueAsString(config);
     }
+
 
     private TrainingTaskResponse convertToTaskResponse(TrainingTask task) {
         return TrainingTaskResponse.builder()

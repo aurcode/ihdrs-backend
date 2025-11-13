@@ -210,11 +210,14 @@
           <el-input v-model="createDialog.form.taskName" placeholder="请输入任务名称" />
         </el-form-item>
 
-        <el-form-item label="数据集" prop="datasetName">
-          <el-select v-model="createDialog.form.datasetName" placeholder="请选择数据集">
-            <el-option label="MNIST手写数字" value="MNIST" />
-            <el-option label="Fashion-MNIST" value="FASHION_MNIST" />
-            <el-option label="CIFAR-10" value="CIFAR10" />
+        <el-form-item label="数据集" prop="datasetId">
+          <el-select v-model="createDialog.form.datasetId" placeholder="请选择数据集">
+            <el-option
+                v-for="d in datasets"
+                :key="d.datasetId"
+                :label="`${d.datasetName} (${d.numSamples} samples)`"
+                :value="d.datasetId"
+            />
           </el-select>
         </el-form-item>
 
@@ -222,8 +225,6 @@
           <el-select v-model="createDialog.form.modelType" placeholder="请选择模型类型">
             <el-option label="CNN" value="CNN" />
             <el-option label="Advanced CNN" value="ADVANCED_CNN" />
-            <el-option label="ResNet" value="RESNET" />
-            <el-option label="LeNet" value="LENET" />
           </el-select>
         </el-form-item>
 
@@ -451,6 +452,8 @@ import {
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 import dayjs from 'dayjs'
+import { getAvailableDatasets } from '@/api/dataset'
+
 
 // 注册ECharts组件
 use([
@@ -464,6 +467,7 @@ use([
 
 // 数据
 const loading = ref(false)
+const datasets = ref([])
 const taskList = ref([])
 const statistics = ref({
   totalTasks: 0,
@@ -488,7 +492,7 @@ const createDialog = reactive({
   loading: false,
   form: {
     taskName: '',
-    datasetName: 'MNIST',
+    datasetId: null,
     modelType: 'CNN',
     totalEpochs: 10,
     batchSize: 32,
@@ -505,7 +509,7 @@ const createDialog = reactive({
     taskName: [
       { required: true, message: '请输入任务名称', trigger: 'blur' }
     ],
-    datasetName: [
+    datasetId: [
       { required: true, message: '请选择数据集', trigger: 'change' }
     ],
     modelType: [
@@ -522,6 +526,18 @@ const createDialog = reactive({
     ]
   }
 })
+
+const loadDatasets = async () => {
+  try {
+    const res = await getAvailableDatasets()
+    if (res.code === 200) {
+      datasets.value = res.data
+    }
+  } catch (err) {
+    console.error('加载数据集失败', err)
+    ElMessage.error('加载数据集失败')
+  }
+}
 
 const createFormRef = ref()
 
@@ -724,7 +740,7 @@ const showCreateDialog = () => {
   createDialog.visible = true
   createDialog.form = {
     taskName: '',
-    datasetName: 'MNIST',
+    datasetId: null,
     modelType: 'CNN',
     totalEpochs: 10,
     batchSize: 32,
@@ -843,6 +859,7 @@ const formatDate = (date) => {
 
 // 生命周期
 onMounted(() => {
+  loadDatasets()
   loadTaskList()
 
   // 每2秒刷新一次列表（如果有正在运行的任务）

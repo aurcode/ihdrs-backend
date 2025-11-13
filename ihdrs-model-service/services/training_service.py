@@ -8,7 +8,8 @@ import time
 import logging
 import requests
 import json
-from models_code.cnn_model import create_cnn_model, create_advanced_cnn_model
+from models_code.cnn_model import create_cnn_model
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -19,94 +20,156 @@ class TrainingService:
         self.is_cancelled = False
 
     def start_training(self, training_config_str, dataset_config_str):
-        """启动训练"""
+        """根据 SpringBoot 配置进行训练"""
         try:
             # 解析配置
-            training_config = json.loads(training_config_str) if isinstance(training_config_str, str) else training_config_str
-            dataset_config = json.loads(dataset_config_str) if isinstance(dataset_config_str, str) else dataset_config_str
-            print("training_config_str=", training_config_str)
-            print("training_config=", training_config)
+            training_config = json.loads(training_config_str)
+            dataset_config = json.loads(dataset_config_str)
 
+            # 读取训练配置
+            epochs = int(training_config.get("epochs", 10))
+            batch_size = int(training_config.get("batchsize", 32))
+            learning_rate = float(training_config.get("learningrate", 0.001))
+            optimizer_name = training_config.get("optimizer", "adam").lower()
+            model_type = training_config.get("modeltype", "cnn").lower()
 
-            epochs = training_config.get('epochs', 10)
-            batch_size = training_config.get('batchsize', 32)
-            learning_rate = float(training_config.get('learningrate', 0.001))
+            # 读取数据集配置
+            relative_path = dataset_config["file_path"]
+            dataset_type = dataset_config.get("dataset_type", "").lower()
+            dataset_path = os.path.join(Config.SPRINGBOOT_UPLOAD_DATASET_ROOT, relative_path)
 
-            logger.info(f"开始训练任务 {self.task_id}")
+            num_classes = int(dataset_config.get("num_classes", 10))
 
-            # 加载数据
-            (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+            if relative_path == "./datasets/mnist/dataset.zip":
+                print("使用内置 MNIST 数据集进行训练")
 
-            # 数据预处理
-            x_train = x_train.reshape(x_train.shape[0], 28, 28, 1).astype('float32') / 255.0
-            x_test = x_test.reshape(x_test.shape[0], 28, 28, 1).astype('float32') / 255.0
-            y_train = keras.utils.to_categorical(y_train, 10)
-            y_test = keras.utils.to_categorical(y_test, 10)
+                (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
-            # 创建模型
-            model = create_cnn_model()
+                # MNIST -> 28x28x1
+                x_train = x_train.reshape((-1, 28, 28, 1)).astype("float32") / 255.0
+                x_test = x_test.reshape((-1, 28, 28, 1)).astype("float32") / 255.0
 
-            # 自定义回调，报告训练进度
+                y_train = tf.one_hot(y_train, 10)
+                y_test = tf.one_hot(y_test, 10)
+
+                train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size)
+                test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size)
+
+                # 选择模型
+                if model_type == "cnn":
+                    model = create_cnn_model(input_shape=(28,28,1), num_classes=10)
+                elif model_type == "advanced_cnn":
+                    model = create_cnn_model(input_shape=(28,28,1), num_classes=10)
+                else:
+                    raise ValueError(f"MNIST 不支持该模型类型: {model_type}")
+
+            else:
+                print("加载用户数据集：", dataset_path)
+
+                img_w = int(dataset_config.get("image_width"))
+                img_h = int(dataset_config.get("image_height"))
+
+                train_dir = os.path.join(dataset_path, "train")
+                test_dir = os.path.join(dataset_path, "test")
+
+                # 加载训练数据
+                train_ds = tf.keras.utils.image_dataset_from_directory(
+                    train_dir,
+                    image_size=(img_h, img_w),
+                    batch_size=batch_size,
+                    shuffle=True
+                )
+
+                # 测试集是否存在
+                if os.path.exists(test_dir) and any(os.scandir(test_dir)):
+                    test_ds = tf.keras.utils.image_dataset_from_directory(
+                        test_dir,
+                        image_size=(img_h, img_w),
+                        batch_size=batch_size,
+                        shuffle=False
+                    )
+                else:
+                    print("未找到 test 目录，将自动从 train 划分 20% 作为验证集")
+                    train_ds_size = train_ds.cardinality().numpy()
+                    val_size = max(1, int(train_ds_size * 0.2))
+
+                    test_ds = train_ds.take(val_size)
+                    train_ds = train_ds.skip(val_size)
+
+                # 标准化
+                train_ds = train_ds.map(lambda x, y: (x/255.0, tf.one_hot(y, num_classes)))
+                test_ds = test_ds.map(lambda x, y: (x/255.0, tf.one_hot(y, num_classes)))
+
+                # 选择模型
+                if model_type == "cnn":
+                    model = create_cnn_model(input_shape=(img_h, img_w, 3), num_classes=num_classes)
+                elif model_type == "advanced_cnn":
+                    model = create_cnn_model(input_shape=(img_h, img_w, 3), num_classes=num_classes)
+                else:
+                    raise ValueError(f"不支持的模型类型: {model_type}")
+
+            optimizer = {
+                "adam": keras.optimizers.Adam(learning_rate),
+                "sgd": keras.optimizers.SGD(learning_rate),
+                "rmsprop": keras.optimizers.RMSprop(learning_rate),
+            }.get(optimizer_name)
+
+            if optimizer is None:
+                raise ValueError(f"不支持的优化器: {optimizer_name}")
+
+            model.compile(
+                optimizer=optimizer,
+                loss="categorical_crossentropy",
+                metrics=["accuracy"]
+            )
+
+            # 回调，用于向 SpringBoot 发送进度
             class ProgressCallback(keras.callbacks.Callback):
                 def __init__(self, service):
                     super().__init__()
                     self.service = service
 
                 def on_epoch_end(self, epoch, logs=None):
-                    if self.service.is_cancelled:
-                        self.model.stop_training = True
-                        return
+                    progress = (epoch + 1) / epochs * 100
+                    self.service.report_progress({
+                        "currentEpoch": epoch + 1,
+                        "progress": progress,
+                        "loss": float(logs.get("loss", 0)),
+                        "accuracy": float(logs.get("accuracy", 0)),
+                        "valLoss": float(logs.get("val_loss", 0)),
+                        "valAccuracy": float(logs.get("val_accuracy", 0)),
+                    })
 
-                    progress = ((epoch + 1) / self.params['epochs']) * 100
-
-                    # 向SpringBoot报告进度
-                    progress_data = {
-                        'currentEpoch': epoch + 1,
-                        'progress': progress,
-                        'loss': float(logs.get('loss', 0)),
-                        'accuracy': float(logs.get('accuracy', 0)),
-                        'valLoss': float(logs.get('val_loss', 0)),
-                        'valAccuracy': float(logs.get('val_accuracy', 0))
-                    }
-
-                    self.service.report_progress(progress_data)
-
-            # 训练模型
+            # 开始训练
             history = model.fit(
-                x_train, y_train,
-                batch_size=batch_size,
+                train_ds,
+                validation_data=test_ds,
                 epochs=epochs,
-                validation_data=(x_test, y_test),
                 callbacks=[ProgressCallback(self)],
                 verbose=1
             )
 
-            if not self.is_cancelled:
-                # 保存模型
-                model_path = f"models/trained_model_{self.task_id}_{int(time.time())}.h5"
-                model.save(model_path)
+            # 保存模型
+            model_path = f"models/model_{self.task_id}_{int(time.time())}.h5"
+            model.save(model_path)
 
-                # 评估模型
-                test_loss, test_accuracy = model.evaluate(x_test, y_test, verbose=0)
+            # 最终评估
+            loss, accuracy = model.evaluate(test_ds, verbose=0)
 
-                model_size = os.path.getsize(model_path)
-
-                # 报告完成
-                result_data = {
-                    'finalAccuracy': float(test_accuracy),
-                    'finalLoss': float(test_loss),
-                    'modelPath': model_path,
-                    'trainingSamples': len(x_train),
-                    'testSamples': len(x_test),
-                    'modelSize': model_size
-                }
-
-                self.report_completion(result_data)
-                logger.info(f"训练任务 {self.task_id} 完成，准确率: {test_accuracy:.4f}")
+            self.report_completion({
+                "finalAccuracy": float(accuracy),
+                "finalLoss": float(loss),
+                "modelPath": model_path,
+                "trainingSamples": int(train_ds.cardinality().numpy()),
+                "testSamples": int(test_ds.cardinality().numpy()),
+                "modelSize": int(os.path.getsize(model_path))
+            })
 
         except Exception as e:
-            logger.error(f"训练任务 {self.task_id} 失败: {e}", exc_info=True)
+            logger.error(f"训练失败: {e}", exc_info=True)
             self.report_failure(str(e))
+
+
 
     def report_progress(self, progress_data):
         """向SpringBoot报告训练进度"""

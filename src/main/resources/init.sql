@@ -1,5 +1,6 @@
 -- init.sql - 数据库初始化脚本
 -- 创建数据库W
+DROP DATABASE ihdrs;
 CREATE DATABASE IF NOT EXISTS ihdrs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE ihdrs;
@@ -17,6 +18,35 @@ DROP TABLE IF EXISTS models;
 DROP TABLE IF EXISTS system_configs;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS datasets;
+
+-- 创建数据集表
+CREATE TABLE `datasets` (
+                            `dataset_id` bigint NOT NULL AUTO_INCREMENT COMMENT '数据集ID',
+                            `dataset_name` varchar(100) NOT NULL COMMENT '数据集名称',
+                            `dataset_type` enum('IMAGE_CLASSIFICATION', 'OBJECT_DETECTION', 'OTHER') NOT NULL DEFAULT 'IMAGE_CLASSIFICATION' COMMENT '数据集类型',
+                            `description` text COMMENT '数据集描述',
+                            `file_path` varchar(500) NOT NULL COMMENT '数据集文件路径',
+                            `file_size` bigint DEFAULT NULL COMMENT '文件大小（字节）',
+                            `num_classes` int DEFAULT NULL COMMENT '类别数量',
+                            `num_samples` int DEFAULT NULL COMMENT '样本总数',
+                            `train_samples` int DEFAULT NULL COMMENT '训练集样本数',
+                            `test_samples` int DEFAULT NULL COMMENT '测试集样本数',
+                            `image_width` int DEFAULT NULL COMMENT '图像宽度',
+                            `image_height` int DEFAULT NULL COMMENT '图像高度',
+                            `class_names` json COMMENT '类别名称列表',
+                            `status` enum('UPLOADING', 'PROCESSING', 'AVAILABLE', 'ERROR') NOT NULL DEFAULT 'UPLOADING' COMMENT '数据集状态',
+                            `error_message` text COMMENT '错误信息',
+                            `is_public` tinyint DEFAULT '0' COMMENT '是否公开：1-公开，0-私有',
+                            `creator_id` bigint NOT NULL COMMENT '创建者ID',
+                            `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                            `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                            PRIMARY KEY (`dataset_id`),
+                            KEY `idx_creator_id` (`creator_id`),
+                            KEY `idx_status` (`status`),
+                            KEY `idx_type` (`dataset_type`),
+                            KEY `idx_is_public` (`is_public`),
+                            KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据集表';
 
 -- 创建用户表
 CREATE TABLE IF NOT EXISTS `users` (
@@ -63,6 +93,18 @@ CREATE TABLE IF NOT EXISTS `models` (
                                         KEY `idx_status` (`status`),
                                         KEY `idx_accuracy` (`accuracy` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模型表';
+
+INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
+    ('DefaultCNN', 'v1.0.0', 'models/default_cnn_v1.0.0.h5', 'CNN', 0.9200, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1, 0.03, 1000000)
+ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
+
+INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
+                                                                                                                                                                                                  ('ImageClassifier', 'v1.0.0', 'models/best_model_checkpoint.h5', 'CNN', 0.8500, 50000, 8000, 'COMPLETED', '图像分类模型', 2, 0.03, 1100000),
+                                                                                                                                                                                                  ('TextAnalyzer', 'v1.2.3', 'models/text_analyzer_v1.2.3.h5', 'RNN', 0.9100, 45000, 9000, 'COMPLETED', '文本分析模型', 2, 0.02, 1200000),
+                                                                                                                                                                                                  ('FaceDetector', 'v1.1.0', 'models/face_detector_v1.1.0.h5', 'CNN', 0.9500, 30000, 5000, 'DISABLED', '人脸检测模型', 1, 0.01, 1100000),
+                                                                                                                                                                                                  ('SentimentModel', 'v2.0.0', 'models/sentiment_model_v2.0.0.h5', 'LSTM', 0.8800, 40000, 10000, 'COMPLETED', '情感分析模型', 1, 0.05, 1000000),
+                                                                                                                                                                                                  ('SpeechRecognizer', 'v3.5.0', 'models/speech_recognizer_v3.5.0.h5', 'DNN', 0.9300, 70000, 15000, 'DISABLED', '语音识别模型', 2, 0.04, 900000)
+ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
 
 -- 创建识别记录表
 CREATE TABLE IF NOT EXISTS `recognition_records` (
@@ -269,15 +311,38 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `desc
                                                                                                            ('system_version', '1.0.0', 'STRING', '系统版本', 1)
 ON DUPLICATE KEY UPDATE `config_value` = VALUES(`config_value`);
 
--- 创建默认模型记录
-INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
-    ('DefaultCNN', 'v1.0.0', 'models/default_cnn_v1.0.0.h5', 'CNN', 0.9200, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1, 0.03, 1000000)
-ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
 
-INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
-                                                                                                                                                                            ('ImageClassifier', 'v1.0.0', 'models/best_model_checkpoint.h5', 'CNN', 0.8500, 50000, 8000, 'COMPLETED', '图像分类模型', 2, 0.03, 1100000),
-                                                                                                                                                                            ('TextAnalyzer', 'v1.2.3', 'models/text_analyzer_v1.2.3.h5', 'RNN', 0.9100, 45000, 9000, 'COMPLETED', '文本分析模型', 2, 0.02, 1200000),
-                                                                                                                                                                            ('FaceDetector', 'v1.1.0', 'models/face_detector_v1.1.0.h5', 'CNN', 0.9500, 30000, 5000, 'DISABLED', '人脸检测模型', 1, 0.01, 1100000),
-                                                                                                                                                                            ('SentimentModel', 'v2.0.0', 'models/sentiment_model_v2.0.0.h5', 'LSTM', 0.8800, 40000, 10000, 'COMPLETED', '情感分析模型', 1, 0.05, 1000000),
-                                                                                                                                                                            ('SpeechRecognizer', 'v3.5.0', 'models/speech_recognizer_v3.5.0.h5', 'DNN', 0.9300, 70000, 15000, 'DISABLED', '语音识别模型', 2, 0.04, 900000)
-ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
+-- 插入一个示例MNIST数据集
+INSERT INTO `datasets` (
+    `dataset_name`,
+    `dataset_type`,
+    `description`,
+    `file_path`,
+    `file_size`,
+    `num_classes`,
+    `num_samples`,
+    `train_samples`,
+    `test_samples`,
+    `image_width`,
+    `image_height`,
+    `class_names`,
+    `status`,
+    `is_public`,
+    `creator_id`
+) VALUES (
+             'MNIST手写数字数据集',
+             'IMAGE_CLASSIFICATION',
+             '经典的手写数字识别数据集，包含0-9共10个类别',
+             './datasets/mnist/dataset.zip',
+             11594722,  -- 约11MB
+             10,
+             70000,
+             60000,
+             10000,
+             28,
+             28,
+             '["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]',
+             'AVAILABLE',
+             1,  -- 设为公开
+             1   -- 假设用户ID为1
+         ) ON DUPLICATE KEY UPDATE dataset_id=dataset_id;  -- 避免重复插入

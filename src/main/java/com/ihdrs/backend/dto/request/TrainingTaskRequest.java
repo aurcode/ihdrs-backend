@@ -18,7 +18,8 @@ public class TrainingTaskRequest {
     private Integer totalEpochs;
 
     // 数据集配置
-    private String datasetName = "MNIST";
+    @NotNull(message = "数据集ID不能为空")
+    private Long datasetId;
     private Boolean useAugmentation = false;
     private BigDecimal validationSplit = new BigDecimal("0.2");
 
