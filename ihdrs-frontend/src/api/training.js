@@ -1,3 +1,4 @@
+// api/training.js
 import request from '@/utils/request'
 
 // 获取训练任务列表

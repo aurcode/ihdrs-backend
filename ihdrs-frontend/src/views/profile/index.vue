@@ -1,3 +1,4 @@
+// views/profile/index.vue
 <template>
   <div class="page-profile">
     <!-- 页面标题 -->

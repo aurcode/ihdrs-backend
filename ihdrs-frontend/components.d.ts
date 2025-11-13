@@ -60,6 +60,7 @@ declare module 'vue' {
     ElTag: typeof import('element-plus/es')['ElTag']
     ElText: typeof import('element-plus/es')['ElText']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    ElUpload: typeof import('element-plus/es')['ElUpload']
     FeedbackDetailDialog: typeof import('./src/components/recognition/FeedbackDetailDialog.vue')['default']
     FeedbackDialog: typeof import('./src/components/recognition/FeedbackDialog.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']

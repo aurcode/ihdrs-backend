@@ -317,29 +317,7 @@ export default {
 
     // 加载预训练模型
     async loadModel() {
-      try {
-        this.modelLoading = true;
-        this.loadingProgress = 0;
-
-        // 模拟模型加载进度
-        const progressInterval = setInterval(() => {
-          this.loadingProgress += 10;
-          if (this.loadingProgress >= 90) clearInterval(progressInterval);
-        }, 200);
-
-        // 这里可以使用真实的MNIST模型URL
-        // 暂时使用模拟识别
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        this.loadingProgress = 100;
-        this.modelLoading = false;
-
         console.log('AI模型加载完成');
-      } catch (error) {
-        console.error('模型加载失败:', error);
-        this.error = 'AI模型加载失败，将使用模拟识别';
-        this.modelLoading = false;
-      }
     },
 
     // 绘制功能

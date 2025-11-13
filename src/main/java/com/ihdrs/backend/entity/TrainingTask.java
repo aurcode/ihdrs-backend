@@ -1,6 +1,7 @@
 // TrainingTask.java - 训练任务实体类
 package com.ihdrs.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -89,6 +90,7 @@ public class TrainingTask {
     // 外键关联
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", insertable = false, updatable = false)
+    @JsonIgnore
     private User creator;
 
     @ManyToOne(fetch = FetchType.LAZY)

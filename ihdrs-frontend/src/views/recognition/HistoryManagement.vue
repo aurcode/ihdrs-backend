@@ -96,6 +96,7 @@
           :data="tableData"
           style="width: 100%"
           @selection-change="handleSelectionChange"
+          :row-class-name="tableRowClassName"
       >
         <el-table-column type="selection" width="55" />
 
@@ -377,6 +378,13 @@ const handleViewDetail = (row) => {
   detailVisible.value = true
 }
 
+const tableRowClassName = ({ row }) => {
+  if (row.recordId === highlightRecordId.value) {
+    return 'highlight-row'
+  }
+  return ''
+}
+
 // 删除
 const handleDelete = async (row) => {
   try {
@@ -470,7 +478,15 @@ const formatTime = (time) => {
   return dayjs(time).format('YYYY-MM-DD HH:mm:ss')
 }
 
+import { useRoute } from 'vue-router'
+const route = useRoute()
+
+const highlightRecordId = ref(null)
+
 onMounted(() => {
+  if (route.query.recordId) {
+    highlightRecordId.value = Number(route.query.recordId)
+  }
   fetchData()
 })
 </script>
@@ -481,6 +497,10 @@ onMounted(() => {
 
   .search-card {
     margin-bottom: 20px;
+  }
+
+  .highlight-row {
+    background-color: #ffe58f !important; /* 浅黄色高亮 */
   }
 
   .stats-row {

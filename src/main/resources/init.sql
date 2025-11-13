@@ -1,5 +1,5 @@
 -- init.sql - 数据库初始化脚本
--- 创建数据库
+-- 创建数据库W
 CREATE DATABASE IF NOT EXISTS ihdrs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE ihdrs;
@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS training_tasks;
 DROP TABLE IF EXISTS models;
 DROP TABLE IF EXISTS system_configs;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS datasets;
 
 -- 创建用户表
 CREATE TABLE IF NOT EXISTS `users` (
@@ -93,19 +94,19 @@ INSERT INTO recognition_records (
     image_data, image_path, image_hash, input_type,
     processing_time, client_info, is_correct, session_id
 ) VALUES
-      (3, 1, 7, 0.9845, NULL, '/uploads/2025/11/digit7.png', 'a7b9c8d5e0f11223344556677889900a', 'UPLOAD', 132,
+      (3, 1, 7, 0.9845, NULL, '/api/uploads/digit7.png', 'a7b9c8d5e0f11223344556677889900a', 'UPLOAD', 132,
        JSON_OBJECT('device', 'Windows 10', 'browser', 'Edge', 'version', '142.0'), 1, 'session_001'),
 
-      (2, 2, 2, 0.8794, NULL, '/uploads/2025/11/digit2.png', 'b8f5c9e3a1d04567bb123abc9d0e1f2a', 'CANVAS', 95,
+      (2, 2, 2, 0.8794, NULL, '/api/uploads/digit2.png', 'b8f5c9e3a1d04567bb123abc9d0e1f2a', 'CANVAS', 95,
        JSON_OBJECT('device', 'Android', 'app_version', '1.2.3'), 1, 'session_002'),
 
-      (1, 3, 9, 0.7563, NULL, '/uploads/2025/11/digit9.png', 'd4a7b9f3e8c01234aabbccddeeff0011', 'CAMERA', 188,
+      (1, 3, 9, 0.7563, NULL, '/api/uploads/digit9.png', 'd4a7b9f3e8c01234aabbccddeeff0011', 'CAMERA', 188,
        JSON_OBJECT('device', 'iPhone 14', 'os', 'iOS 18'), 0, 'session_003'),
 
-      (3, 4, 0, 0.9931, NULL, '/uploads/2025/11/digit0.png', 'aabbccddeeff00112233445566778899', 'CANVAS', 81,
+      (3, 4, 0, 0.9931, NULL, '/api/uploads/digit0.png', 'aabbccddeeff00112233445566778899', 'CANVAS', 81,
        JSON_OBJECT('device', 'Windows 11', 'browser', 'Chrome', 'version', '142.0.0'), 1, 'session_004'),
 
-      (3, 5, 5, 0.6238, NULL, '/uploads/2025/11/digit5.png', '1234567890abcdef1234567890abcdef', 'UPLOAD', 142,
+      (3, 5, 5, 0.6238, NULL, '/api/uploads/digit5.png', '1234567890abcdef1234567890abcdef', 'UPLOAD', 142,
        JSON_OBJECT('device', 'MacBook Pro', 'os', 'macOS 15'), 1, 'session_005');
 
 -- 创建训练任务表

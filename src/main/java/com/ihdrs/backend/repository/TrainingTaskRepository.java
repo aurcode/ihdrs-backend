@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TrainingTaskRepository extends JpaRepository<TrainingTask, Long> {
@@ -72,4 +73,30 @@ public interface TrainingTaskRepository extends JpaRepository<TrainingTask, Long
     Page<TrainingTask> findByCreatorIdAndStatus(Long creatorId, TrainingTask.TaskStatus taskStatus, Pageable pageable);
 
     boolean existsByTaskName(@NotBlank(message = "任务名称不能为空") String taskName);
+
+    /**
+     * 根据任务名称精确查询任务
+     */
+    Optional<TrainingTask> findByTaskName(String taskName);
+
+    /**
+     * 根据创建者和状态分页查询任务（按创建时间倒序）
+     */
+    Page<TrainingTask> findByCreatorIdAndStatusOrderByCreateTimeDesc(
+            Long creatorId,
+            TrainingTask.TaskStatus status,
+            Pageable pageable);
+
+    /**
+     * 统计各状态任务数量
+     */
+    @Query("SELECT t.status, COUNT(t) FROM TrainingTask t GROUP BY t.status")
+    List<Object[]> countTasksByStatus();
+
+    /**
+     * 计算所有已完成任务的平均最终准确率
+     */
+    @Query("SELECT AVG(t.finalAccuracy) FROM TrainingTask t WHERE t.finalAccuracy IS NOT NULL AND t.status = 'COMPLETED'")
+    Double getAverageAccuracy();
+
 }

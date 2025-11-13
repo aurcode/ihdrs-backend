@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 "/recognition/recognize",
                                 "/health/**",
                                 "/test/**",
+                                "/uploads/**",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

@@ -1,4 +1,4 @@
-// dto/response/FeedbackResponse.java
+// FeedbackResponse.java
 package com.ihdrs.backend.dto.response;
 
 import lombok.AllArgsConstructor;

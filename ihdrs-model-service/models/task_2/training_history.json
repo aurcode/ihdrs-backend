@@ -1,0 +1,35 @@
+{
+  "history": {
+    "accuracy": [
+      0.9417036771774292,
+      0.9825000166893005
+    ],
+    "loss": [
+      0.18807901442050934,
+      0.058820683509111404
+    ],
+    "val_accuracy": [
+      0.9793333411216736,
+      0.9833333492279053
+    ],
+    "val_loss": [
+      0.0673568993806839,
+      0.056801360100507736
+    ]
+  },
+  "config": {
+    "model_type": "CNN",
+    "epochs": 2,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "optimizer": "adam",
+    "dropout": 0.2,
+    "validation_split": 0.2,
+    "use_early_stopping": true,
+    "early_stopping_patience": 5,
+    "use_lr_scheduler": false,
+    "use_data_augmentation": false,
+    "use_pretrained_weights": false
+  },
+  "epochs": 2
+}

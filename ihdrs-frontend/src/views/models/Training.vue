@@ -1,3 +1,5 @@
+// views/models/Training.vue
+
 <template>
   <div class="training-management">
     <!-- 顶部统计卡片 -->

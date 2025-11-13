@@ -124,6 +124,26 @@
           </template>
         </el-table-column>
 
+        <el-table-column label="反馈图像" width="120">
+          <template #default="{ row }">
+            <el-image
+                v-if="row.recordInfo?.imagePath"
+                :src="row.recordInfo.imagePath"
+                :preview-src-list="[row.recordInfo.imagePath]"
+                fit="cover"
+                style="width: 60px; height: 60px; border-radius: 6px"
+            >
+              <template #error>
+                <div class="image-placeholder">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+            <span v-else>无图像</span>
+          </template>
+        </el-table-column>
+
+
         <el-table-column label="原始结果 → 正确结果" width="160" align="center">
           <template #default="{ row }">
             <div class="result-compare">
@@ -245,6 +265,16 @@
             #{{ currentFeedback.recordId }}
           </el-link>
         </el-descriptions-item>
+        <el-descriptions-item label="识别图像" :span="2">
+          <el-image
+              v-if="currentFeedback?.recordInfo?.imagePath"
+              :src="currentFeedback.recordInfo.imagePath"
+              :preview-src-list="[currentFeedback.recordInfo.imagePath]"
+              fit="contain"
+              style="max-width: 300px; max-height: 300px"
+          />
+          <span v-else>无图像</span>
+        </el-descriptions-item>
         <el-descriptions-item label="反馈类型">
           <el-tag :type="getFeedbackTypeTag(currentFeedback.feedbackType)">
             {{ getFeedbackTypeText(currentFeedback.feedbackType) }}
@@ -343,6 +373,7 @@ import {
 } from '@element-plus/icons-vue'
 import { getFeedbackList, reviewFeedback, batchReviewFeedback, exportFeedback } from '@/api/feedback'
 import dayjs from 'dayjs'
+import router from "@/router/index.js";
 
 // 搜索表单
 const searchForm = reactive({
@@ -440,10 +471,10 @@ const handleViewDetail = (row) => {
 
 // 查看识别记录
 const handleViewRecord = (recordId) => {
-  // 跳转到识别历史页面并高亮显示该记录
-  ElMessage.info(`查看识别记录 #${recordId}`)
-  // 可以通过路由跳转到识别历史管理页面
-  // router.push({ name: 'HistoryManagement', query: { recordId } })
+  router.push({
+    name: 'HistoryManagement',
+    query: { recordId }
+  })
 }
 
 // 审核反馈

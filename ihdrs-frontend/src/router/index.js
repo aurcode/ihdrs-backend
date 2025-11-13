@@ -73,7 +73,7 @@ export const routes = [
             },
             {
                 path: '/recognition/history',
-                name: 'RecognitionHistory',
+                name: 'HistoryManagement',
                 component: () => import('@/views/recognition/HistoryManagement.vue'),
                 meta: {
                     title: '识别历史管理',
@@ -83,7 +83,7 @@ export const routes = [
             },
             {
                 path: '/recognition/feedback',
-                name: 'RecognitionFeedback',
+                name: 'FeedbackManagement',
                 component: () => import('@/views/recognition/FeedbackManagement.vue'),
                 meta: {
                     title: '用户反馈管理',
@@ -120,7 +120,7 @@ export const routes = [
                 name: 'ModelTraining',
                 component: () => import('@/views/models/training.vue'),
                 meta: {
-                    title: '模型训练',
+                    title: '训练任务管理',
                     icon: 'Operation',
                     requireAuth: true,
                     roles: ['ADMIN']
@@ -161,7 +161,7 @@ export const routes = [
             icon: 'DataAnalysis',
             requireAuth: true,
             roles: ['ADMIN']
-        }/*,
+        },
         children: [
             {
                 path: 'overview',
@@ -174,7 +174,7 @@ export const routes = [
                     roles: ['ADMIN']
                 }
             }
-        ]*/
+        ]
     }/*,
     {
         path: '/:pathMatch(.*)*',
