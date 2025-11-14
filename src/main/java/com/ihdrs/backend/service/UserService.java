@@ -6,8 +6,11 @@ import com.ihdrs.backend.common.Result;
 import com.ihdrs.backend.dto.request.PageRequest;
 import com.ihdrs.backend.dto.request.UpdateProfileRequest;
 import com.ihdrs.backend.dto.response.UserResponse;
+import com.ihdrs.backend.dto.response.UserLogResponse;
 import com.ihdrs.backend.entity.User;
+import com.ihdrs.backend.entity.UserLog;
 import com.ihdrs.backend.repository.UserRepository;
+import com.ihdrs.backend.repository.UserLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,6 +31,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserLogRepository userLogRepository;
 
     /**
      * 分页查询用户列表
@@ -184,4 +188,80 @@ public class UserService {
         log.info("用户 {} 密码修改成功", userId);
         return Result.success("密码修改成功", null);
     }
+
+    /**
+     * 修改用户角色
+     */
+    @Transactional
+    public Result<Void> updateUserRole(Long userId, String role) {
+        try {
+            // 验证角色是否合法
+            if (!role.equals("USER") && !role.equals("ADMIN")) {
+                return Result.error(400, "角色参数错误");
+            }
+
+            // 查询用户是否存在
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null) {
+                return Result.error(404, "用户不存在");
+            }
+
+            // 将字符串转换为枚举并设置角色
+            User.UserRole userRole = User.UserRole.valueOf(role);
+            user.setRole(userRole);
+
+            userRepository.save(user);
+
+            log.info("修改用户角色成功: userId={}, role={}", userId, role);
+            return Result.success("角色修改成功", null);
+        } catch (IllegalArgumentException e) {
+            log.error("角色参数错误: {}", role);
+            return Result.error(400, "角色参数错误");
+        } catch (Exception e) {
+            log.error("修改用户角色失败: userId={}, role={}", userId, role, e);
+            return Result.error(500, "修改角色失败");
+        }
+    }
+
+    /**
+     * 获取用户行为日志
+     */
+    public Result<PageResult<UserLogResponse>> getUserLogs(Long userId, PageRequest pageRequest) {
+        try {
+            org.springframework.data.domain.PageRequest springPageRequest =
+                    org.springframework.data.domain.PageRequest.of(
+                            pageRequest.getCurrent().intValue() - 1,
+                            pageRequest.getSize().intValue()
+                    );
+
+            Page<UserLog> logPage = userLogRepository.findByUserIdOrderByCreateTimeDesc(
+                    userId,
+                    springPageRequest
+            );
+
+            List<UserLogResponse> logResponses = logPage.getContent().stream()
+                    .map(log -> UserLogResponse.builder()
+                            .logId(log.getLogId())
+                            .userId(log.getUserId())
+                            .action(log.getAction())
+                            .ipAddress(log.getIpAddress())
+                            .userAgent(log.getUserAgent())
+                            .createTime(log.getCreateTime())
+                            .build())
+                    .collect(Collectors.toList());
+
+            PageResult<UserLogResponse> result = PageResult.of(
+                    logResponses,
+                    logPage.getTotalElements(),
+                    pageRequest.getSize(),
+                    pageRequest.getCurrent()
+            );
+
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("获取用户日志失败: userId={}", userId, e);
+            return Result.error(500, "获取用户日志失败");
+        }
+    }
+
 }

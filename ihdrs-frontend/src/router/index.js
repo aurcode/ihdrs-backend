@@ -163,12 +163,12 @@ export const routes = [
             icon: 'User',
             requireAuth: true,
             roles: ['ADMIN']
-        }/*,
+        },
         children: [
             {
                 path: 'list',
                 name: 'UserList',
-                component: () => import('@/views/users/list.vue'),
+                component: () => import('@/views/users/UserManagement.vue'),
                 meta: {
                     title: '用户列表',
                     icon: 'List',
@@ -176,7 +176,7 @@ export const routes = [
                     roles: ['ADMIN']
                 }
             }
-        ]*/
+        ]
     },
     {
         path: '/statistics',

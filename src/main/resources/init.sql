@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS models;
 DROP TABLE IF EXISTS system_configs;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS datasets;
+DROP TABLE IF EXISTS user_log;
 
 -- 创建数据集表
 CREATE TABLE `datasets` (
@@ -68,6 +69,39 @@ CREATE TABLE IF NOT EXISTS `users` (
                                        KEY `idx_role` (`role`),
                                        KEY `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+
+-- 插入初始数据
+INSERT INTO `users` (`username`, `password_hash`, `salt`, `role`, `email`, `status`) VALUES
+    ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8ioctKi7X7L4NXMHpnsKp7x6GzwxK', 'default_salt', 'ADMIN', 'admin@ihdrs.com', 1)
+ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
+
+INSERT INTO `users` (`username`, `password_hash`, `salt`, `role`, `email`, `status`) VALUES
+    ('user', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8ioctKi7X7L4NXMHpnsKp7x6GzwxK', 'default_salt', 'USER', 'test@ihdrs.com', 1)
+ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
+
+CREATE TABLE user_log (
+                          log_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '日志ID',
+                          user_id BIGINT NOT NULL COMMENT '用户ID',
+                          action VARCHAR(50) NOT NULL COMMENT '用户行为动作',
+                          ip_address VARCHAR(50) DEFAULT NULL COMMENT 'IP地址',
+                          user_agent VARCHAR(500) DEFAULT NULL COMMENT '浏览器UA',
+                          create_time DATETIME NOT NULL COMMENT '创建时间',
+
+                          INDEX idx_user_id (user_id),
+                          INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户行为日志表';
+
+INSERT INTO user_log (user_id, action, ip_address, user_agent, create_time)
+VALUES
+    (1, 'LOGIN', '192.168.1.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2025-11-14 10:12:30'),
+
+    (1, 'UPDATE_PROFILE', '192.168.1.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2025-11-14 10:20:15'),
+
+    (2, 'LOGIN', '10.0.0.5', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', '2025-11-14 09:00:01'),
+
+    (1, 'START_TRAINING', '192.168.1.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2025-11-14 11:05:44'),
+
+    (2, 'DELETE_DATASET', '10.0.0.5', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', '2025-11-13 23:45:10');
 
 -- 创建模型表
 CREATE TABLE IF NOT EXISTS `models` (
@@ -289,17 +323,6 @@ ALTER TABLE `training_logs` ADD CONSTRAINT `fk_logs_task` FOREIGN KEY (`task_id`
 ALTER TABLE `operation_logs` ADD CONSTRAINT `fk_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 SET FOREIGN_KEY_CHECKS = 1;
-
--- 插入初始数据
--- 插入默认管理员用户 (密码: admin123)
-INSERT INTO `users` (`username`, `password_hash`, `salt`, `role`, `email`, `status`) VALUES
-    ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8ioctKi7X7L4NXMHpnsKp7x6GzwxK', 'default_salt', 'ADMIN', 'admin@ihdrs.com', 1)
-ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
-
--- 插入默认测试用户 (密码: test123)
-INSERT INTO `users` (`username`, `password_hash`, `salt`, `role`, `email`, `status`) VALUES
-    ('user', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8ioctKi7X7L4NXMHpnsKp7x6GzwxK', 'default_salt', 'USER', 'test@ihdrs.com', 1)
-ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
 
 -- 插入系统配置
 INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `description`, `is_public`) VALUES

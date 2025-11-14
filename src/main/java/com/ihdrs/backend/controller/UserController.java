@@ -7,6 +7,7 @@ import com.ihdrs.backend.dto.request.ChangePasswordRequest;
 import com.ihdrs.backend.dto.request.UpdateProfileRequest;
 import com.ihdrs.backend.dto.request.PageRequest;
 import com.ihdrs.backend.dto.response.UserResponse;
+import com.ihdrs.backend.dto.response.UserLogResponse;
 import com.ihdrs.backend.service.AuthService;
 import com.ihdrs.backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,10 +57,10 @@ public class UserController {
 
     @Operation(summary = "获取当前登录用户")
     @GetMapping("/me")
-    public UserResponse getMe(@RequestHeader("Authorization") String authorization) {
+    public Result<UserResponse> getMe(@RequestHeader("Authorization") String authorization) {
         String token = authorization.replace("Bearer ", "");
-        // 直接返回“裸”的 UserResponse（不要再用 Result 包一层）
-        return authService.validateToken(token).getData();
+        UserResponse user = authService.validateToken(token).getData();
+        return Result.success(user);
     }
 
     @Operation(summary = "更新当前用户资料")
@@ -74,7 +75,7 @@ public class UserController {
         Result<Void> result = userService.updateProfile(userId, req);
 
         if (result.getCode() == 200) {
-            return ResponseEntity.noContent().build();  // 204 No Content
+            return ResponseEntity.ok(Result.success("信息修改成功"));
         } else if (result.getCode() == 400) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
         } else {
@@ -95,7 +96,7 @@ public class UserController {
 
         // 根据 Result 的 code 返回不同的状态码
         if (result.getCode() == 200) {
-            return ResponseEntity.noContent().build(); // 204
+            return ResponseEntity.ok(Result.success("密码修改成功"));
         } else if (result.getCode() == 400) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result); // 400
         } else {
@@ -114,7 +115,23 @@ public class UserController {
 
         // 检查用户名是否被其他用户占用
         boolean exists = userService.usernameExistsExcludingUser(username, currentUserId);
-
         return Result.success(exists);
     }
+
+    @Operation(summary="修改用户角色", description = "管理员修改用户角色")
+    @PutMapping("/{userId}/role")
+    public Result<Void> updateUserRole(
+            @PathVariable Long userId,
+            @RequestParam String role) {
+        return userService.updateUserRole(userId, role);
+    }
+
+    @Operation(summary = "获取用户日志", description = "分页查询用户的操作日志")
+    @GetMapping("/{userId}/logs")
+    public Result<PageResult<UserLogResponse>> getUserLogs(
+            @PathVariable Long userId,
+            @Valid PageRequest pageRequest) {
+        return userService.getUserLogs(userId, pageRequest);
+    }
+
 }
