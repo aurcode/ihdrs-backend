@@ -81,4 +81,40 @@ public class FeedbackController {
                 reviewerId);
     }
 
+    @Operation(summary = "获取当前用户的反馈列表", description = "用户查看自己提交的反馈")
+    @GetMapping("/my-feedback")
+    public Result<PageResult<FeedbackResponse>> getMyFeedbackList(
+            @Valid PageRequest pageRequest,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String feedbackType,
+            @RequestAttribute("userId") Long userId) {
+
+        FeedbackData.FeedbackStatus feedbackStatus = null;
+        FeedbackData.FeedbackType type = null;
+
+        if (StringUtils.hasText(status)) {
+            feedbackStatus = FeedbackData.FeedbackStatus.valueOf(status.trim());
+        }
+
+        if (StringUtils.hasText(feedbackType)) {
+            type = FeedbackData.FeedbackType.valueOf(feedbackType.trim());
+        }
+
+        return feedbackService.getUserFeedbackList(userId, pageRequest, feedbackStatus, type);
+    }
+
+    @Operation(summary = "获取反馈详情", description = "查看反馈详细信息")
+    @GetMapping("/{feedbackId}")
+    public Result<FeedbackResponse> getFeedbackById(@PathVariable Long feedbackId) {
+        return feedbackService.getFeedbackById(feedbackId);
+    }
+
+    @Operation(summary = "删除反馈", description = "用户删除自己的反馈（仅待审核状态）")
+    @DeleteMapping("/{feedbackId}")
+    public Result<Void> deleteFeedback(
+            @PathVariable Long feedbackId,
+            @RequestAttribute("userId") Long userId) {
+        return feedbackService.deleteFeedback(feedbackId, userId);
+    }
+
 }

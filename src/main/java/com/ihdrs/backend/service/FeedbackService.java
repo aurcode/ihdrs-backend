@@ -127,9 +127,15 @@ public class FeedbackService {
 
 
     /**
-     * 获取用户自己的反馈列表
+     * 获取用户自己的反馈列表（带状态和类型筛选）
      */
-    public Result<PageResult<FeedbackResponse>> getUserFeedbackList(Long userId, PageRequest pageRequest) {
+    public Result<PageResult<FeedbackResponse>> getUserFeedbackList(
+            Long userId,
+            PageRequest pageRequest,
+            FeedbackData.FeedbackStatus status,
+            FeedbackData.FeedbackType type) {
+
+        // 构建分页对象
         org.springframework.data.domain.PageRequest springPageRequest =
                 org.springframework.data.domain.PageRequest.of(
                         pageRequest.getCurrent().intValue() - 1,
@@ -137,15 +143,29 @@ public class FeedbackService {
                         Sort.by(Sort.Direction.DESC, "createTime")
                 );
 
-        Page<FeedbackData> feedbackPage = feedbackRepository.findByUserIdOrderByCreateTimeDesc(
-                userId, springPageRequest);
+        Page<FeedbackData> feedbackPage;
 
-        List<FeedbackResponse> feedbackList = feedbackPage.getContent().stream()
+        // 三种筛选组合处理
+        if (status != null && type != null) {
+            feedbackPage = feedbackRepository.findByUserIdAndFeedbackTypeAndStatusOrderByCreateTimeDesc(
+                    userId, type, status, springPageRequest);
+        } else if (status != null) {
+            feedbackPage = feedbackRepository.findByUserIdAndStatusOrderByCreateTimeDesc(
+                    userId, status, springPageRequest);
+        } else if (type != null) {
+            feedbackPage = feedbackRepository.findByUserIdAndFeedbackTypeOrderByCreateTimeDesc(
+                    userId, type, springPageRequest);
+        } else {
+            feedbackPage = feedbackRepository.findByUserIdOrderByCreateTimeDesc(
+                    userId, springPageRequest);
+        }
+
+        List<FeedbackResponse> list = feedbackPage.getContent().stream()
                 .map(this::convertToFeedbackResponse)
                 .collect(Collectors.toList());
 
         PageResult<FeedbackResponse> result = PageResult.of(
-                feedbackList,
+                list,
                 feedbackPage.getTotalElements(),
                 pageRequest.getSize(),
                 pageRequest.getCurrent()
@@ -153,6 +173,7 @@ public class FeedbackService {
 
         return Result.success(result);
     }
+
 
     /**
      * 审核反馈

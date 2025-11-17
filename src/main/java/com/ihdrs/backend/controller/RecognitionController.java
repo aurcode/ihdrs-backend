@@ -78,6 +78,45 @@ public class RecognitionController {
         return recognitionService.getAllHistory(page, size, result, userId, start, end);
     }
 
+    @GetMapping("/history_user")
+    @Operation(summary = "获取识别历史记录", description = "仅获取当前用户自己的识别记录")
+    public Result<?> getUserHistory(HttpServletRequest httpRequest,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "10") int size,
+                                @RequestParam(required = false) Integer result,
+                                @RequestParam(required = false) String startTime,
+                                @RequestParam(required = false) String endTime) {
+
+        Long userId = getUserIdFromRequest(httpRequest);
+        if (userId == null) {
+            return Result.error(401, "未登录用户无法查看记录");
+        }
+
+        LocalDateTime start = null, end = null;
+        DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_DATE_TIME;
+
+        try {
+            if (startTime != null && !startTime.isBlank()) {
+                if (startTime.length() == 10) {
+                    start = LocalDate.parse(startTime).atStartOfDay();
+                } else {
+                    start = LocalDateTime.parse(startTime, isoFormatter);
+                }
+            }
+            if (endTime != null && !endTime.isBlank()) {
+                if (endTime.length() == 10) {
+                    end = LocalDate.parse(endTime).atTime(23, 59, 59);
+                } else {
+                    end = LocalDateTime.parse(endTime, isoFormatter);
+                }
+            }
+        } catch (Exception ex) {
+            return Result.error(400, "时间格式错误");
+        }
+
+        return recognitionService.getAllHistory(page, size, result, userId, start, end);
+    }
+
 
     @GetMapping("/history_admin")
     public Result<?> getAllHistory(@RequestParam(defaultValue = "0") int page,

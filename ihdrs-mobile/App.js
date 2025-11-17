@@ -4,12 +4,14 @@ import { View, StyleSheet } from 'react-native';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import HistoryScreen from './src/screens/HistoryScreen';
+import FeedbackScreen from './src/screens/FeedbackScreen';
 import MainScreen from './src/screens/MainScreen';
 
 export default function App() {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
-    const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'login', 'register', 'profile'
+    const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'login', 'register', 'profile', 'history', 'feedback'
 
     const handleLoginSuccess = (userData) => {
         setUser(userData.user || userData);
@@ -33,6 +35,14 @@ export default function App() {
         setCurrentScreen('profile');
     };
 
+    const handleNavigateToHistory = () => {
+        setCurrentScreen('history');
+    };
+
+    const handleNavigateToFeedback = () => {
+        setCurrentScreen('feedback');
+    };
+
     const handleCancelAuth = () => {
         setCurrentScreen('main');
     };
@@ -44,9 +54,36 @@ export default function App() {
     };
 
     const handleProfileUpdated = () => {
-        // Reload user data if needed
         console.log('Profile updated');
     };
+
+    // 显示反馈页面
+    if (currentScreen === 'feedback') {
+        return (
+            <View style={styles.container}>
+                <StatusBar style="light" />
+                <FeedbackScreen
+                    user={user}
+                    token={token}
+                    onCancel={handleCancelAuth}
+                />
+            </View>
+        );
+    }
+
+    // 显示历史记录页面
+    if (currentScreen === 'history') {
+        return (
+            <View style={styles.container}>
+                <StatusBar style="light" />
+                <HistoryScreen
+                    user={user}
+                    token={token}
+                    onCancel={handleCancelAuth}
+                />
+            </View>
+        );
+    }
 
     // 显示个人中心页面
     if (currentScreen === 'profile') {
@@ -101,6 +138,8 @@ export default function App() {
                 onLogin={handleNavigateToLogin}
                 onRegister={handleNavigateToRegister}
                 onProfile={handleNavigateToProfile}
+                onHistory={handleNavigateToHistory}
+                onFeedback={handleNavigateToFeedback}
             />
         </View>
     );

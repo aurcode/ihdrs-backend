@@ -14,11 +14,12 @@ import RecognitionHistory from '../components/RecognitionHistory';
 import recognitionService from '../services/recognitionService';
 import authService from '../services/authService';
 
-const MainScreen = ({user, onLogout, onLogin, onProfile}) => {
+const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback}) => {
     const [mode, setMode] = useState('draw'); // 'draw' or 'upload'
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
+    const [menuVisible, setMenuVisible] = useState(false);
 
     // **FIX 1: Add state to control the ScrollView**
     const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -96,35 +97,53 @@ const MainScreen = ({user, onLogout, onLogin, onProfile}) => {
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Handwriting Recognition</Text>
-
                 <View style={styles.headerRight}>
-                    {user && (
-                        <TouchableOpacity
-                            style={styles.profileButton}
-                            onPress={onProfile}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.profileIcon}>👤</Text>
-                        </TouchableOpacity>
-                    )}
-                    <Text
-                        style={styles.userText}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                    >
-                        {user ? user.userInfo.username : 'Guest'}
-                    </Text>
-
                     {user ? (
-                        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-                            <Text style={styles.logoutButtonText}>Logout</Text>
-                        </TouchableOpacity>
+                        <Text
+                            style={styles.userText}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                        >
+                            {user.userInfo.username}
+                        </Text>
                     ) : (
                         <TouchableOpacity style={styles.logoutButton} onPress={onLogin}>
                             <Text style={styles.logoutButtonText}>Login</Text>
                         </TouchableOpacity>
                     )}
                 </View>
+                <TouchableOpacity
+                    style={styles.menuButton}
+                    onPress={() => setMenuVisible(!menuVisible)}
+                >
+                    <Text style={styles.menuIcon}>⋮</Text>
+                </TouchableOpacity>
+
+                {menuVisible && (
+                    <View style={styles.dropdownMenu}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onProfile(); }}>
+                            <Text style={styles.menuItemIcon}>👤</Text>
+                            <Text style={styles.menuItemText}>个人中心</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onHistory(); }}>
+                            <Text style={styles.menuItemIcon}>📊</Text>
+                            <Text style={styles.menuItemText}>识别记录</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onFeedback(); }}>
+                            <Text style={styles.menuItemIcon}>💬</Text>
+                            <Text style={styles.menuItemText}>反馈记录</Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.menuDivider}></View>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onLogout(); }}>
+                            <Text style={styles.menuItemIcon}>🚪</Text>
+                            <Text style={styles.menuItemText}>Logout</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
             {/* **FIX 2: Pass the scrollEnabled state to the ScrollView** */}
             <ScrollView
@@ -228,6 +247,49 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
+    menuButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    menuIcon: {
+        fontSize: 22,
+        color: '#fff',
+        marginTop: -2,
+    },
+    dropdownMenu: {
+        position: 'absolute',
+        top: 90,
+        right: 0,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingVertical: 8,
+        width: 160,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 10,
+        zIndex: 10000,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+    },
+    menuItemIcon: {
+        fontSize: 18,
+        marginRight: 10,
+    },
+    menuItemText: {
+        fontSize: 16,
+        color: '#1f2937',
+        fontWeight: '600',
+    },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
@@ -254,6 +316,29 @@ const styles = StyleSheet.create({
     },
     profileIcon: {
         fontSize: 10,
+    },
+    historyButton: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    historyIcon: {
+        fontSize: 20,
+    },
+    feedbackButton: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    feedbackIcon: {
+        fontSize: 20,
     },
     logoutButton: {
         backgroundColor: 'rgba(255, 255, 255, 0.2)',

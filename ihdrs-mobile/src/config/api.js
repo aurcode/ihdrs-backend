@@ -16,8 +16,8 @@ export const API_CONFIG = {
 
         // ===================== 识别服务 =====================
         RECOGNIZE: '/recognition/recognize',
-        HISTORY: '/recognition/history',
-        HISTORY_ADMIN: '/recognition/history_admin',
+        HISTORY: '/recognition/history_user',
+        HISTORY_ADMIN: '/recognition/history',
         HISTORY_DELETE: (recordId) => `/recognition/history/${recordId}`,
         HISTORY_BATCH_DELETE: '/recognition/history/batch',
 

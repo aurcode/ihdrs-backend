@@ -52,4 +52,15 @@ public interface FeedbackDataRepository extends JpaRepository<FeedbackData, Long
     Page<FeedbackData> findByFeedbackTypeOrderByCreateTimeDesc(
             FeedbackData.FeedbackType feedbackType,
             Pageable pageable);
+
+    Page<FeedbackData> findByUserIdAndStatusOrderByCreateTimeDesc(
+            Long userId, FeedbackData.FeedbackStatus status, Pageable pageable);
+
+    Page<FeedbackData> findByUserIdAndFeedbackTypeOrderByCreateTimeDesc(
+            Long userId, FeedbackData.FeedbackType type, Pageable pageable);
+
+    Page<FeedbackData> findByUserIdAndFeedbackTypeAndStatusOrderByCreateTimeDesc(
+            Long userId, FeedbackData.FeedbackType type, FeedbackData.FeedbackStatus status,
+            Pageable pageable);
+
 }
