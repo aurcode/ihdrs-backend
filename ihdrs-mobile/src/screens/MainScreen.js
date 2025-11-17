@@ -14,7 +14,7 @@ import RecognitionHistory from '../components/RecognitionHistory';
 import recognitionService from '../services/recognitionService';
 import authService from '../services/authService';
 
-const MainScreen = ({ user, onLogout }) => {
+const MainScreen = ({ user, onLogout, onLogin }) => {
   const [mode, setMode] = useState('draw'); // 'draw' or 'upload'
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -94,17 +94,26 @@ const MainScreen = ({ user, onLogout }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Handwriting Recognition</Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.userText}>{user?.username || 'User'}</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        <View style={styles.header}>
+            <Text style={styles.headerTitle}>Handwriting Recognition</Text>
 
-      {/* **FIX 2: Pass the scrollEnabled state to the ScrollView** */}
+            <View style={styles.headerRight}>
+                <Text style={styles.userText}>
+                    {user ? user.username : 'Guest'}
+                </Text>
+
+                {user ? (
+                    <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+                        <Text style={styles.logoutButtonText}>Logout</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.logoutButton} onPress={onLogin}>
+                        <Text style={styles.logoutButtonText}>Login</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        </View>
+        {/* **FIX 2: Pass the scrollEnabled state to the ScrollView** */}
       <ScrollView 
         style={styles.content}
         scrollEnabled={scrollEnabled}
