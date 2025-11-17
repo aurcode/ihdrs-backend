@@ -2,44 +2,76 @@ import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
 import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
 import MainScreen from './src/screens/MainScreen';
 
 export default function App() {
     const [user, setUser] = useState(null);         // null = 未登录
-    const [showLogin, setShowLogin] = useState(false); // 控制是否显示登录页面
+    const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'login', 'register'
 
     const handleLoginSuccess = (userData) => {
         setUser(userData);
-        setShowLogin(false); // 关闭登录页返回主界面
+        setCurrentScreen('main'); // 登录成功返回主界面
     };
 
-    const handleCancelLogin = () => {
-        setShowLogin(false);  // 返回主页面
+    const handleRegisterSuccess = () => {
+        setCurrentScreen('login'); // 注册成功跳转到登录页
+    };
+
+    const handleNavigateToLogin = () => {
+        setCurrentScreen('login');
+    };
+
+    const handleNavigateToRegister = () => {
+        setCurrentScreen('register');
+    };
+
+    const handleCancelAuth = () => {
+        setCurrentScreen('main');  // 返回主页面
     };
 
     const handleLogout = () => {
         setUser(null);       // 清空用户
+        setCurrentScreen('main');
     };
 
-    // 当 showLogin === true 时显示 LoginScreen
-    if (showLogin) {
+    // 显示注册页面
+    if (currentScreen === 'register') {
         return (
             <View style={styles.container}>
                 <StatusBar style="light" />
-                <LoginScreen onLoginSuccess={handleLoginSuccess}
-                             onCancel={handleCancelLogin}/>
+                <RegisterScreen
+                    onRegisterSuccess={handleRegisterSuccess}
+                    onNavigateToLogin={handleNavigateToLogin}
+                    onCancel={handleCancelAuth}
+                />
             </View>
         );
     }
 
-    // 默认显示 MainScreen
+    // 显示登录页面
+    if (currentScreen === 'login') {
+        return (
+            <View style={styles.container}>
+                <StatusBar style="light" />
+                <LoginScreen
+                    onLoginSuccess={handleLoginSuccess}
+                    onNavigateToRegister={handleNavigateToRegister}
+                    onCancel={handleCancelAuth}
+                />
+            </View>
+        );
+    }
+
+    // 默认显示主页面
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
             <MainScreen
-                user={user}                  // 传递用户
-                onLogout={handleLogout}      // 传递退出函数
-                onLogin={() => setShowLogin(true)} // 点击右上角登录触发
+                user={user}
+                onLogout={handleLogout}
+                onLogin={handleNavigateToLogin}
+                onRegister={handleNavigateToRegister}
             />
         </View>
     );

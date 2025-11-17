@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+// LoginScreen.js
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,204 +7,859 @@ import {
     TouchableOpacity,
     StyleSheet,
     Alert,
-    KeyboardAvoidingView,
     Platform,
-    ScrollView,
+    StatusBar,
+    Dimensions,
+    Animated,
+    Easing,
+    ActivityIndicator,
+    KeyboardAvoidingView,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import authService from '../services/authService';
 
-const LoginScreen = ({onLoginSuccess, onCancel}) => {
+const { width, height } = Dimensions.get('window');
+
+const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [usernameFocused, setUsernameFocused] = useState(false);
+    const [passwordFocused, setPasswordFocused] = useState(false);
+
+    // 动画引用
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const usernameScale = useRef(new Animated.Value(1)).current;
+    const passwordScale = useRef(new Animated.Value(1)).current;
+    const backgroundY = useRef(new Animated.Value(0)).current;
+
+    // 粒子效果
+    const particles = useRef([]);
+
+    useEffect(() => {
+        // 初始淡入动画
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.back(1.2)),
+        }).start();
+
+        // 背景浮动动画
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(backgroundY, {
+                    toValue: -20,
+                    duration: 4000,
+                    useNativeDriver: true,
+                    easing: Easing.inOut(Easing.sin),
+                }),
+                Animated.timing(backgroundY, {
+                    toValue: 20,
+                    duration: 4000,
+                    useNativeDriver: true,
+                    easing: Easing.inOut(Easing.sin),
+                }),
+            ])
+        ).start();
+
+        // 创建粒子
+        createParticles();
+
+    }, [fadeAnim, backgroundY]);
+
+    const createParticles = () => {
+        const newParticles = [];
+        for (let i = 0; i < 20; i++) {
+            newParticles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                size: Math.random() * 3 + 1,
+                speed: Math.random() * 0.5 + 0.2,
+                opacity: Math.random() * 0.2 + 0.1,
+            });
+        }
+        particles.current = newParticles;
+    };
+
+    const handleInputFocus = (inputType) => {
+        if (inputType === 'username') {
+            setUsernameFocused(true);
+            Animated.spring(usernameScale, {
+                toValue: 1.02,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        } else {
+            setPasswordFocused(true);
+            Animated.spring(passwordScale, {
+                toValue: 1.02,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        }
+    };
+
+    const handleInputBlur = (inputType) => {
+        if (inputType === 'username') {
+            setUsernameFocused(false);
+            Animated.spring(usernameScale, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        } else {
+            setPasswordFocused(false);
+            Animated.spring(passwordScale, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        }
+    };
 
     const handleLogin = async () => {
         if (!username || !password) {
-            Alert.alert('Error', 'Please enter both username and password');
+            // 错误动画
+            Animated.sequence([
+                Animated.timing(scaleAnim, {
+                    toValue: 0.95,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            Alert.alert('提示', '请输入用户名和密码');
             return;
         }
 
         setLoading(true);
         try {
             const response = await authService.login(username, password);
-
             if (response.success) {
-                Alert.alert('Success', 'Login successful!');
-                onLoginSuccess(response.data);
+                // 成功动画
+                Animated.sequence([
+                    Animated.timing(scaleAnim, {
+                        toValue: 1.05,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(scaleAnim, {
+                        toValue: 1,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+
+                Alert.alert('成功', '登录成功！');
+                onLoginSuccess && onLoginSuccess(response.data);
             } else {
-                Alert.alert('Login Failed', response.error || 'Invalid credentials');
+                // 失败动画
+                Animated.sequence([
+                    Animated.timing(scaleAnim, {
+                        toValue: 0.98,
+                        duration: 100,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(scaleAnim, {
+                        toValue: 1.02,
+                        duration: 100,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(scaleAnim, {
+                        toValue: 1,
+                        duration: 100,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+
+                Alert.alert('登录失败', response.error || '用户名或密码错误');
             }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to login. Please try again.');
+        } catch (err) {
+            // 错误动画
+            Animated.sequence([
+                Animated.timing(scaleAnim, {
+                    toValue: 0.98,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1.02,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            Alert.alert('错误', '登录失败，请重试');
         } finally {
             setLoading(false);
         }
     };
 
     const useDemoCredentials = () => {
-        setUsername('testuser');
-        setPassword('password');
+        // 填充动画
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 1.02,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        setUsername('weiwo');
+        setPassword('weiwo123');
+    };
+
+    // 渲染粒子背景
+    const renderParticles = () => {
+        return particles.current.map((particle, index) => (
+            <Animated.View
+                key={index}
+                style={[
+                    styles.particle,
+                    {
+                        left: particle.x,
+                        top: particle.y + backgroundY,
+                        width: particle.size,
+                        height: particle.size,
+                        opacity: particle.opacity,
+                    },
+                ]}
+            />
+        ));
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.card}>
-                    <TouchableOpacity onPress={onCancel} style={{marginBottom: 10}}>
-                        <Text style={{fontSize: 16, color: '#6366f1'}}>← Back</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.title}>Handwriting{'\n'}Recognition</Text>
+        <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-                    <View style={styles.form}>
-                        <Text style={styles.label}>Username</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your username"
-                            value={username}
-                            onChangeText={setUsername}
-                            keyboardType="username-address"
-                            autoCapitalize="none"
-                            editable={!loading}
-                        />
+            {/* 动态背景 */}
+            <Animated.View
+                style={[
+                    styles.backgroundGradient,
+                    {
+                        opacity: fadeAnim,
+                        transform: [{ translateY: backgroundY }]
+                    }
+                ]}
+            >
+                {renderParticles()}
+                <View style={styles.circleTop} />
+                <View style={styles.circleBottom} />
+                <View style={styles.circleMiddle} />
+            </Animated.View>
 
-                        <Text style={styles.label}>Password</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your password"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            editable={!loading}
-                        />
+            <KeyboardAwareScrollView
+                enableOnAndroid={true}
+                extraScrollHeight={Platform.OS === 'android' ? 20 : 10}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+            >
+                <Animated.View
+                    style={[
+                        styles.contentContainer,
+                        { transform: [{ scale: scaleAnim }] }
+                    ]}
+                >
+                    {/* 头部Logo区域 */}
+                    <View style={styles.header}>
+                        <Animated.View
+                            style={[
+                                styles.logoContainer,
+                                { opacity: fadeAnim.interpolate({
+                                        inputRange: [0, 0.5, 1],
+                                        outputRange: [0, 0.5, 1]
+                                    })}
+                            ]}
+                        >
+                            <Animated.View
+                                style={[
+                                    styles.logoCircle,
+                                    {
+                                        transform: [
+                                            { scale: fadeAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [0.5, 1]
+                                                })},
+                                            { rotate: fadeAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: ['-180deg', '0deg']
+                                                })}
+                                        ]
+                                    }
+                                ]}
+                            >
+                                <Text style={styles.logoText}>✍️</Text>
+                            </Animated.View>
+                        </Animated.View>
 
+                        <Animated.Text
+                            style={[
+                                styles.title,
+                                {
+                                    opacity: fadeAnim.interpolate({
+                                        inputRange: [0, 0.7, 1],
+                                        outputRange: [0, 0, 1]
+                                    }),
+                                    transform: [{
+                                        translateY: fadeAnim.interpolate({
+                                            inputRange: [0, 0.7, 1],
+                                            outputRange: [20, 20, 0]
+                                        })
+                                    }]
+                                }
+                            ]}
+                        >
+                            手写数字识别系统
+                        </Animated.Text>
+
+                        <Animated.Text
+                            style={[
+                                styles.subtitle,
+                                {
+                                    opacity: fadeAnim.interpolate({
+                                        inputRange: [0, 0.8, 1],
+                                        outputRange: [0, 0, 1]
+                                    }),
+                                    transform: [{
+                                        translateY: fadeAnim.interpolate({
+                                            inputRange: [0, 0.8, 1],
+                                            outputRange: [20, 20, 0]
+                                        })
+                                    }]
+                                }
+                            ]}
+                        >
+                            Handwritten Digit Recognition System
+                        </Animated.Text>
+                    </View>
+
+                    {/* 登录卡片 */}
+                    <Animated.View
+                        style={[
+                            styles.card,
+                            {
+                                opacity: fadeAnim.interpolate({
+                                    inputRange: [0, 0.6, 1],
+                                    outputRange: [0, 0, 1]
+                                }),
+                                transform: [{
+                                    translateY: fadeAnim.interpolate({
+                                        inputRange: [0, 0.6, 1],
+                                        outputRange: [50, 50, 0]
+                                    })
+                                }]
+                            }
+                        ]}
+                    >
+                        <Text style={styles.welcomeText}>欢迎回来</Text>
+                        <Text style={styles.welcomeSubtext}>请登录您的账户</Text>
+
+                        {/* 用户名输入框 */}
+                        <Animated.View
+                            style={[
+                                styles.inputContainer,
+                                { transform: [{ scale: usernameScale }] }
+                            ]}
+                        >
+                            <Text style={[
+                                styles.label,
+                                usernameFocused && styles.labelFocused
+                            ]}>
+                                用户名
+                            </Text>
+                            <Animated.View
+                                style={[
+                                    styles.inputWrapper,
+                                    {
+                                        borderColor: usernameFocused ? '#2563eb' : '#e2e8f0',
+                                        backgroundColor: usernameFocused ? '#eff6ff' : '#f8fafc',
+                                        shadowColor: usernameFocused ? '#2563eb' : 'transparent',
+                                        shadowOpacity: usernameFocused ? 0.2 : 0,
+                                    }
+                                ]}
+                            >
+                                <Text style={[
+                                    styles.inputIcon,
+                                    usernameFocused && styles.inputIconFocused
+                                ]}>👤</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="请输入用户名"
+                                    placeholderTextColor="#94a3b8"
+                                    value={username}
+                                    onChangeText={setUsername}
+                                    autoCapitalize="none"
+                                    editable={!loading}
+                                    returnKeyType="next"
+                                    onFocus={() => handleInputFocus('username')}
+                                    onBlur={() => handleInputBlur('username')}
+                                    selectionColor="#2563eb"
+                                />
+                            </Animated.View>
+                        </Animated.View>
+
+                        {/* 密码输入框 */}
+                        <Animated.View
+                            style={[
+                                styles.inputContainer,
+                                { transform: [{ scale: passwordScale }] }
+                            ]}
+                        >
+                            <Text style={[
+                                styles.label,
+                                passwordFocused && styles.labelFocused
+                            ]}>
+                                密码
+                            </Text>
+                            <Animated.View
+                                style={[
+                                    styles.inputWrapper,
+                                    {
+                                        borderColor: passwordFocused ? '#2563eb' : '#e2e8f0',
+                                        backgroundColor: passwordFocused ? '#eff6ff' : '#f8fafc',
+                                        shadowColor: passwordFocused ? '#2563eb' : 'transparent',
+                                        shadowOpacity: passwordFocused ? 0.2 : 0,
+                                    }
+                                ]}
+                            >
+                                <Text style={[
+                                    styles.inputIcon,
+                                    passwordFocused && styles.inputIconFocused
+                                ]}>🔒</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="请输入密码"
+                                    placeholderTextColor="#94a3b8"
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry={!showPassword}
+                                    editable={!loading}
+                                    returnKeyType="done"
+                                    onFocus={() => handleInputFocus('password')}
+                                    onBlur={() => handleInputBlur('password')}
+                                    selectionColor="#2563eb"
+                                />
+                                <TouchableOpacity
+                                    style={styles.togglePassword}
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    disabled={loading}
+                                >
+                                    <Text style={styles.togglePasswordText}>
+                                        {showPassword ? '👁️' : '👁️'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                        </Animated.View>
+
+                        {/* 登录按钮 */}
                         <TouchableOpacity
-                            style={[styles.signInButton, loading && styles.buttonDisabled]}
+                            style={[
+                                styles.loginButton,
+                                loading && styles.loginButtonDisabled,
+                                {
+                                    backgroundColor: loading ? '#93c5fd' : '#2563eb',
+                                    shadowColor: loading ? '#93c5fd' : '#1d4ed8',
+                                }
+                            ]}
                             onPress={handleLogin}
                             disabled={loading}
+                            activeOpacity={0.8}
                         >
-                            <Text style={styles.signInButtonText}>
-                                {loading ? 'Signing In...' : 'Sign In'}
-                            </Text>
+                            {loading ? (
+                                <ActivityIndicator color="#ffffff" size="small" />
+                            ) : (
+                                <Text style={styles.loginButtonText}>登录</Text>
+                            )}
                         </TouchableOpacity>
 
-                        <View style={styles.demoCredentials}>
-                            <Text style={styles.demoTitle}>Demo Credentials:</Text>
-                            <Text style={styles.demoText}>Username: testuser</Text>
-                            <Text style={styles.demoText}>Password: password</Text>
+                        {/* 演示账号区域 */}
+                        <Animated.View
+                            style={[
+                                styles.demoContainer,
+                                {
+                                    opacity: fadeAnim.interpolate({
+                                        inputRange: [0, 0.9, 1],
+                                        outputRange: [0, 0, 1]
+                                    })
+                                }
+                            ]}
+                        >
+                            <View style={styles.divider}>
+                                <View style={styles.dividerLine} />
+                                <Text style={styles.dividerText}>演示账号</Text>
+                                <View style={styles.dividerLine} />
+                            </View>
+
+                            <View style={styles.demoCredentials}>
+                                <View style={styles.demoRow}>
+                                    <Text style={styles.demoLabel}>用户名：</Text>
+                                    <Text style={styles.demoValue}>weiwo</Text>
+                                </View>
+                                <View style={styles.demoRow}>
+                                    <Text style={styles.demoLabel}>密码：</Text>
+                                    <Text style={styles.demoValue}>weiwo123</Text>
+                                </View>
+                            </View>
+
                             <TouchableOpacity
                                 style={styles.demoButton}
                                 onPress={useDemoCredentials}
+                                disabled={loading}
+                                activeOpacity={0.8}
                             >
-                                <Text style={styles.demoButtonText}>Use Demo Credentials</Text>
+                                <Text style={styles.demoButtonText}>使用演示账号</Text>
                             </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                        </Animated.View>
+
+                        {/* 注册链接 */}
+                        <Animated.View
+                            style={[
+                                styles.registerLinkContainer,
+                                {
+                                    opacity: fadeAnim.interpolate({
+                                        inputRange: [0, 0.9, 1],
+                                        outputRange: [0, 0, 1]
+                                    })
+                                }
+                            ]}
+                        >
+                            <Text style={styles.registerLinkText}>还没有账户？</Text>
+                            <TouchableOpacity
+                                onPress={onNavigateToRegister}
+                                disabled={loading}
+                            >
+                                <Text style={styles.registerLink}>立即注册</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </Animated.View>
+
+                    {/* 返回按钮 */}
+                    <TouchableOpacity
+                        onPress={onCancel}
+                        style={styles.backButton}
+                        disabled={loading}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.backButtonText}>← 返回</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            </KeyboardAwareScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#6366f1',
+        backgroundColor: '#f8fafc',
+    },
+    backgroundGradient: {
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+        overflow: 'hidden',
+    },
+    particle: {
+        position: 'absolute',
+        borderRadius: 50,
+        backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    },
+    circleTop: {
+        position: 'absolute',
+        width: width * 1.8,
+        height: width * 1.8,
+        borderRadius: width * 0.9,
+        backgroundColor: 'rgba(147, 197, 253, 0.2)',
+        top: -width * 0.6,
+        right: -width * 0.4,
+    },
+    circleBottom: {
+        position: 'absolute',
+        width: width * 1.5,
+        height: width * 1.5,
+        borderRadius: width * 0.75,
+        backgroundColor: 'rgba(191, 219, 254, 0.2)',
+        bottom: -width * 0.5,
+        left: -width * 0.4,
+    },
+    circleMiddle: {
+        position: 'absolute',
+        width: width * 1.2,
+        height: width * 1.2,
+        borderRadius: width * 0.6,
+        backgroundColor: 'rgba(224, 242, 254, 0.3)',
+        top: '40%',
+        left: '20%',
     },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center',
+        minHeight: height,
         padding: 20,
+        paddingTop: Platform.OS === 'ios' ? 80 : 60,
+        paddingBottom: 40,
     },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 30,
+    contentContainer: {
+        width: '100%',
+        maxWidth: 440,
+        alignSelf: 'center',
+    },
+    header: {
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    logoContainer: {
+        marginBottom: 25,
+    },
+    logoCircle: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
         elevation: 5,
+        borderWidth: 3,
+        borderColor: 'rgba(59, 130, 246, 0.2)',
+    },
+    logoText: {
+        fontSize: 50,
     },
     title: {
-        fontSize: 32,
+        fontSize: 36,
         fontWeight: 'bold',
-        color: '#1f2937',
-        textAlign: 'center',
+        color: '#1e293b',
         marginBottom: 10,
+        textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
     },
     subtitle: {
-        fontSize: 16,
-        color: '#6b7280',
+        fontSize: 18,
+        color: '#475569',
         textAlign: 'center',
-        marginBottom: 30,
+        fontWeight: '500',
     },
-    form: {
-        width: '100%',
+    card: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 28,
+        padding: 25,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 15 },
+        shadowOpacity: 0.1,
+        shadowRadius: 30,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+        backdropFilter: 'blur(20px)',
+    },
+    welcomeText: {
+        fontSize: 26,
+        fontWeight: '700',
+        color: '#1e293b',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    welcomeSubtext: {
+        fontSize: 16,
+        color: '#64748b',
+        marginBottom: 25,
+        textAlign: 'center',
+    },
+    inputContainer: {
+        marginBottom: 20,
     },
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#374151',
-        marginBottom: 8,
-        marginTop: 15,
+        color: '#334155',
+        marginBottom: 10,
+        transition: 'color 0.3s ease',
+    },
+    labelFocused: {
+        color: '#2563eb',
+        fontWeight: '700',
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 16,
+        borderWidth: 2,
+        paddingHorizontal: 16,
+        height: 60,
+        transition: 'all 0.3s ease',
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    inputIcon: {
+        fontSize: 20,
+        marginRight: 12,
+        color: '#94a3b8',
+        transition: 'color 0.3s ease',
+    },
+    inputIconFocused: {
+        color: '#2563eb',
+        transform: [{ scale: 1.1 }],
     },
     input: {
-        backgroundColor: '#f9fafb',
-        borderWidth: 1,
-        borderColor: '#e5e7eb',
-        borderRadius: 8,
-        padding: 15,
-        fontSize: 16,
-        color: '#1f2937',
+        flex: 1,
+        fontSize: 18,
+        color: '#1e293b',
+        padding: 0,
+        fontWeight: '500',
     },
-    signInButton: {
-        backgroundColor: '#6366f1',
-        borderRadius: 8,
-        padding: 16,
-        marginTop: 25,
+    togglePassword: {
+        padding: 8,
+    },
+    togglePasswordText: {
+        fontSize: 20,
+        color: '#94a3b8',
+    },
+    loginButton: {
+        borderRadius: 16,
+        height: 60,
+        justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 15,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 5,
+        transition: 'all 0.3s ease',
     },
-    buttonDisabled: {
-        opacity: 0.6,
+    loginButtonDisabled: {
+        opacity: 0.7,
+        transform: [{ scale: 0.98 }],
     },
-    signInButtonText: {
+    loginButtonText: {
         color: '#fff',
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '700',
+        textShadowColor: 'rgba(0, 0, 0, 0.2)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
+    },
+    demoContainer: {
+        marginTop: 25,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#e2e8f0',
+    },
+    dividerText: {
+        marginHorizontal: 12,
+        color: '#94a3b8',
+        fontSize: 14,
+        fontWeight: '500',
     },
     demoCredentials: {
-        marginTop: 30,
+        backgroundColor: '#f0f9ff',
+        borderRadius: 12,
         padding: 15,
-        backgroundColor: '#eff6ff',
-        borderRadius: 8,
-        borderLeftWidth: 4,
-        borderLeftColor: '#3b82f6',
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#e0f2fe',
     },
-    demoTitle: {
+    demoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 4,
+    },
+    demoLabel: {
         fontSize: 16,
-        fontWeight: 'bold',
-        color: '#1e40af',
-        marginBottom: 8,
+        color: '#475569',
+        fontWeight: '600',
+        width: 80,
     },
-    demoText: {
-        fontSize: 14,
-        color: '#1e3a8a',
-        marginVertical: 2,
+    demoValue: {
+        fontSize: 16,
+        color: '#1e293b',
+        fontWeight: '700',
+        fontFamily: 'monospace',
     },
     demoButton: {
-        marginTop: 10,
-        padding: 10,
-        backgroundColor: '#3b82f6',
-        borderRadius: 6,
+        backgroundColor: '#e0f2fe',
+        borderRadius: 12,
+        height: 50,
+        justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#bae6fd',
+        transition: 'all 0.3s ease',
     },
     demoButtonText: {
-        color: '#fff',
-        fontSize: 14,
+        color: '#0284c7',
+        fontSize: 16,
         fontWeight: '600',
+    },
+    registerLinkContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    registerLinkText: {
+        fontSize: 16,
+        color: '#64748b',
+        marginRight: 8,
+        fontWeight: '500',
+    },
+    registerLink: {
+        fontSize: 16,
+        color: '#2563eb',
+        fontWeight: '700',
+        textDecorationLine: 'underline',
+        textDecorationColor: '#2563eb',
+        textDecorationThickness: 2,
+        textUnderlineOffset: 4,
+    },
+    backButton: {
+        marginTop: 30,
+        alignSelf: 'center',
+        padding: 12,
+        borderRadius: 25,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(10px)',
+        borderWidth: 1,
+        borderColor: 'rgba(59, 130, 246, 0.2)',
+    },
+    backButtonText: {
+        color: '#1e293b',
+        fontSize: 16,
+        fontWeight: '600',
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
 });
 
