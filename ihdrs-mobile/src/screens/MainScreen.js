@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import DrawingCanvas from '../components/DrawingCanvas';
 import ImagePickerComponent from '../components/ImagePickerComponent';
@@ -14,340 +14,366 @@ import RecognitionHistory from '../components/RecognitionHistory';
 import recognitionService from '../services/recognitionService';
 import authService from '../services/authService';
 
-const MainScreen = ({ user, onLogout, onLogin }) => {
-  const [mode, setMode] = useState('draw'); // 'draw' or 'upload'
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [history, setHistory] = useState([]);
-  
-  // **FIX 1: Add state to control the ScrollView**
-  const [scrollEnabled, setScrollEnabled] = useState(true);
+const MainScreen = ({user, onLogout, onLogin, onProfile}) => {
+    const [mode, setMode] = useState('draw'); // 'draw' or 'upload'
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+    const [history, setHistory] = useState([]);
 
-  /**
-   * Handles the recognition request for both drawing and uploading.
-   * @param {string} base64Image - The base64 encoded image string.
-   */
-  const handleRecognition = async (base64Image) => {
-    if (!base64Image) {
-      Alert.alert('Error', 'No image data received.');
-      return;
-    }
-    
-    setLoading(true);
-    setResult(null);
+    // **FIX 1: Add state to control the ScrollView**
+    const [scrollEnabled, setScrollEnabled] = useState(true);
 
-    try {
-      const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
-      const response = await recognitionService.recognizeDigit(
-        base64Image,
-        inputType,
-        null,
-        {
-          platform: 'mobile',
-          appVersion: '1.0.0',
+    /**
+     * Handles the recognition request for both drawing and uploading.
+     * @param {string} base64Image - The base64 encoded image string.
+     */
+    const handleRecognition = async (base64Image) => {
+        if (!base64Image) {
+            Alert.alert('Error', 'No image data received.');
+            return;
         }
-      );
-      
-      if (response.success) {
-        const recognitionData = response.data.data;
-        setResult(recognitionData);
-        
-        // Add to history
-        const historyItem = {
-          id: Date.now(),
-          digit: recognitionData.predictedDigit,
-          confidence: recognitionData.confidence,
-          probabilities: recognitionData.probabilities,
-          timestamp: new Date().toLocaleTimeString(),
-          inputType: inputType,
-        };
-        setHistory([historyItem, ...history]);
-      } else {
-        Alert.alert('Error', response.error || 'Recognition failed');
-      }
-    } catch (error) {
-      console.error('Recognition error:', error);
-      Alert.alert('Error', 'Failed to recognize digit. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            // authService.logout(); // Assuming this exists
-            onLogout();
-          },
-        },
-      ]
-    );
-  };
+        setLoading(true);
+        setResult(null);
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-        <View style={styles.header}>
-            <Text style={styles.headerTitle}>Handwriting Recognition</Text>
+        try {
+            const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
+            const response = await recognitionService.recognizeDigit(
+                base64Image,
+                inputType,
+                null,
+                {
+                    platform: 'mobile',
+                    appVersion: '1.0.0',
+                }
+            );
 
-            <View style={styles.headerRight}>
-                <Text style={styles.userText}>
-                    {user ? user.username : 'Guest'}
-                </Text>
+            if (response.success) {
+                const recognitionData = response.data.data;
+                setResult(recognitionData);
 
-                {user ? (
-                    <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-                        <Text style={styles.logoutButtonText}>Logout</Text>
-                    </TouchableOpacity>
-                ) : (
-                    <TouchableOpacity style={styles.logoutButton} onPress={onLogin}>
-                        <Text style={styles.logoutButtonText}>Login</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-        </View>
-        {/* **FIX 2: Pass the scrollEnabled state to the ScrollView** */}
-      <ScrollView 
-        style={styles.content}
-        scrollEnabled={scrollEnabled}
-      >
-        <View style={styles.mainContent}>
-          <Text style={styles.pageTitle}>Handwriting Recognition</Text>
-          <Text style={styles.pageSubtitle}>
-            Capture or upload handwritten text for recognition
-          </Text>
+                // Add to history
+                const historyItem = {
+                    id: Date.now(),
+                    digit: recognitionData.predictedDigit,
+                    confidence: recognitionData.confidence,
+                    probabilities: recognitionData.probabilities,
+                    timestamp: new Date().toLocaleTimeString(),
+                    inputType: inputType,
+                };
+                setHistory([historyItem, ...history]);
+            } else {
+                Alert.alert('Error', response.error || 'Recognition failed');
+            }
+        } catch (error) {
+            console.error('Recognition error:', error);
+            Alert.alert('Error', 'Failed to recognize digit. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-          {/* Mode Selector */}
-          <View style={styles.modeSelector}>
-            <TouchableOpacity
-              style={[styles.modeButton, mode === 'draw' && styles.modeButtonActive]}
-              onPress={() => setMode('draw')}
-            >
-              <Text style={[styles.modeButtonText, mode === 'draw' && styles.modeButtonTextActive]}>
-                ✏️ Draw
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modeButton, mode === 'upload' && styles.modeButtonActive]}
-              onPress={() => setMode('upload')}
-            >
-              <Text style={[styles.modeButtonText, mode === 'upload' && styles.modeButtonTextActive]}>
-                📁 Upload Image
-              </Text>
-            </TouchableOpacity>
-          </View>
+    const handleLogout = () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                {text: 'Cancel', style: 'cancel'},
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: () => {
+                        // authService.logout(); // Assuming this exists
+                        onLogout();
+                    },
+                },
+            ]
+        );
+    };
 
-          {/* Content Area */}
-          {/* **FIX 3: Add touch handlers to the wrapper View** */}
-          <View 
-            style={styles.contentCard}
-            // When a touch starts *inside this View*...
-            onTouchStart={() => {
-              // ...and we are in 'draw' mode, disable scrolling.
-              if (mode === 'draw') {
-                setScrollEnabled(false);
-              }
-            }}
-            // When the touch is released *from this View*...
-            onTouchEnd={() => {
-              // ...re-enable scrolling.
-              setScrollEnabled(true);
-            }}
-          >
-            {mode === 'draw' ? (
-              <DrawingCanvas onDrawingComplete={handleRecognition} />
-            ) : (
-              <ImagePickerComponent onImageSelected={handleRecognition} />
-            )}
-          </View>
+    return (
+        <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Handwriting Recognition</Text>
 
-          {/* Loading Indicator */}
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#6366f1" />
-              <Text style={styles.loadingText}>Recognizing digit...</Text>
-            </View>
-          )}
+                <View style={styles.headerRight}>
+                    {user && (
+                        <TouchableOpacity
+                            style={styles.profileButton}
+                            onPress={onProfile}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.profileIcon}>👤</Text>
+                        </TouchableOpacity>
+                    )}
+                    <Text
+                        style={styles.userText}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >
+                        {user ? user.userInfo.username : 'Guest'}
+                    </Text>
 
-          {/* Recognition Result */}
-          {result && !loading && (
-            <View style={styles.resultCard}>
-              <Text style={styles.resultTitle}>Recognition Result</Text>
-              <View style={styles.resultContent}>
-                <View style={styles.digitDisplay}>
-                  <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
+                    {user ? (
+                        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+                            <Text style={styles.logoutButtonText}>Logout</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.logoutButton} onPress={onLogin}>
+                            <Text style={styles.logoutButtonText}>Login</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
-                <Text style={styles.resultSubtext}>
-                  Confidence: {(result.confidence * 100).toFixed(1)}%
-                </Text>
-              </View>
             </View>
-          )}
+            {/* **FIX 2: Pass the scrollEnabled state to the ScrollView** */}
+            <ScrollView
+                style={styles.content}
+                scrollEnabled={scrollEnabled}
+            >
+                <View style={styles.mainContent}>
+                    <Text style={styles.pageTitle}>Handwriting Recognition</Text>
+                    <Text style={styles.pageSubtitle}>
+                        Capture or upload handwritten text for recognition
+                    </Text>
 
-          {/* Recognition History */}
-          {history.length > 0 && (
-            <RecognitionHistory history={history} />
-          )}
+                    {/* Mode Selector */}
+                    <View style={styles.modeSelector}>
+                        <TouchableOpacity
+                            style={[styles.modeButton, mode === 'draw' && styles.modeButtonActive]}
+                            onPress={() => setMode('draw')}
+                        >
+                            <Text style={[styles.modeButtonText, mode === 'draw' && styles.modeButtonTextActive]}>
+                                ✏️ Draw
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.modeButton, mode === 'upload' && styles.modeButtonActive]}
+                            onPress={() => setMode('upload')}
+                        >
+                            <Text style={[styles.modeButtonText, mode === 'upload' && styles.modeButtonTextActive]}>
+                                📁 Upload Image
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Content Area */}
+                    {/* **FIX 3: Add touch handlers to the wrapper View** */}
+                    <View
+                        style={styles.contentCard}
+                        // When a touch starts *inside this View*...
+                        onTouchStart={() => {
+                            // ...and we are in 'draw' mode, disable scrolling.
+                            if (mode === 'draw') {
+                                setScrollEnabled(false);
+                            }
+                        }}
+                        // When the touch is released *from this View*...
+                        onTouchEnd={() => {
+                            // ...re-enable scrolling.
+                            setScrollEnabled(true);
+                        }}
+                    >
+                        {mode === 'draw' ? (
+                            <DrawingCanvas onDrawingComplete={handleRecognition}/>
+                        ) : (
+                            <ImagePickerComponent onImageSelected={handleRecognition}/>
+                        )}
+                    </View>
+
+                    {/* Loading Indicator */}
+                    {loading && (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#6366f1"/>
+                            <Text style={styles.loadingText}>Recognizing digit...</Text>
+                        </View>
+                    )}
+
+                    {/* Recognition Result */}
+                    {result && !loading && (
+                        <View style={styles.resultCard}>
+                            <Text style={styles.resultTitle}>Recognition Result</Text>
+                            <View style={styles.resultContent}>
+                                <View style={styles.digitDisplay}>
+                                    <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
+                                </View>
+                                <Text style={styles.resultSubtext}>
+                                    Confidence: {(result.confidence * 100).toFixed(1)}%
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Recognition History */}
+                    {history.length > 0 && (
+                        <RecognitionHistory history={history}/>
+                    )}
+                </View>
+            </ScrollView>
         </View>
-      </ScrollView>
-    </View>
-  );
+    );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  header: {
-    backgroundColor: '#6366f1',
-    paddingTop: 50,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  userText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  logoutButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
-  mainContent: {
-    padding: 20,
-  },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  pageSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  modeSelector: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    gap: 10,
-  },
-  modeButton: {
-    flex: 1,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  modeButtonActive: {
-    backgroundColor: '#6366f1',
-    borderColor: '#6366f1',
-  },
-  modeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  modeButtonTextActive: {
-    color: '#fff',
-  },
-  contentCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 30,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  resultCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  resultTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 15,
-  },
-  resultContent: {
-    alignItems: 'center',
-  },
-  digitDisplay: {
-    width: 120,
-    height: 120,
-    backgroundColor: '#6366f1',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  resultDigit: {
-    fontSize: 64,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  resultSubtext: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: '#f3f4f6',
+    },
+    header: {
+        backgroundColor: '#6366f1',
+        paddingTop: 50,
+        paddingBottom: 15,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    userText: {
+        color: '#fff',
+        fontSize: 14,
+        maxWidth: 60,
+    },
+    profileButton: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 5
+    },
+    profileIcon: {
+        fontSize: 10,
+    },
+    logoutButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 6,
+    },
+    logoutButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    content: {
+        flex: 1,
+    },
+    mainContent: {
+        padding: 20,
+    },
+    pageTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#1f2937',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    pageSubtitle: {
+        fontSize: 16,
+        color: '#6b7280',
+        textAlign: 'center',
+        marginBottom: 30,
+    },
+    modeSelector: {
+        flexDirection: 'row',
+        marginBottom: 20,
+        gap: 10,
+    },
+    modeButton: {
+        flex: 1,
+        paddingVertical: 15,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        backgroundColor: '#fff',
+        borderWidth: 2,
+        borderColor: '#e5e7eb',
+        alignItems: 'center',
+    },
+    modeButtonActive: {
+        backgroundColor: '#6366f1',
+        borderColor: '#6366f1',
+    },
+    modeButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#6b7280',
+    },
+    modeButtonTextActive: {
+        color: '#fff',
+    },
+    contentCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    loadingContainer: {
+        alignItems: 'center',
+        padding: 30,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginBottom: 20,
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#6b7280',
+    },
+    resultCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    resultTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#1f2937',
+        marginBottom: 15,
+    },
+    resultContent: {
+        alignItems: 'center',
+    },
+    digitDisplay: {
+        width: 120,
+        height: 120,
+        backgroundColor: '#6366f1',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    resultDigit: {
+        fontSize: 64,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    resultSubtext: {
+        fontSize: 14,
+        color: '#6b7280',
+        textAlign: 'center',
+    },
 });
 
 export default MainScreen;

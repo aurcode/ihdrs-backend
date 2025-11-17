@@ -3,19 +3,22 @@ import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import MainScreen from './src/screens/MainScreen';
 
 export default function App() {
-    const [user, setUser] = useState(null);         // null = 未登录
-    const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'login', 'register'
+    const [user, setUser] = useState(null);
+    const [token, setToken] = useState(null);
+    const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'login', 'register', 'profile'
 
     const handleLoginSuccess = (userData) => {
-        setUser(userData);
-        setCurrentScreen('main'); // 登录成功返回主界面
+        setUser(userData.user || userData);
+        setToken(userData.token);
+        setCurrentScreen('main');
     };
 
     const handleRegisterSuccess = () => {
-        setCurrentScreen('login'); // 注册成功跳转到登录页
+        setCurrentScreen('login');
     };
 
     const handleNavigateToLogin = () => {
@@ -26,14 +29,39 @@ export default function App() {
         setCurrentScreen('register');
     };
 
+    const handleNavigateToProfile = () => {
+        setCurrentScreen('profile');
+    };
+
     const handleCancelAuth = () => {
-        setCurrentScreen('main');  // 返回主页面
+        setCurrentScreen('main');
     };
 
     const handleLogout = () => {
-        setUser(null);       // 清空用户
+        setUser(null);
+        setToken(null);
         setCurrentScreen('main');
     };
+
+    const handleProfileUpdated = () => {
+        // Reload user data if needed
+        console.log('Profile updated');
+    };
+
+    // 显示个人中心页面
+    if (currentScreen === 'profile') {
+        return (
+            <View style={styles.container}>
+                <StatusBar style="light" />
+                <ProfileScreen
+                    user={user}
+                    token={token}
+                    onProfileUpdated={handleProfileUpdated}
+                    onCancel={handleCancelAuth}
+                />
+            </View>
+        );
+    }
 
     // 显示注册页面
     if (currentScreen === 'register') {
@@ -72,6 +100,7 @@ export default function App() {
                 onLogout={handleLogout}
                 onLogin={handleNavigateToLogin}
                 onRegister={handleNavigateToRegister}
+                onProfile={handleNavigateToProfile}
             />
         </View>
     );
