@@ -95,6 +95,13 @@ const HistoryScreen = ({ user, token, onCancel }) => {
         loadHistory();
     };
 
+    const BASE_URL = "http://10.0.2.2:8080";
+
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        return BASE_URL + path;
+    };
+
     const handleDeleteRecord = (recordId) => {
         Alert.alert(
             '确认删除',
@@ -293,6 +300,13 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                                 <Text style={styles.deleteButtonText}>删除</Text>
                             </TouchableOpacity>
                         </View>
+                    )}
+                    {record.imagePath && (
+                        <Image
+                            source={{ uri: getImageUrl(record.imagePath) }}
+                            style={styles.historyImage}
+                            resizeMode="contain"
+                        />
                     )}
                 </View>
             </View>
@@ -775,6 +789,14 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
     },
+    historyImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        marginTop: 10,
+        backgroundColor: '#f1f5f9',
+    },
+
     historyItemSelected: {
         backgroundColor: '#eff6ff',
         borderWidth: 2,
