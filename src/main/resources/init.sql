@@ -212,6 +212,10 @@ CREATE TABLE IF NOT EXISTS `training_tasks` (
                                                 KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练任务表';
 
+ALTER TABLE training_tasks
+    ADD COLUMN confusion_matrix TEXT NULL,
+    ADD COLUMN class_names TEXT NULL;
+
 -- 创建反馈数据表
 CREATE TABLE IF NOT EXISTS `feedback_data` (
                                                `feedback_id` bigint NOT NULL AUTO_INCREMENT COMMENT '反馈ID',

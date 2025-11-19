@@ -32,6 +32,10 @@ public class TrainingTaskResponse {
     private String creatorName;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private String confusionMatrixJson;
+    private String classNamesJson;
+    private String trainingConfig;
+    private String datasetConfig;
 
     // 生成的模型信息
     private Long modelId;

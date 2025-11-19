@@ -87,6 +87,12 @@ public class TrainingTask {
     @Column(name = "update_time", nullable = false)
     private LocalDateTime updateTime;
 
+    @Column(name = "confusion_matrix", columnDefinition = "TEXT")
+    private String confusionMatrixJson;
+
+    @Column(name = "class_names", columnDefinition = "TEXT")
+    private String classNamesJson;
+
     // 外键关联
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", insertable = false, updatable = false)
