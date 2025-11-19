@@ -16,39 +16,69 @@ public class StatsRepository {
     private EntityManager entityManager;
 
     public StatsDTO getRecognitionStats(LocalDateTime startTime, LocalDateTime endTime) {
-        String sql = """
-            SELECT 
-                COUNT(*) as total_recognitions,
-                SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as success_recognitions,
-                SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) as failed_recognitions,
-                AVG(processing_time) as avg_processing_time
-            FROM recognition_records 
-            WHERE create_time BETWEEN ?1 AND ?2
-            """;
 
-        Object[] result = (Object[]) entityManager.createNativeQuery(sql)
-                .setParameter(1, startTime)
-                .setParameter(2, endTime)
-                .getSingleResult();
+        StringBuilder sql = new StringBuilder("""
+        SELECT 
+            COUNT(*) AS total_recognitions,
+            SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) AS success_recognitions,
+            SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) AS failed_recognitions,
+            AVG(processing_time) AS avg_processing_time
+        FROM recognition_records
+        """);
+
+        // 动态添加 WHERE 条件
+        if (startTime != null && endTime != null) {
+            sql.append(" WHERE create_time BETWEEN :start AND :end");
+        }
+
+        var query = entityManager.createNativeQuery(sql.toString());
+
+        if (startTime != null && endTime != null) {
+            query.setParameter("start", startTime);
+            query.setParameter("end", endTime);
+        }
+
+        Object[] result = (Object[]) query.getSingleResult();
 
         StatsDTO stats = new StatsDTO();
         stats.setTotalRecognitions(((Number) result[0]).longValue());
-        stats.setSuccessRecognitions(((Number) result[1]).longValue());
-        stats.setFailedRecognitions(((Number) result[2]).longValue());
-        
-        Long total = stats.getTotalRecognitions();
-        if (total > 0) {
-            stats.setSuccessRate(stats.getSuccessRecognitions() * 100.0 / total);
-            stats.setErrorRate(stats.getFailedRecognitions() * 100.0 / total);
-        } else {
-            stats.setSuccessRate(0.0);
-            stats.setErrorRate(0.0);
-        }
-        
+        stats.setSuccessRecognitions(
+                result[1] != null ? ((Number) result[1]).longValue() : 0L
+        );
+        stats.setFailedRecognitions(
+                result[2] != null ? ((Number) result[2]).longValue() : 0L
+        );
+
+        long total = stats.getTotalRecognitions();
+        stats.setSuccessRate(total > 0 ? stats.getSuccessRecognitions() * 100.0 / total : 0.0);
+        stats.setErrorRate(total > 0 ? stats.getFailedRecognitions() * 100.0 / total : 0.0);
+
         stats.setAvgProcessingTime(result[3] != null ? ((Number) result[3]).doubleValue() : 0.0);
         stats.setStatsTime(LocalDateTime.now());
-        
+
         return stats;
+    }
+
+    public Long getUserCount() {
+        String sql = "SELECT COUNT(*) FROM users";
+        Object r = entityManager.createNativeQuery(sql).getSingleResult();
+        return ((Number) r).longValue();
+    }
+
+    public Long getModelCount() {
+        String sql = "SELECT COUNT(*) FROM models";
+        Object r = entityManager.createNativeQuery(sql).getSingleResult();
+        return ((Number) r).longValue();
+    }
+
+    public Long getTodayRecognitions() {
+        String sql = """
+        SELECT COUNT(*) 
+        FROM recognition_records
+        WHERE DATE(create_time) = CURDATE()
+    """;
+        Object r = entityManager.createNativeQuery(sql).getSingleResult();
+        return ((Number) r).longValue();
     }
 
     public List<RecognitionHistoryDTO> getRecentRecognitions(int limit) {

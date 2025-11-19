@@ -6,10 +6,19 @@ import java.time.LocalDateTime;
 @Data
 public class StatsDTO {
     private Long totalRecognitions;
+    private Long todayRecognitions;
+    private Long totalUsers;
+    private Long totalModels;
+
     private Long successRecognitions;
     private Long failedRecognitions;
     private Double successRate;
     private Double errorRate;
     private Double avgProcessingTime;
     private LocalDateTime statsTime;
+
+    private Double recognitionGrowth;
+    private Double userGrowth;
+    private Double modelGrowth;
+    private Double todayGrowth;
 }
