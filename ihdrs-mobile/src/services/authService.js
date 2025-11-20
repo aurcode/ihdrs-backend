@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
+import recognitionService from "./recognitionService";
 
 /**
  * Authentication Service
@@ -34,8 +35,9 @@ class AuthService {
         // Store token for future requests
         const token = response.data.data.token;
         this.setAuthToken(token);
-        
-        return {
+        recognitionService.setAuthToken(token);
+
+          return {
           success: true,
           data: response.data.data,
         };

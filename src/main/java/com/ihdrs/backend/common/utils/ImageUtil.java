@@ -2,18 +2,73 @@
 package com.ihdrs.backend.common.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @Slf4j
 @Component
 public class ImageUtil {
+
+    @Value("${file.upload.path}")
+    private String uploadBasePath;
+
+    /**
+     * 保存识别图片，并返回可访问的相对路径
+     * 在你当前 WebMvcConfig 下，对外访问 URL 为：
+     *   http(s)://<host>:<port>/uploads/recognitions/xxxx.png
+     * 对应 DB 中 image_path 存：/uploads/recognitions/xxxx.png
+     *
+     * @param imageData 图片二进制数据
+     * @param imageHash 图片哈希（用于生成稳定文件名）
+     * @return URL 相对路径，例如：/uploads/recognitions/digit-<hash>.png；失败时返回 null
+     */
+    public String saveRecognitionImage(byte[] imageData, String imageHash) {
+        if (imageData == null || imageData.length == 0) {
+            log.warn("saveRecognitionImage: imageData is empty");
+            return null;
+        }
+
+        try {
+
+            // 物理目录：uploadBasePath + /recognitions
+            // 确保 uploadBasePath 末尾带 /
+            String baseDir = uploadBasePath.endsWith(File.separator)
+                    ? uploadBasePath
+                    : uploadBasePath + File.separator;
+
+            String dirPath = baseDir;
+            Files.createDirectories(Paths.get(dirPath));
+
+            // 使用 hash 生成文件名
+            String safeHash = (imageHash != null && !imageHash.isBlank())
+                    ? imageHash
+                    : String.valueOf(System.currentTimeMillis());
+
+            String fileName = "digit-" + safeHash + ".png";
+
+            String filePath = dirPath + File.separator + fileName;
+
+            try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                fos.write(imageData);
+            }
+
+            String urlPath = "/api/uploads/" + fileName;
+
+            log.info("Recognition image saved: physicalPath={}, urlPath={}", filePath, urlPath);
+
+            return urlPath;
+        } catch (IOException e) {
+            log.error("Failed to save recognition image", e);
+            return null;
+        }
+    }
 
     /**
      * 调整图像大小到28x28像素（MNIST标准）

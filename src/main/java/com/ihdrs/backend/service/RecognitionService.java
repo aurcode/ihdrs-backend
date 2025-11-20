@@ -82,7 +82,7 @@ public class RecognitionService {
 
                 // 保存识别记录（即使是缓存结果）
                 saveRecognitionRecord(userId, activeModel.getModelId(), cachedResult,
-                        imageData, imageHash, request, (int)(System.currentTimeMillis() - startTime));
+                        imageData, imageHash, request, (int) (System.currentTimeMillis() - startTime));
 
                 return Result.success(cachedResult);
             }
@@ -99,6 +99,20 @@ public class RecognitionService {
             Double confidenceValue = (Double) recognitionResult.get("confidence");
             BigDecimal confidence = BigDecimal.valueOf(confidenceValue);
 
+            // 提取 all_probabilities
+            @SuppressWarnings("unchecked")
+            List<Double> probabilities =
+                    (List<Double>) recognitionResult.getOrDefault("all_probabilities", List.of());
+
+            //构建 digit -> prob 的 map
+            Map<Integer, Double> probabilitiesMap = null;
+            if (probabilities != null && !probabilities.isEmpty()) {
+                probabilitiesMap = new java.util.HashMap<>();
+                for (int i = 0; i < probabilities.size(); i++) {
+                    probabilitiesMap.put(i, probabilities.get(i));
+                }
+            }
+
             int processingTime = (int) (System.currentTimeMillis() - startTime);
 
             // 判断是否需要重写（置信度低）
@@ -114,6 +128,8 @@ public class RecognitionService {
                     .processingTime(processingTime)
                     .message(message)
                     .needRewrite(needRewrite)
+                    .probabilities(probabilities)
+                    .probabilitiesMap(probabilitiesMap)
                     .build();
 
             // 7. 保存识别记录
@@ -188,14 +204,18 @@ public class RecognitionService {
         record.setModelId(modelId);
         record.setRecognitionResult(response.getRecognitionResult());
         record.setConfidence(response.getConfidence());
-        record.setImageData(imageData);
         record.setImageHash(imageHash);
         record.setInputType(RecognitionRecord.InputType.valueOf(request.getInputType()));
         record.setProcessingTime(processingTime);
         record.setSessionId(request.getSessionId());
         record.setClientInfo(request.getClientInfo());
-
-        return recordRepository.save(record);
+        String imagePath = imageUtil.saveRecognitionImage(imageData, imageHash);
+        record.setImagePath(imagePath);
+        record.setImageData(null);
+        RecognitionRecord saved = recordRepository.save(record);
+        response.setImagePath(imagePath);
+        response.setRecordId(saved.getRecordId());
+        return saved;
     }
 
     /**
@@ -227,7 +247,7 @@ public class RecognitionService {
                             .userId(record.getUserId())
                             .modelId(record.getModelId());
 
-                    // 新增:查询模型信息
+                    // 查询模型信息
                     if (record.getModelId() != null) {
                         modelRepository.findById(record.getModelId())
                                 .ifPresent(model -> {

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
     View,
     Text,
@@ -13,6 +13,7 @@ import ImagePickerComponent from '../components/ImagePickerComponent';
 import RecognitionHistory from '../components/RecognitionHistory';
 import recognitionService from '../services/recognitionService';
 import authService from '../services/authService';
+import { v4 as uuidv4 } from 'uuid';
 
 const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback}) => {
     const [mode, setMode] = useState('draw'); // 'draw' or 'upload'
@@ -20,6 +21,10 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
     const [menuVisible, setMenuVisible] = useState(false);
+    const sessionId = useMemo(
+        () => `mobile-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        []
+    );
 
     // **FIX 1: Add state to control the ScrollView**
     const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -29,50 +34,52 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
      * @param {string} base64Image - The base64 encoded image string.
      */
     const handleRecognition = async (base64Image) => {
-        if (!base64Image) {
-            Alert.alert('Error', 'No image data received.');
-            return;
-        }
-
-        setLoading(true);
-        setResult(null);
-
-        try {
-            const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
-            const response = await recognitionService.recognizeDigit(
-                base64Image,
-                inputType,
-                null,
-                {
-                    platform: 'mobile',
-                    appVersion: '1.0.0',
-                }
-            );
-
-            if (response.success) {
-                const recognitionData = response.data.data;
-                setResult(recognitionData);
-
-                // Add to history
-                const historyItem = {
-                    id: Date.now(),
-                    digit: recognitionData.predictedDigit,
-                    confidence: recognitionData.confidence,
-                    probabilities: recognitionData.probabilities,
-                    timestamp: new Date().toLocaleTimeString(),
-                    inputType: inputType,
-                };
-                setHistory([historyItem, ...history]);
-            } else {
-                Alert.alert('Error', response.error || 'Recognition failed');
+            if (!base64Image) {
+                Alert.alert('Error', 'No image data received.');
+                return;
             }
-        } catch (error) {
-            console.error('Recognition error:', error);
-            Alert.alert('Error', 'Failed to recognize digit. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+
+            setLoading(true);
+            setResult(null);
+
+            try {
+                const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
+                const response = await recognitionService.recognizeDigit(
+                    base64Image,
+                    inputType,
+                    sessionId,
+                    null,
+                    {
+                        platform: 'mobile',
+                        appVersion: '1.0.0',
+                    }
+                );
+
+                if (response.success) {
+                    // 新的 recognitionService 已经把 Java 后端 data 展平了
+                    const recognitionData = response.data;
+
+                    setResult(recognitionData);
+
+                    const historyItem = {
+                        id: Date.now(),
+                        digit: recognitionData.predictedDigit,
+                        confidence: recognitionData.confidence,
+                        probabilities: recognitionData.probabilities || null,
+                        timestamp: new Date().toLocaleTimeString(),
+                        inputType: inputType,
+                    };
+                    setHistory([historyItem, ...history]);
+                } else {
+                    Alert.alert('Error', response.error || 'Recognition failed');
+                }
+            } catch (error) {
+                console.error('Recognition error:', error);
+                Alert.alert('Error', 'Failed to recognize digit. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        };
 
     const handleLogout = () => {
         Alert.alert(

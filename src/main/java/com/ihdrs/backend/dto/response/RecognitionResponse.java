@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -26,6 +28,8 @@ public class RecognitionResponse {
     private String imagePath;
     private String inputType;
     private Boolean isCorrect;
+    private List<Double> probabilities;      // 0-9 每一类概率
+    private Map<Integer, Double> probabilitiesMap; // 可选：digit -> probability
 
     // 模型信息字段
     private Long modelId;
