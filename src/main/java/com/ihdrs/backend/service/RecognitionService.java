@@ -171,14 +171,32 @@ public class RecognitionService {
         ResponseEntity<Map> resp = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), Map.class);
 
         Map data = (Map) resp.getBody().get("data");
+        
+        // 计算序列和平均置信度
+        List<Map<String, Object>> results = (List<Map<String, Object>>) data.get("results");
+        String sequence = results.stream()
+                .map(r -> String.valueOf(r.get("digit")))
+                .collect(Collectors.joining(""));
+        
+        double avgConfidence = results.stream()
+                .mapToDouble(r -> (Double) r.get("confidence"))
+                .average()
+                .orElse(0.0);
+        
+        boolean needRewrite = avgConfidence < Constants.MIN_CONFIDENCE_THRESHOLD;
+        String message = needRewrite ? "识别置信度较低，建议重新书写" : "识别成功";
 
         RecognitionMultiResponse r = RecognitionMultiResponse.builder()
+                .sequence(sequence)
                 .count((Integer) data.get("count"))
                 .processingTime((Integer) data.get("processing_time"))
-                .results((List<Map<String, Object>>) data.get("results"))
+                .results(results)
+                .message(message)
+                .needRewrite(needRewrite)
                 .build();
-        System.out.println(r);
-        saveSequenceRecord(userId, activeModel.getModelId(), request, r, imageData);
+        
+        RecognitionRecord record = saveSequenceRecord(userId, activeModel.getModelId(), request, r, imageData);
+        r.setRecordId(record.getRecordId());
 
         return Result.success(r);
     }

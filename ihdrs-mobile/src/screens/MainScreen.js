@@ -71,13 +71,18 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                 setResult(response.data);
 
                 if (mode === 'multi') {
-                    const seq = response.data.results.map(r => r.digit).join('');
+                    // 使用后端返回的 sequence 字段
+                    const sequence = response.data.sequence || 
+                                    response.data.results.map(r => r.digit).join('');
 
                     const historyItem = {
                         id: Date.now(),
                         type: "MULTI",
-                        sequence: seq,
-                        details: response.data.results,
+                        sequence: sequence,
+                        details: response.data.results.map(r => ({
+                            digit: r.digit,
+                            confidence: r.confidence,
+                        })),
                         timestamp: new Date().toLocaleTimeString(),
                     };
 
@@ -235,18 +240,33 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         <View style={styles.resultCard}>
                             <Text style={styles.resultTitle}>Recognition Result</Text>
 
-                            {/* Multi-digit UI */}
                             {mode === 'multi' ? (
                                 <View style={styles.resultContent}>
-                                    <Text style={styles.resultDigit}>
-                                        {result?.results?.map(r => r.digit).join('') || ''}
+                                    {/* 显示完整序列 */}
+                                    <Text style={styles.resultSequence}>
+                                        {result.sequence || result.results?.map(r => r.digit).join('') || ''}
                                     </Text>
                                     <Text style={styles.resultSubtext}>
-                                        (Multi-digit Sequence)
+                                        {result.count} 个数字 | 平均置信度: {
+                                            result.results 
+                                                ? (result.results.reduce((sum, r) => sum + r.confidence, 0) / result.results.length * 100).toFixed(1)
+                                                : '0'
+                                        }%
                                     </Text>
+                                    
+                                    {/* 显示每个数字的详情 */}
+                                    <View style={styles.multiResultDetails}>
+                                        {result.results?.map((r, idx) => (
+                                            <View key={idx} style={styles.digitResultCard}>
+                                                <Text style={styles.digitResultNumber}>{r.digit}</Text>
+                                                <Text style={styles.digitResultConf}>
+                                                    {(r.confidence * 100).toFixed(1)}%
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
                                 </View>
                             ) : (
-                                /* Single digit UI */
                                 <View style={styles.resultContent}>
                                     <View style={styles.digitDisplay}>
                                         <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
@@ -489,6 +509,39 @@ const styles = StyleSheet.create({
         fontSize: 64,
         fontWeight: 'bold',
         color: '#fff',
+    },
+    resultSequence: {
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: '#6366f1',
+        letterSpacing: 4,
+        marginBottom: 10,
+    },
+    multiResultDetails: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        marginTop: 15,
+        gap: 10,
+    },
+    digitResultCard: {
+        backgroundColor: '#f3f4f6',
+        borderRadius: 8,
+        padding: 12,
+        minWidth: 60,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#6366f1',
+    },
+    digitResultNumber: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#1f2937',
+    },
+    digitResultConf: {
+        fontSize: 12,
+        color: '#10b981',
+        marginTop: 4,
     },
     resultSubtext: {
         fontSize: 14,
