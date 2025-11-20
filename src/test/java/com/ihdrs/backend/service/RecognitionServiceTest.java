@@ -125,4 +125,35 @@ class RecognitionServiceTest {
             }
         });
     }
+
+    @Test
+    void testMultiDigitRecognitionResponseFields() {
+        // 创建测试用的RecognitionMultiResponse
+        com.ihdrs.backend.dto.response.RecognitionMultiResponse response = 
+            com.ihdrs.backend.dto.response.RecognitionMultiResponse.builder()
+                .recordId(1L)
+                .sequence("12345")
+                .count(5)
+                .processingTime(150)
+                .results(new java.util.ArrayList<>())
+                .message("识别成功")
+                .needRewrite(false)
+                .build();
+
+        // 验证所有新增字段
+        assertNotNull(response.getRecordId(), "recordId should not be null");
+        assertEquals(1L, response.getRecordId(), "recordId should be 1");
+        
+        assertNotNull(response.getSequence(), "sequence should not be null");
+        assertEquals("12345", response.getSequence(), "sequence should be '12345'");
+        
+        assertNotNull(response.getMessage(), "message should not be null");
+        assertEquals("识别成功", response.getMessage(), "message should be '识别成功'");
+        
+        assertNotNull(response.getNeedRewrite(), "needRewrite should not be null");
+        assertFalse(response.getNeedRewrite(), "needRewrite should be false for high confidence");
+        
+        assertEquals(5, response.getCount(), "count should be 5");
+        assertEquals(150, response.getProcessingTime(), "processing time should be 150");
+    }
 }
