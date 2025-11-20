@@ -12,11 +12,9 @@ import DrawingCanvas from '../components/DrawingCanvas';
 import ImagePickerComponent from '../components/ImagePickerComponent';
 import RecognitionHistory from '../components/RecognitionHistory';
 import recognitionService from '../services/recognitionService';
-import authService from '../services/authService';
-import { v4 as uuidv4 } from 'uuid';
 
 const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback}) => {
-    const [mode, setMode] = useState('draw'); // 'draw' or 'upload'
+    const [mode, setMode] = useState('draw'); // draw | upload | multi
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
@@ -34,33 +32,59 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
      * @param {string} base64Image - The base64 encoded image string.
      */
     const handleRecognition = async (base64Image) => {
-            if (!base64Image) {
-                Alert.alert('Error', 'No image data received.');
-                return;
-            }
+        if (!base64Image) {
+            Alert.alert('Error', 'No image data received.');
+            return;
+        }
 
-            setLoading(true);
-            setResult(null);
+        setLoading(true);
+        setResult(null);
 
-            try {
-                const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
-                const response = await recognitionService.recognizeDigit(
+        try {
+            const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
+
+            let response;
+
+            if (mode === 'multi') {
+                response = await recognitionService.recognizeMulti(
                     base64Image,
                     inputType,
                     sessionId,
-                    null,
                     {
                         platform: 'mobile',
                         appVersion: '1.0.0',
                     }
                 );
+            } else {
+                response = await recognitionService.recognizeDigit(
+                    base64Image,
+                    inputType,
+                    sessionId,
+                    {
+                        platform: 'mobile',
+                        appVersion: '1.0.0',
+                    }
+                );
+            }
 
-                if (response.success) {
-                    // 新的 recognitionService 已经把 Java 后端 data 展平了
+            if (response.success) {
+                setResult(response.data);
+
+                if (mode === 'multi') {
+                    const seq = response.data.results.map(r => r.digit).join('');
+
+                    const historyItem = {
+                        id: Date.now(),
+                        type: "MULTI",
+                        sequence: seq,
+                        details: response.data.results,
+                        timestamp: new Date().toLocaleTimeString(),
+                    };
+
+                    setHistory([historyItem, ...history]);
+
+                } else {
                     const recognitionData = response.data;
-
-                    setResult(recognitionData);
-
                     const historyItem = {
                         id: Date.now(),
                         digit: recognitionData.predictedDigit,
@@ -70,33 +94,16 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         inputType: inputType,
                     };
                     setHistory([historyItem, ...history]);
-                } else {
-                    Alert.alert('Error', response.error || 'Recognition failed');
                 }
-            } catch (error) {
-                console.error('Recognition error:', error);
-                Alert.alert('Error', 'Failed to recognize digit. Please try again.');
-            } finally {
-                setLoading(false);
+            } else {
+                Alert.alert('Error', response.error || 'Recognition failed');
             }
-        };
-
-    const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                {text: 'Cancel', style: 'cancel'},
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: () => {
-                        // authService.logout(); // Assuming this exists
-                        onLogout();
-                    },
-                },
-            ]
-        );
+        } catch (error) {
+            console.error('Recognition error:', error);
+            Alert.alert('Error', 'Failed to recognize digit. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -170,7 +177,15 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('draw')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'draw' && styles.modeButtonTextActive]}>
-                                ✏️ Draw
+                                Draw
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.modeButton, mode === 'multi' && styles.modeButtonActive]}
+                            onPress={() => setMode('multi')}
+                        >
+                            <Text style={[styles.modeButtonText, mode === 'multi' && styles.modeButtonTextActive]}>
+                                Multi-digit
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -178,7 +193,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('upload')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'upload' && styles.modeButtonTextActive]}>
-                                📁 Upload Image
+                                Upload Image
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -190,7 +205,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         // When a touch starts *inside this View*...
                         onTouchStart={() => {
                             // ...and we are in 'draw' mode, disable scrolling.
-                            if (mode === 'draw') {
+                            if (mode === 'draw' || mode === 'multi') {
                                 setScrollEnabled(false);
                             }
                         }}
@@ -200,10 +215,10 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             setScrollEnabled(true);
                         }}
                     >
-                        {mode === 'draw' ? (
-                            <DrawingCanvas onDrawingComplete={handleRecognition}/>
+                        {mode === 'draw' || mode === 'multi' ? (
+                            <DrawingCanvas onDrawingComplete={handleRecognition} />
                         ) : (
-                            <ImagePickerComponent onImageSelected={handleRecognition}/>
+                            <ImagePickerComponent onImageSelected={handleRecognition} />
                         )}
                     </View>
 
@@ -219,14 +234,28 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     {result && !loading && (
                         <View style={styles.resultCard}>
                             <Text style={styles.resultTitle}>Recognition Result</Text>
-                            <View style={styles.resultContent}>
-                                <View style={styles.digitDisplay}>
-                                    <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
+
+                            {/* Multi-digit UI */}
+                            {mode === 'multi' ? (
+                                <View style={styles.resultContent}>
+                                    <Text style={styles.resultDigit}>
+                                        {result?.results?.map(r => r.digit).join('') || ''}
+                                    </Text>
+                                    <Text style={styles.resultSubtext}>
+                                        (Multi-digit Sequence)
+                                    </Text>
                                 </View>
-                                <Text style={styles.resultSubtext}>
-                                    Confidence: {(result.confidence * 100).toFixed(1)}%
-                                </Text>
-                            </View>
+                            ) : (
+                                /* Single digit UI */
+                                <View style={styles.resultContent}>
+                                    <View style={styles.digitDisplay}>
+                                        <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
+                                    </View>
+                                    <Text style={styles.resultSubtext}>
+                                        Confidence: {(result.confidence * 100).toFixed(1)}%
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                     )}
 
@@ -397,7 +426,7 @@ const styles = StyleSheet.create({
         borderColor: '#6366f1',
     },
     modeButtonText: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
         color: '#6b7280',
     },

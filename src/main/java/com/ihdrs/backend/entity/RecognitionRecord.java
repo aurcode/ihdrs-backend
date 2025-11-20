@@ -44,6 +44,9 @@ public class RecognitionRecord {
     @Column(name = "image_data")
     private byte[] imageData;
 
+    @Column(name = "sequence_result", length = 500)
+    private String sequenceResult;
+
     @Column(name = "image_path", length = 500)
     private String imagePath;
 
@@ -80,6 +83,6 @@ public class RecognitionRecord {
     private Model model;
 
     public enum InputType {
-        CANVAS, UPLOAD, CAMERA
+        CANVAS, UPLOAD, MULTI, CAMERA
     }
 }

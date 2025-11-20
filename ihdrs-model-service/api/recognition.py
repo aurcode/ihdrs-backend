@@ -95,3 +95,41 @@ def recognize():
             'message': '识别服务异常',
             'error': str(e)
         }), 500
+
+@recognition_bp.route('/recognize_multi', methods=['POST'])
+def recognize_multi():
+    start = time.time()
+
+    data = request.get_json()
+    image_base64 = data.get("image")
+    model_id = data.get("model_id", 1)
+
+    # 1. 解码
+    image_bytes = base64.b64decode(image_base64)
+
+    # 2. 分割多个数字
+    processor = ImageProcessor()
+    digits = processor.segment_digits(image_bytes)
+    current_app.logger.info(f"分割数量: {len(digits)}")
+    if not digits:
+        return jsonify({"status": "error", "message": "无法分割数字"}), 400
+
+    model_service = current_app.model_service
+
+    results = []
+    for digit_img in digits:
+        pred = model_service.predict(digit_img, model_id)
+        results.append({
+            "digit": int(pred['digit']),
+            "confidence": float(pred['confidence']),
+            "all_probabilities": pred.get('all_probabilities', [])
+        })
+
+    return jsonify({
+        "status": "success",
+        "data": {
+            "count": len(results),
+            "results": results,
+            "processing_time": int((time.time() - start) * 1000)
+        }
+    })

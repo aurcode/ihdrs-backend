@@ -29,7 +29,7 @@ class RecognitionService {
         inputType = 'CANVAS',
         sessionId = null,
         clientInfo = null
-    ) {
+        , p) {
         try {
             const requestBody = {
                 imageData: base64Image,
@@ -79,6 +79,31 @@ class RecognitionService {
             };
         }
     }
+
+    async recognizeMulti(base64Image,
+                         inputType = 'CANVAS',
+                         sessionId = null,
+                         clientInfo = null) {
+        const body = {
+            imageData: base64Image,
+            inputType: inputType,
+            sessionId: sessionId,
+            clientInfo: clientInfo ? JSON.stringify(clientInfo) : null,
+        };
+
+        const response = await this.backendApi.post(
+            '/recognition/recognize_multi',
+            body
+        );
+
+        if (response.data.code === 200) {
+            return {
+                success: true,
+                data: response.data.data,
+            };
+        }
+    }
+
 
     /**
      * 设置认证 token，给 Java 后端用

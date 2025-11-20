@@ -182,7 +182,7 @@ class ImageProcessor:
                 x, y, w, h = cv2.boundingRect(contour)
 
                 # 过滤太小的轮廓
-                if w < 10 or h < 10:
+                if w < 3 or h < 3:
                     continue
 
                 # 提取数字区域
