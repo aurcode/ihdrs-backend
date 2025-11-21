@@ -8,7 +8,9 @@
         <el-card class="stat-card primary">
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon :size="32"><DataAnalysis /></el-icon>
+              <el-icon :size="32">
+                <DataAnalysis/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ statistics.totalTasks || 0 }}</div>
@@ -22,7 +24,9 @@
         <el-card class="stat-card success">
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon :size="32"><CircleCheck /></el-icon>
+              <el-icon :size="32">
+                <CircleCheck/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ statistics.completedTasks || 0 }}</div>
@@ -36,7 +40,9 @@
         <el-card class="stat-card warning">
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon :size="32"><Loading /></el-icon>
+              <el-icon :size="32">
+                <Loading/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ statistics.runningTasks || 0 }}</div>
@@ -50,7 +56,9 @@
         <el-card class="stat-card info">
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon :size="32"><TrendCharts /></el-icon>
+              <el-icon :size="32">
+                <TrendCharts/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ (statistics.avgAccuracy * 100).toFixed(2) }}%</div>
@@ -73,18 +81,20 @@
               @keyup.enter="handleSearch"
           >
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search/>
+              </el-icon>
             </template>
           </el-input>
         </el-form-item>
 
         <el-form-item label="状态">
           <el-select v-model="filterForm.status" placeholder="请选择状态" clearable style="width: 150px">
-            <el-option label="等待中" value="PENDING" />
-            <el-option label="训练中" value="RUNNING" />
-            <el-option label="已完成" value="COMPLETED" />
-            <el-option label="已失败" value="FAILED" />
-            <el-option label="已取消" value="CANCELLED" />
+            <el-option label="等待中" value="PENDING"/>
+            <el-option label="训练中" value="RUNNING"/>
+            <el-option label="已完成" value="COMPLETED"/>
+            <el-option label="已失败" value="FAILED"/>
+            <el-option label="已取消" value="CANCELLED"/>
           </el-select>
         </el-form-item>
 
@@ -103,8 +113,10 @@
           :data="taskList"
           stripe
           style="width: 100%"
+          @row-click="handleRowClick"
+          :row-class-name="tableRowClassName"
       >
-        <el-table-column prop="taskName" label="任务名称" min-width="150" />
+        <el-table-column prop="taskName" label="任务名称" min-width="150"/>
 
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
@@ -149,8 +161,10 @@
 
         <el-table-column label="操作" fixed="right" width="250">
           <template #default="{ row }">
-            <el-button size="small" type="primary" link @click="viewDetail(row)">
-              <el-icon><View /></el-icon>
+            <el-button size="small" type="primary" link @click.stop="viewDetail(row)">
+              <el-icon>
+                <View/>
+              </el-icon>
               详情
             </el-button>
 
@@ -159,9 +173,11 @@
                 size="small"
                 type="warning"
                 link
-                @click="handleCancelTask(row)"
+                @click.stop="handleCancelTask(row)"
             >
-              <el-icon><VideoPause /></el-icon>
+              <el-icon>
+                <VideoPause/>
+              </el-icon>
               取消
             </el-button>
 
@@ -170,10 +186,12 @@
                 size="small"
                 type="success"
                 link
-                @click="viewLogs(row)"
+                @click.stop="openLogsDialog(row)"
             >
-              <el-icon><Document /></el-icon>
-              日志
+              <el-icon>
+                <Document/>
+              </el-icon>
+              日志弹窗
             </el-button>
           </template>
         </el-table-column>
@@ -193,6 +211,93 @@
       </div>
     </el-card>
 
+    <!-- 选中任务的训练视图（直接展示在页面中） -->
+    <el-card v-if="selectedTask" class="selected-task-card" shadow="never">
+      <div class="selected-task-header">
+        <div>
+          <h3>当前选中任务：{{ selectedTask.taskName }}</h3>
+          <div class="selected-task-meta">
+            <span>状态：<el-tag :type="getStatusType(selectedTask.status)">{{
+                getStatusText(selectedTask.status)
+              }}</el-tag></span>
+            <span>进度：{{
+                (selectedTask.progress || 0).toFixed ? selectedTask.progress.toFixed(2) : selectedTask.progress || 0
+              }}%</span>
+            <span>Epoch：{{ selectedTask.currentEpoch || 0 }}/{{ selectedTask.totalEpochs }}</span>
+            <span>最佳准确率：{{
+                selectedTask.bestAccuracy ? (selectedTask.bestAccuracy * 100).toFixed(2) + '%' : '-'
+              }}</span>
+            <span>最终准确率：{{
+                selectedTask.finalAccuracy ? (selectedTask.finalAccuracy * 100).toFixed(2) + '%' : '-'
+              }}</span>
+            <span>最终损失：{{ selectedTask.finalLoss ? selectedTask.finalLoss.toFixed(6) : '-' }}</span>
+          </div>
+        </div>
+        <div class="selected-task-time">
+          <div>开始时间：{{ formatDate(selectedTask.startTime) }}</div>
+          <div>结束时间：{{ formatDate(selectedTask.endTime) }}</div>
+        </div>
+      </div>
+
+      <div class="charts-container" v-loading="inlineLogsLoading">
+        <div v-if="!logsDialog.logs.length" class="no-logs-tip">
+          暂无训练日志，请等待训练过程中产生日志。
+        </div>
+        <template v-else>
+          <!-- 上方增加一些汇总信息 -->
+          <div class="logs-summary">
+            <span>最新 Epoch：{{ latestLog?.epoch ?? '-' }}</span>
+            <span>最新 Step：{{ latestLog?.step ?? '-' }}</span>
+            <span>当前学习率：{{ latestLog?.learningRate ?? '-' }}</span>
+            <span>Batch Size：{{ latestLog?.batchSize ?? '-' }}</span>
+            <span>最近日志时间：{{ latestLog ? formatDate(latestLog.timestamp) : '-' }}</span>
+          </div>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <div class="chart-item">
+                <h4>准确率曲线</h4>
+                <v-chart :option="accuracyChartOption" autoresize style="height: 300px"/>
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div class="chart-item">
+                <h4>损失曲线</h4>
+                <v-chart :option="lossChartOption" autoresize style="height: 300px"/>
+              </div>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20" style="margin-top: 10px" v-if="logsDialog.logs.length">
+            <el-col :span="24">
+              <div class="chart-item">
+                <h4>学习率曲线</h4>
+                <v-chart :option="lrChartOption" autoresize style="height: 260px"/>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="chart-item">
+                <h4>准确率差（过拟合观察）</h4>
+                <v-chart :option="gapAccChartOption" autoresize style="height: 260px"/>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="chart-item">
+                <h4>每个 Epoch 时长</h4>
+                <v-chart :option="epochDurationChartOption" autoresize style="height: 260px"/>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <!-- 混淆矩阵区域 -->
+              <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
+                <h4>混淆矩阵</h4>
+                <v-chart :option="confusionMatrixOption" autoresize style="height: 400px"/>
+              </div>
+            </el-col>
+          </el-row>
+        </template>
+      </div>
+    </el-card>
+
     <!-- 创建训练任务对话框 -->
     <el-dialog
         v-model="createDialog.visible"
@@ -207,7 +312,7 @@
           label-width="120px"
       >
         <el-form-item label="任务名称" prop="taskName">
-          <el-input v-model="createDialog.form.taskName" placeholder="请输入任务名称" />
+          <el-input v-model="createDialog.form.taskName" placeholder="请输入任务名称"/>
         </el-form-item>
 
         <el-form-item label="数据集" prop="datasetId">
@@ -223,8 +328,8 @@
 
         <el-form-item label="模型类型" prop="modelType">
           <el-select v-model="createDialog.form.modelType" placeholder="请选择模型类型">
-            <el-option label="CNN" value="CNN" />
-            <el-option label="Advanced CNN" value="ADVANCED_CNN" />
+            <el-option label="CNN" value="CNN"/>
+            <el-option label="Advanced CNN" value="ADVANCED_CNN"/>
           </el-select>
         </el-form-item>
 
@@ -239,50 +344,50 @@
 
         <el-form-item label="批次大小" prop="batchSize">
           <el-select v-model="createDialog.form.batchSize" placeholder="请选择批次大小">
-            <el-option label="16" :value="16" />
-            <el-option label="32" :value="32" />
-            <el-option label="64" :value="64" />
-            <el-option label="128" :value="128" />
+            <el-option label="16" :value="16"/>
+            <el-option label="32" :value="32"/>
+            <el-option label="64" :value="64"/>
+            <el-option label="128" :value="128"/>
           </el-select>
         </el-form-item>
 
         <el-form-item label="学习率" prop="learningRate">
           <el-select v-model="createDialog.form.learningRate" placeholder="请选择学习率">
-            <el-option label="0.0001" value="0.0001" />
-            <el-option label="0.001" value="0.001" />
-            <el-option label="0.01" value="0.01" />
+            <el-option label="0.0001" value="0.0001"/>
+            <el-option label="0.001" value="0.001"/>
+            <el-option label="0.01" value="0.01"/>
           </el-select>
         </el-form-item>
 
         <el-form-item label="优化器" prop="optimizer">
           <el-select v-model="createDialog.form.optimizer" placeholder="请选择优化器">
-            <el-option label="Adam" value="adam" />
-            <el-option label="SGD" value="sgd" />
-            <el-option label="RMSprop" value="rmsprop" />
+            <el-option label="Adam" value="adam"/>
+            <el-option label="SGD" value="sgd"/>
+            <el-option label="RMSprop" value="rmsprop"/>
           </el-select>
         </el-form-item>
 
         <el-form-item label="损失函数" prop="lossFunction">
           <el-select v-model="createDialog.form.lossFunction" placeholder="请选择损失函数">
-            <el-option label="Categorical Crossentropy" value="categorical_crossentropy" />
-            <el-option label="Sparse Categorical Crossentropy" value="sparse_categorical_crossentropy" />
+            <el-option label="Categorical Crossentropy" value="categorical_crossentropy"/>
+            <el-option label="Sparse Categorical Crossentropy" value="sparse_categorical_crossentropy"/>
           </el-select>
         </el-form-item>
 
         <el-form-item label="激活函数" prop="activation">
           <el-select v-model="createDialog.form.activation" placeholder="请选择激活函数">
-            <el-option label="ReLU" value="relu" />
-            <el-option label="Sigmoid" value="sigmoid" />
-            <el-option label="Tanh" value="tanh" />
+            <el-option label="ReLU" value="relu"/>
+            <el-option label="Sigmoid" value="sigmoid"/>
+            <el-option label="Tanh" value="tanh"/>
           </el-select>
         </el-form-item>
 
         <el-form-item label="Dropout率" prop="dropout">
           <el-select v-model="createDialog.form.dropout" placeholder="请选择Dropout率">
-            <el-option label="0.0" value="0.0" />
-            <el-option label="0.2" value="0.2" />
-            <el-option label="0.3" value="0.3" />
-            <el-option label="0.5" value="0.5" />
+            <el-option label="0.0" value="0.0"/>
+            <el-option label="0.2" value="0.2"/>
+            <el-option label="0.3" value="0.3"/>
+            <el-option label="0.5" value="0.5"/>
           </el-select>
         </el-form-item>
 
@@ -298,14 +403,14 @@
 
         <el-form-item label="验证集比例" prop="validationSplit">
           <el-select v-model="createDialog.form.validationSplit" placeholder="请选择验证集比例">
-            <el-option label="10%" value="0.1" />
-            <el-option label="15%" value="0.15" />
-            <el-option label="20%" value="0.2" />
+            <el-option label="10%" value="0.1"/>
+            <el-option label="15%" value="0.15"/>
+            <el-option label="20%" value="0.2"/>
           </el-select>
         </el-form-item>
 
         <el-form-item label="数据增强" prop="useAugmentation">
-          <el-switch v-model="createDialog.form.useAugmentation" />
+          <el-switch v-model="createDialog.form.useAugmentation"/>
         </el-form-item>
       </el-form>
 
@@ -323,7 +428,7 @@
     <el-dialog
         v-model="detailDialog.visible"
         title="训练任务详情"
-        width="900px"
+        width="1100px"
         :close-on-click-modal="false"
     >
       <el-descriptions :column="2" border v-if="detailDialog.task">
@@ -333,6 +438,38 @@
 
         <el-descriptions-item label="任务名称">
           {{ detailDialog.task.taskName }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="模型类型">
+          {{ detailDialog.task.trainingConfigParsed.modeltype }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="训练轮数">
+          {{ detailDialog.task.trainingConfigParsed.epochs }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="批次大小">
+          {{ detailDialog.task.trainingConfigParsed.batchsize }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="学习率">
+          {{ detailDialog.task.trainingConfigParsed.learningrate }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="优化器">
+          {{ detailDialog.task.trainingConfigParsed.optimizer }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="激活函数">
+          {{ detailDialog.task.trainingConfigParsed.activation }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="Dropout">
+          {{ detailDialog.task.trainingConfigParsed.dropout }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="数据增强">
+          {{ detailDialog.task.trainingConfigParsed.useAugmentation ? '是' : '否' }}
         </el-descriptions-item>
 
         <el-descriptions-item label="状态">
@@ -382,6 +519,12 @@
         </el-descriptions-item>
       </el-descriptions>
 
+      <!-- 混淆矩阵区域 -->
+      <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
+        <h4>混淆矩阵</h4>
+        <v-chart :option="confusionMatrixOption" autoresize style="height: 400px"/>
+      </div>
+
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="detailDialog.visible = false">关闭</el-button>
@@ -397,17 +540,48 @@
         :close-on-click-modal="false"
     >
       <div class="charts-container" v-loading="logsDialog.loading">
-        <!-- 准确率曲线 -->
-        <div class="chart-item">
-          <h4>准确率曲线</h4>
-          <v-chart :option="accuracyChartOption" autoresize style="height: 300px" />
+        <div v-if="!logsDialog.logs.length" class="no-logs-tip">
+          暂无训练日志。
         </div>
+        <template v-else>
+          <div class="logs-summary">
+            <span>最新 Epoch：{{ latestLog?.epoch ?? '-' }}</span>
+            <span>最新 Step：{{ latestLog?.step ?? '-' }}</span>
+            <span>当前学习率：{{ latestLog?.learningRate ?? '-' }}</span>
+            <span>Batch Size：{{ latestLog?.batchSize ?? '-' }}</span>
+            <span>最近日志时间：{{ latestLog ? formatDate(latestLog.timestamp) : '-' }}</span>
+          </div>
 
-        <!-- 损失曲线 -->
-        <div class="chart-item">
-          <h4>损失曲线</h4>
-          <v-chart :option="lossChartOption" autoresize style="height: 300px" />
-        </div>
+          <div class="chart-item">
+            <h4>准确率曲线</h4>
+            <v-chart :option="accuracyChartOption" autoresize style="height: 300px"/>
+          </div>
+
+          <div class="chart-item">
+            <h4>损失曲线</h4>
+            <v-chart :option="lossChartOption" autoresize style="height: 300px"/>
+          </div>
+
+          <div class="chart-item">
+            <h4>学习率曲线</h4>
+            <v-chart :option="lrChartOption" autoresize style="height: 300px"/>
+          </div>
+
+          <div class="chart-item">
+            <h4>准确率差（过拟合观察）</h4>
+            <v-chart :option="gapAccChartOption" autoresize style="height: 300px"/>
+          </div>
+
+          <div class="chart-item">
+            <h4>每个 Epoch 时长</h4>
+            <v-chart :option="epochDurationChartOption" autoresize style="height: 300px"/>
+          </div>
+
+          <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
+            <h4>混淆矩阵</h4>
+            <v-chart :option="confusionMatrixOption" autoresize style="height: 400px"/>
+          </div>
+        </template>
       </div>
 
       <template #footer>
@@ -420,8 +594,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {ref, reactive, onMounted, computed} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {HeatmapChart} from 'echarts/charts'
+import {VisualMapComponent} from 'echarts/components'
 import {
   getTrainingTaskList,
   createTrainingTask,
@@ -441,9 +617,10 @@ import {
   VideoPause,
   Document
 } from '@element-plus/icons-vue'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart } from 'echarts/charts'
+import {use} from 'echarts/core'
+import {CanvasRenderer} from 'echarts/renderers'
+import {LineChart} from 'echarts/charts'
+import {BarChart} from 'echarts/charts';
 import {
   TitleComponent,
   TooltipComponent,
@@ -452,21 +629,25 @@ import {
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 import dayjs from 'dayjs'
-import { getAvailableDatasets } from '@/api/dataset'
+import {getAvailableDatasets} from '@/api/dataset'
 
 
 // 注册ECharts组件
 use([
   CanvasRenderer,
   LineChart,
+  BarChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
-  GridComponent
+  GridComponent,
+  HeatmapChart,
+  VisualMapComponent
 ])
 
 // 数据
 const loading = ref(false)
+const inlineLogsLoading = ref(false)
 const datasets = ref([])
 const taskList = ref([])
 const statistics = ref({
@@ -475,6 +656,8 @@ const statistics = ref({
   runningTasks: 0,
   avgAccuracy: 0
 })
+
+const selectedTask = ref(null)
 
 const filterForm = reactive({
   keyword: '',
@@ -507,22 +690,22 @@ const createDialog = reactive({
   },
   rules: {
     taskName: [
-      { required: true, message: '请输入任务名称', trigger: 'blur' }
+      {required: true, message: '请输入任务名称', trigger: 'blur'}
     ],
     datasetId: [
-      { required: true, message: '请选择数据集', trigger: 'change' }
+      {required: true, message: '请选择数据集', trigger: 'change'}
     ],
     modelType: [
-      { required: true, message: '请选择模型类型', trigger: 'change' }
+      {required: true, message: '请选择模型类型', trigger: 'change'}
     ],
     totalEpochs: [
-      { required: true, message: '请输入训练轮数', trigger: 'blur' }
+      {required: true, message: '请输入训练轮数', trigger: 'blur'}
     ],
     batchSize: [
-      { required: true, message: '请选择批次大小', trigger: 'change' }
+      {required: true, message: '请选择批次大小', trigger: 'change'}
     ],
     learningRate: [
-      { required: true, message: '请选择学习率', trigger: 'change' }
+      {required: true, message: '请选择学习率', trigger: 'change'}
     ]
   }
 })
@@ -552,6 +735,11 @@ const logsDialog = reactive({
   logs: []
 })
 
+const latestLog = computed(() => {
+  if (!logsDialog.logs || !logsDialog.logs.length) return null
+  return logsDialog.logs[logsDialog.logs.length - 1]
+})
+
 // 图表配置
 const accuracyChartOption = computed(() => {
   const epochs = logsDialog.logs.map(log => log.epoch)
@@ -564,7 +752,7 @@ const accuracyChartOption = computed(() => {
       backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderColor: '#e4e7ed',
       borderWidth: 1,
-      textStyle: { color: '#606266' }
+      textStyle: {color: '#606266'}
     },
     legend: {
       data: ['训练准确率', '验证准确率'],
@@ -580,15 +768,15 @@ const accuracyChartOption = computed(() => {
       type: 'category',
       data: epochs,
       name: 'Epoch',
-      axisLine: { lineStyle: { color: '#e4e7ed' } },
-      axisLabel: { color: '#909399' }
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'}
     },
     yAxis: {
       type: 'value',
       name: '准确率 (%)',
-      axisLine: { lineStyle: { color: '#e4e7ed' } },
-      axisLabel: { color: '#909399' },
-      splitLine: { lineStyle: { color: '#f5f7fa' } }
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'},
+      splitLine: {lineStyle: {color: '#f5f7fa'}}
     },
     series: [
       {
@@ -598,8 +786,8 @@ const accuracyChartOption = computed(() => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { width: 3, color: '#409EFF' },
-        itemStyle: { color: '#409EFF' }
+        lineStyle: {width: 3, color: '#409EFF'},
+        itemStyle: {color: '#409EFF'}
       },
       {
         name: '验证准确率',
@@ -608,8 +796,8 @@ const accuracyChartOption = computed(() => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { width: 3, color: '#67C23A' },
-        itemStyle: { color: '#67C23A' }
+        lineStyle: {width: 3, color: '#67C23A'},
+        itemStyle: {color: '#67C23A'}
       }
     ]
   }
@@ -626,7 +814,7 @@ const lossChartOption = computed(() => {
       backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderColor: '#e4e7ed',
       borderWidth: 1,
-      textStyle: { color: '#606266' }
+      textStyle: {color: '#606266'}
     },
     legend: {
       data: ['训练损失', '验证损失'],
@@ -642,15 +830,15 @@ const lossChartOption = computed(() => {
       type: 'category',
       data: epochs,
       name: 'Epoch',
-      axisLine: { lineStyle: { color: '#e4e7ed' } },
-      axisLabel: { color: '#909399' }
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'}
     },
     yAxis: {
       type: 'value',
       name: '损失',
-      axisLine: { lineStyle: { color: '#e4e7ed' } },
-      axisLabel: { color: '#909399' },
-      splitLine: { lineStyle: { color: '#f5f7fa' } }
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'},
+      splitLine: {lineStyle: {color: '#f5f7fa'}}
     },
     series: [
       {
@@ -660,8 +848,8 @@ const lossChartOption = computed(() => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { width: 3, color: '#E6A23C' },
-        itemStyle: { color: '#E6A23C' }
+        lineStyle: {width: 3, color: '#E6A23C'},
+        itemStyle: {color: '#E6A23C'}
       },
       {
         name: '验证损失',
@@ -670,8 +858,255 @@ const lossChartOption = computed(() => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { width: 3, color: '#F56C6C' },
-        itemStyle: { color: '#F56C6C' }
+        lineStyle: {width: 3, color: '#F56C6C'},
+        itemStyle: {color: '#F56C6C'}
+      }
+    ]
+  }
+})
+
+const lrChartOption = computed(() => {
+  const epochs = logsDialog.logs.map(log => log.epoch)
+  const lrs = logsDialog.logs.map(log =>
+      log.learningRate != null ? Number(log.learningRate) : null
+  )
+
+  return {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderColor: '#e4e7ed',
+      borderWidth: 1,
+      textStyle: {color: '#606266'}
+    },
+    legend: {
+      data: ['学习率'],
+      bottom: 10
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '15%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: epochs,
+      name: 'Epoch',
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'}
+    },
+    yAxis: {
+      type: 'value',
+      name: '学习率',
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'},
+      splitLine: {lineStyle: {color: '#f5f7fa'}},
+    },
+    series: [
+      {
+        name: '学习率',
+        type: 'line',
+        data: lrs,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {width: 3, color: '#909399'},
+        itemStyle: {color: '#909399'}
+      }
+    ]
+  }
+})
+
+const gapAccChartOption = computed(() => {
+  const epochs = logsDialog.logs.map(log => log.epoch)
+  const gaps = logsDialog.logs.map(log => {
+    if (log.accuracy != null && log.valAccuracy != null) {
+      return parseFloat(((Number(log.valAccuracy) - Number(log.accuracy)) * 100).toFixed(2))
+    }
+    return null
+  })
+
+  return {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderColor: '#e4e7ed',
+      borderWidth: 1,
+      textStyle: {color: '#606266'}
+    },
+    legend: {
+      data: ['验证-训练 准确率差'],
+      bottom: 10
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '15%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: epochs,
+      name: 'Epoch',
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'}
+    },
+    yAxis: {
+      type: 'value',
+      name: '差值 (%)',
+      axisLine: {lineStyle: {color: '#e4e7ed'}},
+      axisLabel: {color: '#909399'},
+      splitLine: {lineStyle: {color: '#f5f7fa'}}
+    },
+    series: [
+      {
+        name: '验证-训练 准确率差',
+        type: 'line',
+        data: gaps,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {width: 3, color: '#F56C6C'},
+        itemStyle: {color: '#F56C6C'}
+      }
+    ]
+  }
+})
+
+const epochDurationChartOption = computed(() => {
+  if (!logsDialog.logs.length) return {}
+
+  const epochs = logsDialog.logs.map(log => log.epoch)
+  const durations = logsDialog.logs.map((log, index, arr) => {
+    if (index === 0) return null
+    const prev = arr[index - 1]
+    if (!prev.timestamp || !log.timestamp) return null
+    const t1 = new Date(prev.timestamp).getTime()
+    const t2 = new Date(log.timestamp).getTime()
+    return parseFloat(((t2 - t1) / 1000).toFixed(2)) // 秒
+  })
+
+  return {
+    tooltip: {trigger: 'axis'},
+    legend: {bottom: 10},
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '15%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: epochs,
+      name: 'Epoch'
+    },
+    yAxis: {
+      type: 'value',
+      name: '秒'
+    },
+    series: [
+      {
+        name: 'Epoch 时长 (秒)',
+        type: 'bar',
+        data: durations,
+        itemStyle: {color: '#67C23A'}
+      }
+    ]
+  }
+})
+
+const confusionMatrixData = computed(() => {
+  if (!detailDialog.task || !detailDialog.task.confusionMatrixJson) return null
+  try {
+    return JSON.parse(detailDialog.task.confusionMatrixJson) // 2D array
+  } catch (e) {
+    console.error('解析 confusionMatrixJson 失败', e)
+    return null
+  }
+})
+
+const confusionClassNames = computed(() => {
+  if (!detailDialog.task || !detailDialog.task.classNamesJson) return null
+  try {
+    return JSON.parse(detailDialog.task.classNamesJson) // array of strings
+  } catch (e) {
+    console.error('解析 classNamesJson 失败', e)
+    return null
+  }
+})
+
+const confusionMatrixOption = computed(() => {
+  const cm = confusionMatrixData.value
+  const labels = confusionClassNames.value
+
+  if (!cm || !cm.length) return {}
+
+  const numClasses = cm.length
+  // 如果没提供 classNames，用 0..n-1 代替
+  const axisLabels =
+      labels && labels.length === numClasses
+          ? labels
+          : Array.from({length: numClasses}, (_, i) => String(i))
+
+  // 把二维数组转成 [x, y, value] 格式
+  const data = []
+  let maxValue = 0
+  for (let i = 0; i < numClasses; i++) {
+    for (let j = 0; j < numClasses; j++) {
+      const v = cm[i][j] || 0
+      data.push([j, i, v]) // x: 预测, y: 真实
+      if (v > maxValue) maxValue = v
+    }
+  }
+
+  return {
+    tooltip: {
+      position: 'top',
+      formatter: params => {
+        const real = axisLabels[params.value[1]]
+        const pred = axisLabels[params.value[0]]
+        const count = params.value[2]
+        return `真实: ${real}<br/>预测: ${pred}<br/>样本数: ${count}`
+      }
+    },
+    grid: {
+      left: '10%',
+      right: '10%',
+      top: '10%',
+      bottom: '25%'
+    },
+    xAxis: {
+      type: 'category',
+      data: axisLabels,
+      name: '预测类别',
+      axisLabel: {rotate: 45}
+    },
+    yAxis: {
+      type: 'category',
+      data: axisLabels,
+      name: '真实类别'
+    },
+    visualMap: {
+      min: 0,
+      max: maxValue || 1,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '0',
+      inRange: {
+        color: ['#f5f5f5', '#409EFF'] // 颜色从浅到深
+      }
+    },
+    series: [
+      {
+        name: '混淆矩阵',
+        type: 'heatmap',
+        data,
+        label: {
+          show: true,
+          formatter: params => params.value[2] || ''
+        }
       }
     ]
   }
@@ -692,14 +1127,41 @@ const loadTaskList = async () => {
       taskList.value = response.data.records
       pagination.total = response.data.total
 
-      // 更新统计数据
       updateStatistics()
+
+      // 默认选中第一个任务，并加载日志
+      if (!selectedTask.value && taskList.value.length > 0) {
+        selectedTask.value = taskList.value[0]
+        loadLogsForSelectedTask()
+      } else if (
+          selectedTask.value &&
+          taskList.value.some(t => t.taskId === selectedTask.value.taskId)
+      ) {
+        // 保持选中任务对象为最新
+        selectedTask.value = taskList.value.find(t => t.taskId === selectedTask.value.taskId)
+      }
     }
   } catch (error) {
     console.error('获取训练任务列表失败', error)
     ElMessage.error('获取训练任务列表失败')
   } finally {
     loading.value = false
+  }
+}
+
+const loadLogsForSelectedTask = async () => {
+  if (!selectedTask.value) return
+  inlineLogsLoading.value = true
+  try {
+    const response = await getTrainingLogs(selectedTask.value.taskId)
+    if (response.code === 200) {
+      logsDialog.logs = response.data || []
+    }
+  } catch (error) {
+    console.error('获取训练日志失败', error)
+    ElMessage.error('获取训练日志失败')
+  } finally {
+    inlineLogsLoading.value = false
   }
 }
 
@@ -781,11 +1243,33 @@ const viewDetail = async (row) => {
     const response = await getTrainingTaskDetail(row.taskId)
     if (response.code === 200) {
       detailDialog.task = response.data
+
+      // 解析超参数 JSON
+      detailDialog.task.trainingConfigParsed = JSON.parse(response.data.trainingConfig || "{}")
+      detailDialog.task.datasetConfigParsed = JSON.parse(response.data.datasetConfig || "{}")
+
       detailDialog.visible = true
     }
   } catch (error) {
     console.error('获取任务详情失败', error)
     ElMessage.error('获取任务详情失败')
+  }
+}
+
+
+const openLogsDialog = async row => {
+  logsDialog.visible = true
+  logsDialog.loading = true
+  try {
+    const response = await getTrainingLogs(row.taskId)
+    if (response.code === 200) {
+      logsDialog.logs = response.data || []
+    }
+  } catch (error) {
+    console.error('获取训练日志失败', error)
+    ElMessage.error('获取训练日志失败')
+  } finally {
+    logsDialog.loading = false
   }
 }
 
@@ -857,16 +1341,33 @@ const formatDate = (date) => {
   return date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : '-'
 }
 
+// 点击行：切换当前选中任务并加载日志
+const handleRowClick = row => {
+  selectedTask.value = row
+  loadLogsForSelectedTask()
+}
+
+// 高亮选中行
+const tableRowClassName = ({row}) => {
+  if (selectedTask.value && row.taskId === selectedTask.value.taskId) {
+    return 'selected-row'
+  }
+  return ''
+}
+
 // 生命周期
 onMounted(() => {
   loadDatasets()
   loadTaskList()
 
-  // 每2秒刷新一次列表（如果有正在运行的任务）
+  // 每2秒刷新一次列表（如果有正在运行的任务），并自动更新选中任务信息/日志
   setInterval(() => {
     const hasRunning = taskList.value.some(t => t.status === 'RUNNING')
     if (hasRunning) {
       loadTaskList()
+      if (selectedTask.value) {
+        loadLogsForSelectedTask()
+      }
     }
   }, 2000)
 })
@@ -913,10 +1414,21 @@ onMounted(() => {
     }
   }
 
-  &.primary .stat-icon { color: #409EFF; }
-  &.success .stat-icon { color: #67C23A; }
-  &.warning .stat-icon { color: #E6A23C; }
-  &.info .stat-icon { color: #909399; }
+  &.primary .stat-icon {
+    color: #409EFF;
+  }
+
+  &.success .stat-icon {
+    color: #67C23A;
+  }
+
+  &.warning .stat-icon {
+    color: #E6A23C;
+  }
+
+  &.info .stat-icon {
+    color: #909399;
+  }
 }
 
 .filter-card {
@@ -955,5 +1467,101 @@ onMounted(() => {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
+}
+
+.selected-task-card {
+  margin-top: 20px;
+}
+
+.selected-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+
+  h3 {
+    margin: 0 0 8px;
+  }
+
+  .selected-task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: #606266;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  .selected-task-time {
+    text-align: right;
+    font-size: 13px;
+    color: #909399;
+
+    > div + div {
+      margin-top: 4px;
+    }
+  }
+}
+
+.logs-summary {
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: #606266;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+.no-logs-tip {
+  padding: 20px 0;
+  text-align: center;
+  color: #909399;
+}
+
+.table-card {
+  margin-bottom: 20px;
+
+  .progress-text {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 4px;
+  }
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.charts-container {
+  .chart-item {
+    margin-bottom: 30px;
+
+    h4 {
+      margin-bottom: 10px;
+      color: #303133;
+    }
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 高亮选中行 */
+:deep(.el-table__row.selected-row) {
+  background-color: #ecf5ff !important;
 }
 </style>

@@ -1,4 +1,3 @@
-# services/training_service.py
 import os
 
 import tensorflow as tf
@@ -10,6 +9,7 @@ import requests
 import json
 from models_code.cnn_model import create_cnn_model
 from config import Config
+from sklearn.metrics import confusion_matrix
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +57,9 @@ class TrainingService:
 
                 # 选择模型
                 if model_type == "cnn":
-                    model = create_cnn_model(input_shape=(28,28,1), num_classes=10)
+                    model = create_cnn_model(input_shape=(28, 28, 1), num_classes=10)
                 elif model_type == "advanced_cnn":
-                    model = create_cnn_model(input_shape=(28,28,1), num_classes=10)
+                    model = create_cnn_model(input_shape=(28, 28, 1), num_classes=10)
                 else:
                     raise ValueError(f"MNIST 不支持该模型类型: {model_type}")
 
@@ -97,8 +97,8 @@ class TrainingService:
                     train_ds = train_ds.skip(val_size)
 
                 # 标准化
-                train_ds = train_ds.map(lambda x, y: (x/255.0, tf.one_hot(y, num_classes)))
-                test_ds = test_ds.map(lambda x, y: (x/255.0, tf.one_hot(y, num_classes)))
+                train_ds = train_ds.map(lambda x, y: (x / 255.0, tf.one_hot(y, num_classes)))
+                test_ds = test_ds.map(lambda x, y: (x / 255.0, tf.one_hot(y, num_classes)))
 
                 # 选择模型
                 if model_type == "cnn":
@@ -125,27 +125,41 @@ class TrainingService:
 
             # 回调，用于向 SpringBoot 发送进度
             class ProgressCallback(keras.callbacks.Callback):
-                def __init__(self, service):
+                def __init__(self, service, batch_size, learning_rate):
                     super().__init__()
                     self.service = service
+                    self.batch_size = batch_size
+                    self.learning_rate = learning_rate
+                    self.global_step = 0
+
+                def on_train_batch_end(self, batch, logs=None):
+                    # 如需 finer-grained 的 step，可以用这个
+                    self.global_step += 1
 
                 def on_epoch_end(self, epoch, logs=None):
+                    logs = logs or {}
                     progress = (epoch + 1) / epochs * 100
-                    self.service.report_progress({
+
+                    progress_data = {
                         "currentEpoch": epoch + 1,
                         "progress": progress,
-                        "loss": float(logs.get("loss", 0)),
-                        "accuracy": float(logs.get("accuracy", 0)),
-                        "valLoss": float(logs.get("val_loss", 0)),
-                        "valAccuracy": float(logs.get("val_accuracy", 0)),
-                    })
+                        "loss": float(logs.get("loss", 0.0)),
+                        "accuracy": float(logs.get("accuracy", 0.0)),
+                        "valLoss": float(logs.get("val_loss", 0.0)),
+                        "valAccuracy": float(logs.get("val_accuracy", 0.0)),
+                        "step": self.global_step,
+                        "learningRate": float(self.learning_rate),
+                        "batchSize": int(self.batch_size),
+                    }
+
+                    self.service.report_progress(progress_data)
 
             # 开始训练
             history = model.fit(
                 train_ds,
                 validation_data=test_ds,
                 epochs=epochs,
-                callbacks=[ProgressCallback(self)],
+                callbacks=[ProgressCallback(self, batch_size=batch_size, learning_rate=learning_rate)],
                 verbose=1
             )
 
@@ -156,20 +170,42 @@ class TrainingService:
             # 最终评估
             loss, accuracy = model.evaluate(test_ds, verbose=0)
 
+            # 计算混淆矩阵
+            # 收集测试集的真实标签和预测结果
+            y_true = []
+            y_pred = []
+
+            # 注意：test_ds 里 y 是 one-hot 形式（上面有 tf.one_hot）
+            for batch_x, batch_y in test_ds:
+                # batch_y: [batch, num_classes] one-hot -> 转回整数标签
+                true_labels = tf.argmax(batch_y, axis=-1).numpy()         # shape [batch]
+                preds = model.predict(batch_x, verbose=0)
+                pred_labels = np.argmax(preds, axis=-1)                    # shape [batch]
+
+                y_true.extend(true_labels.tolist())
+                y_pred.extend(pred_labels.tolist())
+
+            # 计算混淆矩阵
+            cm = confusion_matrix(y_true, y_pred)  # shape [num_classes, num_classes]
+            cm_list = cm.tolist()                  # Python list，方便 JSON 序列化
+
+            # 从 dataset_config 中取类名（如果有）
+            class_names = dataset_config.get("class_names")  # 可能是 list[str] 或 None
+
             self.report_completion({
                 "finalAccuracy": float(accuracy),
                 "finalLoss": float(loss),
                 "modelPath": model_path,
                 "trainingSamples": int(train_ds.cardinality().numpy()),
                 "testSamples": int(test_ds.cardinality().numpy()),
-                "modelSize": int(os.path.getsize(model_path))
+                "modelSize": int(os.path.getsize(model_path)),
+                "confusionMatrix": cm_list,
+                "classNames": class_names,
             })
 
         except Exception as e:
             logger.error(f"训练失败: {e}", exc_info=True)
             self.report_failure(str(e))
-
-
 
     def report_progress(self, progress_data):
         """向SpringBoot报告训练进度"""

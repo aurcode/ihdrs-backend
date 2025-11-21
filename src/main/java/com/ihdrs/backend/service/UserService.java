@@ -11,16 +11,20 @@ import com.ihdrs.backend.entity.User;
 import com.ihdrs.backend.entity.UserLog;
 import com.ihdrs.backend.repository.UserRepository;
 import com.ihdrs.backend.repository.UserLogRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,21 +38,53 @@ public class UserService {
     private final UserLogRepository userLogRepository;
 
     /**
-     * 分页查询用户列表
+     * 分页查询用户列表（支持搜索、角色筛选、状态筛选）
      */
     public Result<PageResult<UserResponse>> getUserList(PageRequest pageRequest) {
-        org.springframework.data.domain.PageRequest springPageRequest = org.springframework.data.domain.PageRequest.of(
+
+        // 构建分页和排序
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getCurrent().intValue() - 1,
                 pageRequest.getSize().intValue(),
                 Sort.by(Sort.Direction.DESC, "createTime")
         );
 
-        Page<User> userPage = userRepository.findAll(springPageRequest);
+        // 动态构建筛选条件
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
+            // 搜索：用户名模糊匹配 （对应前端 search）
+            if (pageRequest.getUsername() != null && !pageRequest.getUsername().isEmpty()) {
+                predicates.add(cb.like(root.get("username"), "%" + pageRequest.getUsername() + "%"));
+            }
+
+            // 角色筛选（ADMIN / USER）
+            if (pageRequest.getRole() != null && !pageRequest.getRole().isEmpty()) {
+                predicates.add(cb.equal(root.get("role"), pageRequest.getRole()));
+            }
+
+            // 状态筛选（1=启用，0=禁用）
+            Boolean statusValue = null;
+            String raw = pageRequest.getStatus();
+            if ("1".equals(raw) || "true".equalsIgnoreCase(raw)) statusValue = true;
+            if ("0".equals(raw) || "false".equalsIgnoreCase(raw)) statusValue = false;
+
+            if (statusValue != null) {
+                predicates.add(cb.equal(root.get("status"), statusValue));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        // 执行分页查询
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+
+        // 转换 DTO
         List<UserResponse> userList = userPage.getContent().stream()
                 .map(this::convertToUserResponse)
                 .collect(Collectors.toList());
 
+        // 封装结果
         PageResult<UserResponse> result = PageResult.of(
                 userList,
                 userPage.getTotalElements(),
@@ -58,6 +94,7 @@ public class UserService {
 
         return Result.success(result);
     }
+
 
     /**
      * 根据ID获取用户信息

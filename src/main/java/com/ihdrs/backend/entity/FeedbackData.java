@@ -31,13 +31,9 @@ public class FeedbackData {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Min(value = 0, message = "原始结果必须在0-9之间")
-    @Max(value = 9, message = "原始结果必须在0-9之间")
     @Column(name = "original_result", nullable = false)
     private Integer originalResult;
 
-    @Min(value = 0, message = "正确结果必须在0-9之间")
-    @Max(value = 9, message = "正确结果必须在0-9之间")
     @Column(name = "correct_result", nullable = false)
     private Integer correctResult;
 

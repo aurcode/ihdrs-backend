@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/**",
                                 "/recognition/recognize",
+                                "/recognition/recognize_multi",
                                 "/health/**",
                                 "/test/**",
                                 "/uploads/**",

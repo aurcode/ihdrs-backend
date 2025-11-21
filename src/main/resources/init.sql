@@ -145,12 +145,13 @@ CREATE TABLE IF NOT EXISTS `recognition_records` (
                                                      `record_id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
                                                      `user_id` bigint DEFAULT NULL COMMENT '用户ID（可为空，支持匿名识别）',
                                                      `model_id` bigint NOT NULL COMMENT '使用的模型ID',
-                                                     `recognition_result` int NOT NULL COMMENT '识别结果（0-9）',
+                                                     `recognition_result` int COMMENT '识别结果（0-9）',
                                                      `confidence` decimal(5,4) NOT NULL COMMENT '置信度',
                                                      `image_data` longblob COMMENT '原始图像数据',
                                                      `image_path` varchar(500) COMMENT '图像文件路径',
+                                                     `sequence_result` varchar(500) COMMENT '图像文件路径',
                                                      `image_hash` varchar(64) COMMENT '图像MD5哈希',
-                                                     `input_type` enum('CANVAS','UPLOAD','CAMERA') DEFAULT 'CANVAS' COMMENT '输入类型',
+                                                     `input_type` enum('CANVAS','UPLOAD','MULTI','CAMERA') DEFAULT 'CANVAS' COMMENT '输入类型',
                                                      `processing_time` int DEFAULT NULL COMMENT '处理时间（毫秒）',
                                                      `client_info` json COMMENT '客户端信息',
                                                      `is_correct` tinyint DEFAULT NULL COMMENT '是否正确：1-正确，0-错误，NULL-未知',
@@ -211,6 +212,10 @@ CREATE TABLE IF NOT EXISTS `training_tasks` (
                                                 KEY `idx_status` (`status`),
                                                 KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练任务表';
+
+ALTER TABLE training_tasks
+    ADD COLUMN confusion_matrix TEXT NULL,
+    ADD COLUMN class_names TEXT NULL;
 
 -- 创建反馈数据表
 CREATE TABLE IF NOT EXISTS `feedback_data` (

@@ -3,6 +3,7 @@ package com.ihdrs.backend.controller;
 
 import com.ihdrs.backend.common.Result;
 import com.ihdrs.backend.dto.request.RecognitionRequest;
+import com.ihdrs.backend.dto.response.RecognitionMultiResponse;
 import com.ihdrs.backend.dto.response.RecognitionResponse;
 import com.ihdrs.backend.service.RecognitionService;
 import com.ihdrs.backend.common.utils.JwtUtil;
@@ -40,6 +41,16 @@ public class RecognitionController {
         Long userId = getUserIdFromRequest(httpRequest); // 如果有 token 则填 userId，否则 null（匿名）
         return recognitionService.recognize(request, userId);
     }
+
+    @PostMapping("/recognize_multi")
+    public Result<RecognitionMultiResponse> recognizeMulti(
+            @Valid @RequestBody RecognitionRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        Long userId = getUserIdFromRequest(httpRequest);
+        return recognitionService.recognizeMulti(request, userId);
+    }
+
 
     @Operation(summary = "获取识别历史记录", description = "获取当前用户的识别记录历史（支持 result / 时间区间 筛选）")
     @GetMapping("/history")

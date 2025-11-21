@@ -16,6 +16,10 @@ public class PageRequest {
     private String sortField; // 排序字段
     private String sortOrder = "ASC"; // 排序方向：ASC, DESC
 
+    private String username;
+    private String role;
+    private String status;
+
     // 计算偏移量
     public Long getOffset() {
         return (current - 1) * size;

@@ -3,98 +3,118 @@ import { API_CONFIG } from '../config/api';
 
 /**
  * Recognition Service
- * Handles communication with the Python Model Service for digit recognition
+ * 通过 Java 后端进行识别：/api/recognition/recognize
  */
 
 class RecognitionService {
-  constructor() {
-    // Axios instance for the Python Model Service (for recognition)
-    this.modelApi = axios.create({
-      baseURL: API_CONFIG.MODEL_SERVICE_URL,
-      timeout: API_CONFIG.TIMEOUT,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
-
-  /**
-   * Recognize a digit from a base64 encoded image
-   * This method now calls the Python Model Service directly.
-   * @param {string} base64Image - Base64 encoded image string
-   * @param {string} inputType - (No longer used directly in this call, but kept for signature compatibility)
-   * @param {string} sessionId - (No longer used directly in this call, but kept for signature compatibility)
-   * @param {object} clientInfo - (No longer used directly in this call, but kept for signature compatibility)
-   * @returns {Promise} Recognition result with predicted digit and confidence
-   */
-  async recognizeDigit(base64Image, inputType = 'CANVAS', sessionId = null, clientInfo = null) {
-    try {
-      // Hardcoding model_id to 1 as per Postman example,
-      // since the Java backend call was removed.
-      const modelId = 1;
-
-      // 1. Prepare the request body for the Python Model Service
-      // This matches the format from your Postman example
-      const requestBody = {
-        model_id: modelId,
-        image: base64Image,
-      };
-
-      // 2. Call the Python Model Service endpoint
-      // We use 'this.modelApi' and the '/api/recognize' endpoint
-      const response = await this.modelApi.post('/api/recognize', requestBody);
-
-      // 3. Parse the response data
-      if (response.data && response.data.status === 'success' && response.data.data) {
-        const predictionData = response.data.data;
-
-        // Create a more structured probabilities object (digit: probability)
-        const probabilitiesMap = {};
-        if (predictionData.all_probabilities && Array.isArray(predictionData.all_probabilities)) {
-          predictionData.all_probabilities.forEach((probability, index) => {
-            probabilitiesMap[index] = probability;
-          });
-        }
-
-        // Return a structured response that matches what MainScreen.js expects
-        return {
-          success: true,
-          data: {
-            // Add the extra 'data' nesting that MainScreen.js expects
-            data: {
-              predictedDigit: predictionData.result,
-              confidence: predictionData.confidence,
-              processingTime: predictionData.processing_time,
-              // Rename 'all_probabilities' to 'probabilities' as expected by MainScreen.js
-              probabilities: predictionData.all_probabilities,
-              probabilitiesMap: probabilitiesMap, // Still include this, it might be useful later
+    constructor() {
+        this.backendApi = axios.create({
+            baseURL: API_CONFIG.BACKEND_URL,
+            timeout: API_CONFIG.TIMEOUT,
+            headers: {
+                'Content-Type': 'application/json',
             },
-          },
-        };
-      } else {
-        // Handle unexpected success response format
-        throw new Error(response.data?.message || 'Received an unexpected response format from the model service.');
-      }
-    } catch (error) {
-      console.error('Recognition error:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message || 'Recognition failed',
-      };
+        });
     }
-  }
 
-  /**
-   * Set authentication token for API requests
-   * @param {string} token - JWT token
-   */
-  setAuthToken(token) {
-    if (token) {
-      this.modelApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete this.modelApi.defaults.headers.common['Authorization'];
+    /**
+     * 识别手写数字
+     * @param {string} base64Image - Base64 编码图像（不带 data:image/png;base64, 前缀）
+     * @param {string} inputType - 'CANVAS' | 'UPLOAD'
+     * @param {string|null} sessionId
+     * @param {object|null} clientInfo
+     */
+    async recognizeDigit(
+        base64Image,
+        inputType = 'CANVAS',
+        sessionId = null,
+        clientInfo = null
+        , p) {
+        try {
+            const requestBody = {
+                imageData: base64Image,
+                inputType: inputType,
+                sessionId: sessionId,
+                clientInfo: clientInfo ? JSON.stringify(clientInfo) : null,
+            };
+
+            // RecognitionController 的路径是 /recognition/recognize
+            const response = await this.backendApi.post(
+                '/recognition/recognize',
+                requestBody
+            );
+
+            const resData = response.data;
+
+            // 统一 Result 包装：code / msg / data
+            if (resData && resData.code === 200 && resData.data) {
+                const recognitionData = resData.data;
+
+                return {
+                    success: true,
+                    data: {
+                        predictedDigit: recognitionData.recognitionResult,
+                        confidence: Number(recognitionData.confidence), // BigDecimal -> number
+                        processingTime: recognitionData.processingTime,
+                        needRewrite: recognitionData.needRewrite,
+                        message: recognitionData.message,
+                        recordId: recognitionData.recordId,
+                        probabilities: recognitionData.probabilities || [],
+                        probabilitiesMap: recognitionData.probabilitiesMap || null,
+                    },
+                    raw: recognitionData,
+                };
+            } else {
+                throw new Error(resData?.msg || '识别接口返回错误');
+            }
+        } catch (error) {
+            console.error('Recognition error (via backend):', error);
+            return {
+                success: false,
+                error:
+                    error.response?.data?.msg ||
+                    error.response?.data?.message ||
+                    error.message ||
+                    'Recognition failed',
+            };
+        }
     }
-  }
+
+    async recognizeMulti(base64Image,
+                         inputType = 'CANVAS',
+                         sessionId = null,
+                         clientInfo = null) {
+        const body = {
+            imageData: base64Image,
+            inputType: inputType,
+            sessionId: sessionId,
+            clientInfo: clientInfo ? JSON.stringify(clientInfo) : null,
+        };
+
+        const response = await this.backendApi.post(
+            '/recognition/recognize_multi',
+            body
+        );
+
+        if (response.data.code === 200) {
+            return {
+                success: true,
+                data: response.data.data,
+            };
+        }
+    }
+
+
+    /**
+     * 设置认证 token，给 Java 后端用
+     */
+    setAuthToken(token) {
+        if (token) {
+            this.backendApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+            delete this.backendApi.defaults.headers.common['Authorization'];
+        }
+    }
 }
 
 export default new RecognitionService();

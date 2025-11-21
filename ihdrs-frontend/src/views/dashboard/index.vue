@@ -9,15 +9,17 @@
           <div class="stat-background"></div>
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon><View /></el-icon>
+              <el-icon>
+                <View/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.totalRecognitions || 0 }}</div>
               <div class="stat-label">总识别次数</div>
             </div>
           </div>
-          <div class="stat-trend">
-            <span class="trend-text">+12%</span>
+          <div class="stat-trend" v-if="stats.recognitionGrowth">
+            <span class="trend-text">{{ stats.recognitionGrowth > 0 ? '+' : '' }}{{ stats.recognitionGrowth }}%</span>
           </div>
         </div>
       </el-col>
@@ -27,15 +29,17 @@
           <div class="stat-background"></div>
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon><User /></el-icon>
+              <el-icon>
+                <User/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.totalUsers || 0 }}</div>
               <div class="stat-label">注册用户</div>
             </div>
           </div>
-          <div class="stat-trend">
-            <span class="trend-text">+8%</span>
+          <div class="stat-trend" v-if="stats.userGrowth">
+            <span class="trend-text">{{ stats.userGrowth > 0 ? '+' : '' }}{{ stats.userGrowth }}%</span>
           </div>
         </div>
       </el-col>
@@ -45,15 +49,17 @@
           <div class="stat-background"></div>
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon><Setting /></el-icon>
+              <el-icon>
+                <Setting/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.totalModels || 0 }}</div>
               <div class="stat-label">训练模型</div>
             </div>
           </div>
-          <div class="stat-trend">
-            <span class="trend-text">+5%</span>
+          <div class="stat-trend" v-if="stats.modelGrowth">
+            <span class="trend-text">{{ stats.modelGrowth > 0 ? '+' : '' }}{{ stats.modelGrowth }}%</span>
           </div>
         </div>
       </el-col>
@@ -63,15 +69,17 @@
           <div class="stat-background"></div>
           <div class="stat-content">
             <div class="stat-icon">
-              <el-icon><DataAnalysis /></el-icon>
+              <el-icon>
+                <DataAnalysis/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.todayRecognitions || 0 }}</div>
               <div class="stat-label">今日识别</div>
             </div>
           </div>
-          <div class="stat-trend">
-            <span class="trend-text">+25%</span>
+          <div class="stat-trend" v-if="stats.todayGrowth">
+            <span class="trend-text">{{ stats.todayGrowth > 0 ? '+' : '' }}{{ stats.todayGrowth }}%</span>
           </div>
         </div>
       </el-col>
@@ -88,7 +96,9 @@
               <p>最近7天数据统计</p>
             </div>
             <el-button type="text" @click="refreshCharts" class="refresh-btn">
-              <el-icon><Refresh /></el-icon>
+              <el-icon>
+                <Refresh/>
+              </el-icon>
               刷新
             </el-button>
           </div>
@@ -135,7 +145,9 @@
           <div class="quick-actions">
             <div class="action-item" @click="goToTraining">
               <div class="action-icon primary">
-                <el-icon><Setting /></el-icon>
+                <el-icon>
+                  <Setting/>
+                </el-icon>
               </div>
               <div class="action-content">
                 <h4>开始训练模型</h4>
@@ -144,7 +156,9 @@
             </div>
             <div class="action-item" @click="goToRecognition">
               <div class="action-icon success">
-                <el-icon><View /></el-icon>
+                <el-icon>
+                  <View/>
+                </el-icon>
               </div>
               <div class="action-content">
                 <h4>查看识别记录</h4>
@@ -153,7 +167,9 @@
             </div>
             <div class="action-item" @click="goToUsers" v-if="userStore.isAdmin">
               <div class="action-icon warning">
-                <el-icon><User /></el-icon>
+                <el-icon>
+                  <User/>
+                </el-icon>
               </div>
               <div class="action-content">
                 <h4>用户管理</h4>
@@ -162,7 +178,9 @@
             </div>
             <div class="action-item" @click="goToModels" v-if="userStore.isAdmin">
               <div class="action-icon info">
-                <el-icon><DataAnalysis /></el-icon>
+                <el-icon>
+                  <DataAnalysis/>
+                </el-icon>
               </div>
               <div class="action-content">
                 <h4>模型管理</h4>
@@ -191,13 +209,17 @@
                 class="activity-item"
             >
               <div class="activity-avatar">
-                <div class="digit-display">{{ record.result }}</div>
+                <img
+                    class="digit-image"
+                    :src="getImageUrl(record.imageName)"
+                    alt="识别图像"
+                />
               </div>
               <div class="activity-content">
-                <div class="activity-title">识别数字: {{ record.result }}</div>
+                <div class="activity-title">{{ record.result }}</div>
                 <div class="activity-meta">
                   <span class="confidence">
-                    <el-icon><SuccessFilled /></el-icon>
+                    <el-icon><SuccessFilled/></el-icon>
                     置信度: {{ (record.confidence * 100).toFixed(1) }}%
                   </span>
                   <span class="time">{{ formatTime(record.createTime) }}</span>
@@ -208,7 +230,9 @@
               </div>
             </div>
             <div v-if="recentRecognitions.length === 0" class="empty-activity">
-              <el-icon><DocumentRemove /></el-icon>
+              <el-icon>
+                <DocumentRemove/>
+              </el-icon>
               <p>暂无识别记录</p>
             </div>
           </div>
@@ -292,13 +316,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { ElMessage } from 'element-plus'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, PieChart } from 'echarts/charts'
+import {ref, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
+import {useUserStore} from '@/stores/user'
+import {ElMessage} from 'element-plus'
+import {use} from 'echarts/core'
+import {CanvasRenderer} from 'echarts/renderers'
+import {LineChart, PieChart} from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -316,6 +340,7 @@ import {
   SuccessFilled,
   DocumentRemove
 } from "@element-plus/icons-vue"
+import {getDashboardStats, getRecentRecognitions, getPerformanceMetrics} from '@/api/stats'
 
 // 注册 ECharts 组件
 use([
@@ -336,7 +361,11 @@ const stats = ref({
   totalRecognitions: 0,
   totalUsers: 0,
   totalModels: 0,
-  todayRecognitions: 0
+  todayRecognitions: 0,
+  recognitionGrowth: 0,
+  userGrowth: 0,
+  modelGrowth: 0,
+  todayGrowth: 0
 })
 
 const chartsLoading = ref(false)
@@ -349,7 +378,7 @@ const systemStatus = ref({
   redis: true
 })
 
-// 图表配置 - 优化样式
+// 图表配置
 const recognitionTrendOption = ref({
   tooltip: {
     trigger: 'axis',
@@ -368,7 +397,7 @@ const recognitionTrendOption = ref({
   },
   xAxis: {
     type: 'category',
-    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    data: [],
     axisLine: {
       lineStyle: {
         color: '#e4e7ed'
@@ -395,7 +424,7 @@ const recognitionTrendOption = ref({
     }
   },
   series: [{
-    data: [120, 132, 101, 134, 90, 230, 210],
+    data: [],
     type: 'line',
     smooth: true,
     symbol: 'circle',
@@ -454,14 +483,7 @@ const digitDistributionOption = ref({
     type: 'pie',
     radius: ['40%', '70%'],
     center: ['50%', '40%'],
-    data: [
-      { value: 35, name: '数字0', itemStyle: { color: '#409EFF' } },
-      { value: 30, name: '数字1', itemStyle: { color: '#67C23A' } },
-      { value: 25, name: '数字2', itemStyle: { color: '#E6A23C' } },
-      { value: 20, name: '数字3', itemStyle: { color: '#F56C6C' } },
-      { value: 15, name: '数字4', itemStyle: { color: '#909399' } },
-      { value: 10, name: '其他', itemStyle: { color: '#C0C4CC' } }
-    ],
+    data: [],
     emphasis: {
       itemStyle: {
         shadowBlur: 10,
@@ -475,52 +497,92 @@ const digitDistributionOption = ref({
   }]
 })
 
-// 方法
-const loadDashboardData = async () => {
-  try {
-    // 模拟API调用
-    // const response = await getDashboardStats()
+// 更新图表数据的辅助函数
+const updateCharts = (performanceData) => {
+  if (!performanceData) return
 
-    // 模拟数据
-    stats.value = {
-      totalRecognitions: 1234,
-      totalUsers: 56,
-      totalModels: 8,
-      todayRecognitions: 89
-    }
+  // 更新识别趋势图
+  if (performanceData.weeklyTrend) {
+    recognitionTrendOption.value.xAxis.data = performanceData.weeklyTrend.map(item => item.date || item.day)
+    recognitionTrendOption.value.series[0].data =
+        performanceData.weeklyTrend.map(item => Number(item.count ?? item.value ?? 0))
+  }
 
-    recentRecognitions.value = [
-      {
-        id: 1,
-        result: 8,
-        confidence: 0.95,
-        createTime: new Date()
-      },
-      {
-        id: 2,
-        result: 3,
-        confidence: 0.87,
-        createTime: new Date(Date.now() - 1000 * 60 * 5)
-      },
-      {
-        id: 3,
-        result: 7,
-        confidence: 0.92,
-        createTime: new Date(Date.now() - 1000 * 60 * 10)
-      }
-    ]
-  } catch (error) {
-    console.error('加载仪表板数据失败:', error)
-    ElMessage.error('加载数据失败')
+  // 更新数字分布图
+  if (performanceData.digitDistribution) {
+    const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#C0C4CC', '#00D7FF', '#FF6B9D', '#C71585', '#FFD700']
+    digitDistributionOption.value.series[0].data =
+        performanceData.digitDistribution.map((item, index) => ({
+          value: item.count ?? item.value ?? 0,
+          name: `数字${item.digit ?? item.name ?? 0}`,
+          itemStyle: {color: colors[index % colors.length]}
+        }))
   }
 }
 
-const refreshCharts = () => {
-  chartsLoading.value = true
-  setTimeout(() => {
+// 方法
+const loadDashboardData = async () => {
+  try {
+    // 加载仪表盘统计数据
+    const dashboardRes = await getDashboardStats()
+    if (dashboardRes.code === 200 && dashboardRes.data) {
+      stats.value = {
+        totalRecognitions: dashboardRes.data.totalRecognitions || 0,
+        totalUsers: dashboardRes.data.totalUsers || 0,
+        totalModels: dashboardRes.data.totalModels || 0,
+        todayRecognitions: dashboardRes.data.todayRecognitions || 0,
+        recognitionGrowth: dashboardRes.data.recognitionGrowth || 0,
+        userGrowth: dashboardRes.data.userGrowth || 0,
+        modelGrowth: dashboardRes.data.modelGrowth || 0,
+        todayGrowth: dashboardRes.data.todayGrowth || 0
+      }
+    }
+
+    // 加载最近识别记录
+    activitiesLoading.value = true
+    const recognitionsRes = await getRecentRecognitions(10)
+    if (recognitionsRes.code === 200 && recognitionsRes.data) {
+      recentRecognitions.value = recognitionsRes.data
+    }
+    activitiesLoading.value = false
+
+    // 加载性能指标（图表数据）
+    chartsLoading.value = true
+    const performanceRes = await getPerformanceMetrics()
+    if (performanceRes.code === 200 && performanceRes.data) {
+      updateCharts(performanceRes.data)
+    }
     chartsLoading.value = false
-    ElMessage.success('图表数据已刷新')
-  }, 1000)
+
+  } catch (error) {
+    console.error('加载仪表板数据失败:', error)
+    ElMessage.error('加载数据失败')
+    activitiesLoading.value = false
+    chartsLoading.value = false
+  }
+}
+
+const refreshCharts = async () => {
+  chartsLoading.value = true
+  try {
+    const performanceRes = await getPerformanceMetrics()
+    if (performanceRes.code === 200 && performanceRes.data) {
+      updateCharts(performanceRes.data)
+      ElMessage.success('图表数据已刷新')
+    }
+  } catch (error) {
+    console.error('刷新图表失败:', error)
+    ElMessage.error('刷新失败')
+  } finally {
+    chartsLoading.value = false
+  }
+}
+
+const getImageUrl = (fileName) => {
+  if (!fileName) return '';
+  let VITE_BASE_API = 'http://192.168.193.1:8080'; //TODO: 从环境变量或配置中获取基础URL
+  console.log(`${VITE_BASE_API}${fileName}`);
+  return `${VITE_BASE_API}${fileName}`;
 }
 
 const formatTime = (time) => {
@@ -808,6 +870,14 @@ onMounted(() => {
           height: 48px;
           margin-right: 16px;
 
+          .digit-image {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;  // 保持图片比例正确
+            background: #f0f0f0;
+          }
+
           .digit-display {
             width: 100%;
             height: 100%;
@@ -995,11 +1065,5 @@ onMounted(() => {
     transform: scale(2);
     opacity: 0;
   }
-}
-
-// 加载动画优化
-:deep(.el-loading-mask) {
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
 }
 </style>

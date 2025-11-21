@@ -33,6 +33,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Slf4j
 @Service
@@ -239,6 +241,9 @@ public class TrainingTaskService {
         Double loss = (Double) progressData.get("loss");
         Double valAccuracy = (Double) progressData.get("valAccuracy");
         Double valLoss = (Double) progressData.get("valLoss");
+        Integer step = (Integer) progressData.get("step");
+        Double learningRate = (Double) progressData.get("learningRate");
+        Integer batchSize = (Integer) progressData.get("batchSize");
 
         task.setCurrentEpoch(currentEpoch);
         task.setProgress(BigDecimal.valueOf(progress));
@@ -258,13 +263,17 @@ public class TrainingTaskService {
         log.setAccuracy(accuracy != null ? BigDecimal.valueOf(accuracy) : null);
         log.setValLoss(valLoss != null ? BigDecimal.valueOf(valLoss) : null);
         log.setValAccuracy(valAccuracy != null ? BigDecimal.valueOf(valAccuracy) : null);
+        log.setStep(step);
+        log.setLearningRate(learningRate != null ? BigDecimal.valueOf(learningRate) : null);
+        log.setBatchSize(batchSize);
+
         logRepository.save(log);
 
         taskRepository.save(task);
         return Result.success(null);
     }
 
-    @Transactional
+
     public Result<Void> completeTask(Long taskId, Map<String, Object> resultData) {
         TrainingTask task = taskRepository.findById(taskId).orElse(null);
         if (task == null) {
@@ -276,12 +285,28 @@ public class TrainingTaskService {
         String modelPath = (String) resultData.get("modelPath");
         Integer trainingSamples = resultData.get("trainingSamples") != null
                 ? ((Number) resultData.get("trainingSamples")).intValue() : null;
-
         Integer testSamples = resultData.get("testSamples") != null
                 ? ((Number) resultData.get("testSamples")).intValue() : null;
-
         Long modelSize = resultData.get("modelSize") != null
                 ? ((Number) resultData.get("modelSize")).longValue() : null;
+
+        // 接收混淆矩阵和类名
+        Object confusionMatrixObj = resultData.get("confusionMatrix");
+        Object classNamesObj = resultData.get("classNames");
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            if (confusionMatrixObj != null) {
+                String cmJson = mapper.writeValueAsString(confusionMatrixObj);
+                task.setConfusionMatrixJson(cmJson);
+            }
+            if (classNamesObj != null) {
+                String classNamesJson = mapper.writeValueAsString(classNamesObj);
+                task.setClassNamesJson(classNamesJson);
+            }
+        } catch (JsonProcessingException e) {
+            log.error("序列化混淆矩阵或类别名称失败", e);
+        }
 
         Model model = new Model();
         model.setModelName(task.getTaskName());
@@ -381,6 +406,10 @@ public class TrainingTaskService {
                 .createTime(task.getCreateTime())
                 .updateTime(task.getUpdateTime())
                 .modelId(task.getModelId())
+                .confusionMatrixJson(task.getConfusionMatrixJson())
+                .classNamesJson(task.getClassNamesJson())
+                .trainingConfig(task.getTrainingConfig())
+                .datasetConfig(task.getDatasetConfig())
                 .build();
     }
 }

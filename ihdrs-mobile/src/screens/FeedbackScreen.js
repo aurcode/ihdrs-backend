@@ -13,6 +13,7 @@ import {
     Modal,
 } from 'react-native';
 import feedbackService from '../services/feedbackService';
+import { Image } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -91,6 +92,13 @@ const FeedbackScreen = ({ user, token, onCancel }) => {
     const handleViewDetail = async (feedback) => {
         setSelectedFeedback(feedback);
         setShowDetailModal(true);
+    };
+
+    const BASE_URL = "http://10.0.2.2:8080";
+
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        return BASE_URL + path;
     };
 
     const handleDeleteFeedback = (feedbackId) => {
@@ -273,6 +281,15 @@ const FeedbackScreen = ({ user, token, onCancel }) => {
                         </TouchableOpacity>
                     )}
                 </View>
+                {feedback.recordInfo?.imagePath && (
+                    <View style={{ marginTop: 12, alignItems: 'center' }}>
+                        <Image
+                            source={{ uri: getImageUrl(feedback.recordInfo?.imagePath) }}
+                            style={{ width: 120, height: 120, borderRadius: 12 }}
+                            resizeMode="contain"
+                        />
+                    </View>
+                )}
             </TouchableOpacity>
         );
     };
@@ -528,6 +545,23 @@ const FeedbackScreen = ({ user, token, onCancel }) => {
                                     <View style={styles.detailSection}>
                                         <Text style={styles.detailLabel}>反馈说明</Text>
                                         <Text style={styles.detailReason}>{selectedFeedback.feedbackReason}</Text>
+                                        {selectedFeedback.recordInfo?.imagePath && (
+                                            <View style={styles.detailSection}>
+                                                <Text style={styles.detailLabel}>识别图像</Text>
+
+                                                <Image
+                                                    source={{ uri: getImageUrl(selectedFeedback.recordInfo.imagePath) }}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: 300,
+                                                        borderRadius: 16,
+                                                        backgroundColor: '#f1f5f9',
+                                                    }}
+                                                    resizeMode="contain"
+                                                />
+                                            </View>
+                                        )}
+
                                     </View>
                                 )}
 

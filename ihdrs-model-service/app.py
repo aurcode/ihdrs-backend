@@ -8,6 +8,13 @@ from utils.logger import setup_logger
 from services.model_service import ModelService
 
 def create_app(config_name=None):
+    logging.basicConfig(
+        level=logging.INFO,  # 改为 DEBUG 可以看到更详细的日志
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+    # 为 image_processor 设置更详细的日志
+    logging.getLogger('services.image_processor').setLevel(logging.DEBUG)
     """应用工厂函数"""
     if config_name is None:
         config_name = os.environ.get('FLASK_CONFIG') or 'development'

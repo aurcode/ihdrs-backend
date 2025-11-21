@@ -95,6 +95,13 @@ const HistoryScreen = ({ user, token, onCancel }) => {
         loadHistory();
     };
 
+    const BASE_URL = "http://10.0.2.2:8080";
+
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        return BASE_URL + path;
+    };
+
     const handleDeleteRecord = (recordId) => {
         Alert.alert(
             '确认删除',
@@ -164,8 +171,8 @@ const HistoryScreen = ({ user, token, onCancel }) => {
         }
 
         const correctResultNum = parseInt(correctResult);
-        if (isNaN(correctResultNum) || correctResultNum < 0 || correctResultNum > 9) {
-            Alert.alert('验证失败', '识别结果必须是0-9之间的数字');
+        if (isNaN(correctResultNum)) {
+            Alert.alert('验证失败', '识别结果必须是数字');
             return;
         }
 
@@ -239,7 +246,9 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                 <View style={styles.historyContent}>
                     <View style={styles.historyHeader}>
                         <View style={styles.resultBadge}>
-                            <Text style={styles.resultText}>{record.recognitionResult}</Text>
+                            <Text style={styles.resultText}>
+                                {record.recognitionResult || "连续"}
+                            </Text>
                         </View>
                         <View style={styles.historyInfo}>
                             <Text style={styles.historyDate}>{formatDate(record.createTime)}</Text>
@@ -271,7 +280,7 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                         <View style={styles.metaItem}>
                             <Text style={styles.metaLabel}>输入类型：</Text>
                             <Text style={styles.metaValue}>
-                                {record.inputType === 'CANVAS' ? '手绘' : record.inputType === 'UPLOAD' ? '上传' : '相机'}
+                                {record.inputType === 'CANVAS' ? '手绘' : record.inputType === 'UPLOAD' ? '上传' : record.inputType === 'MULTI' ? '手绘' : '相机'}
                             </Text>
                         </View>
                     </View>
@@ -293,6 +302,13 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                                 <Text style={styles.deleteButtonText}>删除</Text>
                             </TouchableOpacity>
                         </View>
+                    )}
+                    {record.imagePath && (
+                        <Image
+                            source={{ uri: getImageUrl(record.imagePath) }}
+                            style={styles.historyImage}
+                            resizeMode="contain"
+                        />
                     )}
                 </View>
             </View>
@@ -478,19 +494,18 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>提交反馈</Text>
                         <Text style={styles.modalSubtitle}>
-                            原识别结果: {selectedRecord?.recognitionResult}
+                            原识别结果: {selectedRecord?.recognitionResult || "（连续数字）"}
                         </Text>
 
                         <View style={styles.modalInput}>
                             <Text style={styles.modalLabel}>正确结果 *</Text>
                             <TextInput
                                 style={styles.textInput}
-                                placeholder="请输入0-9之间的数字"
+                                placeholder="请输入你的预期结果"
                                 placeholderTextColor="#94a3b8"
                                 value={correctResult}
                                 onChangeText={setCorrectResult}
                                 keyboardType="number-pad"
-                                maxLength={1}
                             />
                         </View>
 
@@ -775,6 +790,14 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
     },
+    historyImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        marginTop: 10,
+        backgroundColor: '#f1f5f9',
+    },
+
     historyItemSelected: {
         backgroundColor: '#eff6ff',
         borderWidth: 2,

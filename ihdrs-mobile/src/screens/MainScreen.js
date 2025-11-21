@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
     View,
     Text,
@@ -12,14 +12,17 @@ import DrawingCanvas from '../components/DrawingCanvas';
 import ImagePickerComponent from '../components/ImagePickerComponent';
 import RecognitionHistory from '../components/RecognitionHistory';
 import recognitionService from '../services/recognitionService';
-import authService from '../services/authService';
 
 const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback}) => {
-    const [mode, setMode] = useState('draw'); // 'draw' or 'upload'
+    const [mode, setMode] = useState('draw'); // draw | upload | multi
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
     const [menuVisible, setMenuVisible] = useState(false);
+    const sessionId = useMemo(
+        () => `mobile-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        []
+    );
 
     // **FIX 1: Add state to control the ScrollView**
     const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -39,30 +42,64 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
 
         try {
             const inputType = mode === 'draw' ? 'CANVAS' : 'UPLOAD';
-            const response = await recognitionService.recognizeDigit(
-                base64Image,
-                inputType,
-                null,
-                {
-                    platform: 'mobile',
-                    appVersion: '1.0.0',
-                }
-            );
+
+            let response;
+
+            if (mode === 'multi') {
+                response = await recognitionService.recognizeMulti(
+                    base64Image,
+                    inputType,
+                    sessionId,
+                    {
+                        platform: 'mobile',
+                        appVersion: '1.0.0',
+                    }
+                );
+            } else {
+                response = await recognitionService.recognizeDigit(
+                    base64Image,
+                    inputType,
+                    sessionId,
+                    {
+                        platform: 'mobile',
+                        appVersion: '1.0.0',
+                    }
+                );
+            }
 
             if (response.success) {
-                const recognitionData = response.data.data;
-                setResult(recognitionData);
+                setResult(response.data);
 
-                // Add to history
-                const historyItem = {
-                    id: Date.now(),
-                    digit: recognitionData.predictedDigit,
-                    confidence: recognitionData.confidence,
-                    probabilities: recognitionData.probabilities,
-                    timestamp: new Date().toLocaleTimeString(),
-                    inputType: inputType,
-                };
-                setHistory([historyItem, ...history]);
+                if (mode === 'multi') {
+                    // 使用后端返回的 sequence 字段
+                    const sequence = response.data.sequence || 
+                                    response.data.results.map(r => r.digit).join('');
+
+                    const historyItem = {
+                        id: Date.now(),
+                        type: "MULTI",
+                        sequence: sequence,
+                        details: response.data.results.map(r => ({
+                            digit: r.digit,
+                            confidence: r.confidence,
+                        })),
+                        timestamp: new Date().toLocaleTimeString(),
+                    };
+
+                    setHistory([historyItem, ...history]);
+
+                } else {
+                    const recognitionData = response.data;
+                    const historyItem = {
+                        id: Date.now(),
+                        digit: recognitionData.predictedDigit,
+                        confidence: recognitionData.confidence,
+                        probabilities: recognitionData.probabilities || null,
+                        timestamp: new Date().toLocaleTimeString(),
+                        inputType: inputType,
+                    };
+                    setHistory([historyItem, ...history]);
+                }
             } else {
                 Alert.alert('Error', response.error || 'Recognition failed');
             }
@@ -72,24 +109,6 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                {text: 'Cancel', style: 'cancel'},
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: () => {
-                        // authService.logout(); // Assuming this exists
-                        onLogout();
-                    },
-                },
-            ]
-        );
     };
 
     return (
@@ -114,9 +133,12 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                 </View>
                 <TouchableOpacity
                     style={styles.menuButton}
-                    onPress={() => setMenuVisible(!menuVisible)}
+                    onPress={() => {
+                        if (!user) return;  // 未登录时禁止打开菜单
+                        setMenuVisible(!menuVisible);
+                    }}
                 >
-                    <Text style={styles.menuIcon}>⋮</Text>
+                    <Text style={[styles.menuIcon, !user && { opacity: 0.3 } ]}>⋮</Text>
                 </TouchableOpacity>
 
                 {menuVisible && (
@@ -163,7 +185,15 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('draw')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'draw' && styles.modeButtonTextActive]}>
-                                ✏️ Draw
+                                Draw
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.modeButton, mode === 'multi' && styles.modeButtonActive]}
+                            onPress={() => setMode('multi')}
+                        >
+                            <Text style={[styles.modeButtonText, mode === 'multi' && styles.modeButtonTextActive]}>
+                                Multi-digit
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -171,7 +201,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('upload')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'upload' && styles.modeButtonTextActive]}>
-                                📁 Upload Image
+                                Upload Image
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -183,7 +213,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         // When a touch starts *inside this View*...
                         onTouchStart={() => {
                             // ...and we are in 'draw' mode, disable scrolling.
-                            if (mode === 'draw') {
+                            if (mode === 'draw' || mode === 'multi') {
                                 setScrollEnabled(false);
                             }
                         }}
@@ -193,10 +223,10 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             setScrollEnabled(true);
                         }}
                     >
-                        {mode === 'draw' ? (
-                            <DrawingCanvas onDrawingComplete={handleRecognition}/>
+                        {mode === 'draw' || mode === 'multi' ? (
+                            <DrawingCanvas onDrawingComplete={handleRecognition} />
                         ) : (
-                            <ImagePickerComponent onImageSelected={handleRecognition}/>
+                            <ImagePickerComponent onImageSelected={handleRecognition} />
                         )}
                     </View>
 
@@ -212,14 +242,43 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     {result && !loading && (
                         <View style={styles.resultCard}>
                             <Text style={styles.resultTitle}>Recognition Result</Text>
-                            <View style={styles.resultContent}>
-                                <View style={styles.digitDisplay}>
-                                    <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
+
+                            {mode === 'multi' ? (
+                                <View style={styles.resultContent}>
+                                    {/* 显示完整序列 */}
+                                    <Text style={styles.resultSequence}>
+                                        {result.sequence || result.results?.map(r => r.digit).join('') || ''}
+                                    </Text>
+                                    <Text style={styles.resultSubtext}>
+                                        {result.count || 0} 个数字 | 平均置信度: {
+                                            result.results 
+                                                ? (result.results.reduce((sum, r) => sum + r.confidence, 0) / result.results.length * 100).toFixed(1)
+                                                : '0'
+                                        }%
+                                    </Text>
+                                    
+                                    {/* 显示每个数字的详情 */}
+                                    <View style={styles.multiResultDetails}>
+                                        {result.results?.map((r, idx) => (
+                                            <View key={idx} style={styles.digitResultCard}>
+                                                <Text style={styles.digitResultNumber}>{r.digit}</Text>
+                                                <Text style={styles.digitResultConf}>
+                                                    {(r.confidence * 100).toFixed(1)}%
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
                                 </View>
-                                <Text style={styles.resultSubtext}>
-                                    Confidence: {(result.confidence * 100).toFixed(1)}%
-                                </Text>
-                            </View>
+                            ) : (
+                                <View style={styles.resultContent}>
+                                    <View style={styles.digitDisplay}>
+                                        <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
+                                    </View>
+                                    <Text style={styles.resultSubtext}>
+                                        Confidence: {(result.confidence * 100).toFixed(1)}%
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                     )}
 
@@ -390,7 +449,7 @@ const styles = StyleSheet.create({
         borderColor: '#6366f1',
     },
     modeButtonText: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
         color: '#6b7280',
     },
@@ -400,7 +459,6 @@ const styles = StyleSheet.create({
     contentCard: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 20,
         marginBottom: 20,
         shadowColor: '#000',
         shadowOffset: {width: 0, height: 2},
@@ -453,6 +511,39 @@ const styles = StyleSheet.create({
         fontSize: 64,
         fontWeight: 'bold',
         color: '#fff',
+    },
+    resultSequence: {
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: '#6366f1',
+        letterSpacing: 4,
+        marginBottom: 10,
+    },
+    multiResultDetails: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        marginTop: 15,
+        gap: 10,
+    },
+    digitResultCard: {
+        backgroundColor: '#f3f4f6',
+        borderRadius: 8,
+        padding: 12,
+        minWidth: 60,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#6366f1',
+    },
+    digitResultNumber: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#1f2937',
+    },
+    digitResultConf: {
+        fontSize: 12,
+        color: '#10b981',
+        marginTop: 4,
     },
     resultSubtext: {
         fontSize: 14,

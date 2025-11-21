@@ -37,9 +37,9 @@ const fetchUserList = async () => {
   try {
     loading.value = true
     const params = {
-      page: currentPage.value,
+      current: currentPage.value,
       size: pageSize.value,
-      search: searchQuery.value,
+      username: searchQuery.value,
       role: filterRole.value,
       status: filterStatus.value
     }
