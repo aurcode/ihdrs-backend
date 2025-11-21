@@ -171,8 +171,8 @@ const HistoryScreen = ({ user, token, onCancel }) => {
         }
 
         const correctResultNum = parseInt(correctResult);
-        if (isNaN(correctResultNum) || correctResultNum < 0 || correctResultNum > 9) {
-            Alert.alert('验证失败', '识别结果必须是0-9之间的数字');
+        if (isNaN(correctResultNum)) {
+            Alert.alert('验证失败', '识别结果必须是数字');
             return;
         }
 
@@ -246,7 +246,9 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                 <View style={styles.historyContent}>
                     <View style={styles.historyHeader}>
                         <View style={styles.resultBadge}>
-                            <Text style={styles.resultText}>{record.recognitionResult}</Text>
+                            <Text style={styles.resultText}>
+                                {record.recognitionResult || "连续"}
+                            </Text>
                         </View>
                         <View style={styles.historyInfo}>
                             <Text style={styles.historyDate}>{formatDate(record.createTime)}</Text>
@@ -278,7 +280,7 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                         <View style={styles.metaItem}>
                             <Text style={styles.metaLabel}>输入类型：</Text>
                             <Text style={styles.metaValue}>
-                                {record.inputType === 'CANVAS' ? '手绘' : record.inputType === 'UPLOAD' ? '上传' : '相机'}
+                                {record.inputType === 'CANVAS' ? '手绘' : record.inputType === 'UPLOAD' ? '上传' : record.inputType === 'MULTI' ? '手绘' : '相机'}
                             </Text>
                         </View>
                     </View>
@@ -492,19 +494,18 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>提交反馈</Text>
                         <Text style={styles.modalSubtitle}>
-                            原识别结果: {selectedRecord?.recognitionResult}
+                            原识别结果: {selectedRecord?.recognitionResult || "（连续数字）"}
                         </Text>
 
                         <View style={styles.modalInput}>
                             <Text style={styles.modalLabel}>正确结果 *</Text>
                             <TextInput
                                 style={styles.textInput}
-                                placeholder="请输入0-9之间的数字"
+                                placeholder="请输入你的预期结果"
                                 placeholderTextColor="#94a3b8"
                                 value={correctResult}
                                 onChangeText={setCorrectResult}
                                 keyboardType="number-pad"
-                                maxLength={1}
                             />
                         </View>
 
