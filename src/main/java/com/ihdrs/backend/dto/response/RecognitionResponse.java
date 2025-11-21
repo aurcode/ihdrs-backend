@@ -20,6 +20,7 @@ public class RecognitionResponse {
     private Long userId;
     private Long recordId;
     private Integer recognitionResult;
+    private String sequenceResult;
     private BigDecimal confidence;
     private Integer processingTime; // 处理时间（毫秒）
     private String message; // 提示信息

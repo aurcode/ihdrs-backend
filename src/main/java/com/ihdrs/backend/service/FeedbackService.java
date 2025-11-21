@@ -64,7 +64,11 @@ public class FeedbackService {
         FeedbackData feedback = new FeedbackData();
         feedback.setRecordId(request.getRecordId());
         feedback.setUserId(userId);
-        feedback.setOriginalResult(record.getRecognitionResult());
+        if(record.getRecognitionResult() ==null){
+            feedback.setOriginalResult(Integer.valueOf(record.getSequenceResult()));
+        }else{
+            feedback.setOriginalResult(record.getRecognitionResult());
+        }
         feedback.setCorrectResult(request.getCorrectResult());
         feedback.setFeedbackType(FeedbackData.FeedbackType.valueOf(request.getFeedbackType()));
         feedback.setFeedbackReason(request.getFeedbackReason());
@@ -74,11 +78,12 @@ public class FeedbackService {
         feedbackRepository.save(feedback);
 
         // 更新识别记录的正确性标记
-        record.setIsCorrect(record.getRecognitionResult().equals(request.getCorrectResult()));
+        if(record.getRecognitionResult() ==null){
+            record.setIsCorrect(record.getSequenceResult().equals(request.getCorrectResult().toString()));
+        }else{
+            record.setIsCorrect(record.getRecognitionResult().equals(request.getCorrectResult()));
+        }
         recordRepository.save(record);
-
-        log.info("用户提交反馈: userId={}, recordId={}, correctResult={}",
-                userId, request.getRecordId(), request.getCorrectResult());
 
         return Result.success("反馈提交成功", null);
     }

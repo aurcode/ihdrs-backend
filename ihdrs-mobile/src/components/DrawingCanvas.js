@@ -182,7 +182,7 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginVertical: 20,
+    marginBottom: 20,
   },
   canvasContainer: {
     backgroundColor: CANVAS_BACKGROUND_COLOR, // Set background color here

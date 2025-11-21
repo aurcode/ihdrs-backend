@@ -133,9 +133,12 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                 </View>
                 <TouchableOpacity
                     style={styles.menuButton}
-                    onPress={() => setMenuVisible(!menuVisible)}
+                    onPress={() => {
+                        if (!user) return;  // 未登录时禁止打开菜单
+                        setMenuVisible(!menuVisible);
+                    }}
                 >
-                    <Text style={styles.menuIcon}>⋮</Text>
+                    <Text style={[styles.menuIcon, !user && { opacity: 0.3 } ]}>⋮</Text>
                 </TouchableOpacity>
 
                 {menuVisible && (
@@ -247,7 +250,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                                         {result.sequence || result.results?.map(r => r.digit).join('') || ''}
                                     </Text>
                                     <Text style={styles.resultSubtext}>
-                                        {result.count} 个数字 | 平均置信度: {
+                                        {result.count || 0} 个数字 | 平均置信度: {
                                             result.results 
                                                 ? (result.results.reduce((sum, r) => sum + r.confidence, 0) / result.results.length * 100).toFixed(1)
                                                 : '0'
@@ -456,7 +459,6 @@ const styles = StyleSheet.create({
     contentCard: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 20,
         marginBottom: 20,
         shadowColor: '#000',
         shadowOffset: {width: 0, height: 2},

@@ -24,7 +24,7 @@ class Config:
     SPRINGBOOT_UPLOAD_DATASET_ROOT = r"C:\Users\I\IdeaProjects\ihdrs-backend"
 
     # 模型配置
-    DEFAULT_MODEL_NAME = 'default_cnn_v1.0.0.h5'
+    DEFAULT_MODEL_NAME = 'best_model_checkpoint.h5'
     DEFAULT_MODEL_PATH = MODEL_PATH / DEFAULT_MODEL_NAME
 
     # 数据集配置
