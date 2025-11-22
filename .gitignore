@@ -1,3 +1,47 @@
+# ======== General ========
+.DS_Store
+.env
+*.log
+
+# ======== Logs ========
+# Covers all .gz and .log files in this directory
+logs/
+
+# ======== Java / Gradle ========
+# Ignore Gradle's local cache and daemons
+.gradle/
+caches/
+daemon/
+native/
+
+# Ignore the downloaded Gradle distribution
+wrapper/dists/
+
+# Ignore standard Java/Gradle build output
+build/
+target/
+
+# ======== Python ========
+# Ignore Python bytecode cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+.venv/
+venv/
+
+# ======== Node.js (Frontend/Mobile) ========
+# Ignore downloaded dependencies
+node_modules/
+
+# Ignore build output
+dist/
+.output/
+
+# ======== Runtime Data ========
+# Ignore runtime file uploads
+uploads/
+
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
