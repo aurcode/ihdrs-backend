@@ -34,3 +34,5 @@ build/
 logs/
 *.log
 node_modules/
+__pycache__/
+*.pyc
