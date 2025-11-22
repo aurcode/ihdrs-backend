@@ -106,7 +106,7 @@
           <template #default="{ row }">
             <div class="user-info">
               <el-avatar :size="32">{{ row.userId }}</el-avatar>
-              <span class="user-id">ID: {{ row.userId }}</span>
+              <span class="user-id">ID: {{ row.userId ?? '匿名'}}</span>
             </div>
           </template>
         </el-table-column>

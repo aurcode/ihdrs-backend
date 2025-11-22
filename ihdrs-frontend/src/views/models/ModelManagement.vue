@@ -9,9 +9,6 @@
         <el-button type="primary" icon="Refresh" @click="loadModelList">
           刷新
         </el-button>
-        <el-button type="success" icon="Plus" @click="showCreateDialog">
-          新建训练任务
-        </el-button>
       </div>
     </div>
 
@@ -340,7 +337,6 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="detailDialog.visible = false">关闭</el-button>
-          <el-button type="primary" @click="editModel">编辑</el-button>
         </div>
       </template>
     </el-dialog>
@@ -798,18 +794,6 @@ const handleSizeChange = () => {
 
 const handleCurrentChange = () => {
   loadModelList()
-}
-
-// 编辑模型
-const editModel = () => {
-  // TODO: 实现编辑功能
-  ElMessage.info('编辑功能开发中')
-}
-
-// 显示创建对话框
-const showCreateDialog = () => {
-  // TODO: 跳转到训练任务创建页面
-  ElMessage.info('请前往训练管理创建新任务')
 }
 
 // 辅助函数
