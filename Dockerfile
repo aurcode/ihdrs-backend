@@ -17,25 +17,21 @@ RUN mvn clean package -DskipTests
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 
-# Install wget for health checks
-RUN apk add --no-cache wget
-
 # Set working directory
 WORKDIR /app
 
 # Copy the built jar from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Create necessary directories with proper permissions
-RUN mkdir -p logs uploads models && \
-    chmod 755 logs uploads models
+# Create necessary directories
+RUN mkdir -p logs uploads models
 
 # Expose port
 EXPOSE 8080
 
 # Set environment variables
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+ENV JAVA_OPTS="-Xms512m -Xmx1024m"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

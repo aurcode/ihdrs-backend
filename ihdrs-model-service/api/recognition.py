@@ -103,14 +103,13 @@ def recognize_multi():
     data = request.get_json()
     image_base64 = data.get("image")
     model_id = data.get("model_id", 1)
-    debug = data.get("debug", False)  # 新增调试模式参数
 
     # 1. 解码
     image_bytes = base64.b64decode(image_base64)
 
     # 2. 分割多个数字
     processor = ImageProcessor()
-    digits = processor.segment_digits(image_bytes, debug=debug)  # 传入debug参数
+    digits = processor.segment_digits(image_bytes)
     current_app.logger.info(f"分割数量: {len(digits)}")
     if not digits:
         return jsonify({"status": "error", "message": "无法分割数字"}), 400
@@ -126,27 +125,11 @@ def recognize_multi():
             "all_probabilities": pred.get('all_probabilities', [])
         })
 
-    response_data = {
+    return jsonify({
         "status": "success",
         "data": {
             "count": len(results),
             "results": results,
             "processing_time": int((time.time() - start) * 1000)
         }
-    }
-
-    # 如果启用了调试模式，添加额外的调试信息
-    if debug:
-        response_data["debug"] = {
-            "segmentation_enabled": True,
-            "optimization_version": "2.0",
-            "features": [
-                "adaptive_thresholding",
-                "stroke_width_estimation", 
-                "connectivity_analysis",
-                "contour_merging",
-                "dynamic_morphology"
-            ]
-        }
-
-    return jsonify(response_data)
+    })

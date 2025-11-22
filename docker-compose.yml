@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   # PostgreSQL Database
   postgres:
@@ -68,6 +70,14 @@ services:
       retries: 3
       start_period: 40s
     restart: unless-stopped
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   # Java Backend Service
   backend:

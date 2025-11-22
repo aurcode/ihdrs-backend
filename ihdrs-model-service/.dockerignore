@@ -28,14 +28,13 @@ ENV/
 .coverage
 htmlcov/
 .tox/
-tests/
 
 # Logs
 logs/
 *.log
 
 # Data files (keep models but exclude training data)
-data/custom/
+data/
 *.csv
 *.json
 *.pkl
@@ -47,12 +46,10 @@ data/custom/
 # Documentation
 README.md
 docs/
-DOCKER_README.md
 
 # Docker files
 Dockerfile
 .dockerignore
-docker-compose.yml
 
 # Environment files
 .env
@@ -71,29 +68,3 @@ temp/
 # Test images
 test_*.png
 test_*.jpg
-*.png
-*.jpg
-*.jpeg
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Model files (keep in repo but exclude from Docker image)
-models/*.h5
-models/*.pkl
-models/*.joblib
-
-# Training data
-data/training/
-data/validation/
-data/test/
-
-# Cache
-.cache/
-*.cache
-
-# Python packaging
-setup.py
-MANIFEST.in

@@ -5,7 +5,6 @@ import numpy as np
 from PIL import Image
 import io
 import logging
-import time
 from typing import Optional, Tuple, List
 
 logger = logging.getLogger(__name__)
@@ -146,35 +145,15 @@ class ImageProcessor:
         # 这里暂不实现，保持原图像
         return image
 
-    def segment_digits(self, image_bytes: bytes, debug: bool = False) -> List[np.ndarray]:
+    def segment_digits(self, image_bytes: bytes) -> List[np.ndarray]:
         """
-        分割连续数字（增强版：抗阴影、抗边框、分离粘连、优化性能）
-        
-        Args:
-            image_bytes: 图像字节数据
-            debug: 是否启用调试模式
-            
-        Returns:
-            分割后的数字图像列表
+        分割连续数字（增强版：抗阴影、抗边框、分离粘连）
         """
-        start_time = time.time()
-        debug_info = {}
-        
         try:
-            # 1. 基础加载 - 优化内存使用
+            # 1. 基础加载
             image = Image.open(io.BytesIO(image_bytes))
             if image.mode != 'RGB':
                 image = image.convert('RGB')
-            
-            # 限制图像尺寸以提高处理速度
-            original_size = image.size
-            image.thumbnail((800, 800), Image.Resampling.LANCZOS)
-            resized_size = image.size
-            
-            if debug:
-                debug_info['original_size'] = original_size
-                debug_info['resized_size'] = resized_size
-            
             image_array = np.array(image)
 
             # 转灰度
@@ -183,120 +162,79 @@ class ImageProcessor:
             else:
                 gray = image_array
 
-            # 2. 预处理优化 - 自适应参数
-            # 2.1 高斯模糊去噪 - 根据图像大小调整核大小
-            h_img, w_img = gray.shape
-            blur_kernel = (5, 5) if max(h_img, w_img) > 200 else (3, 3)
-            blurred = cv2.GaussianBlur(gray, blur_kernel, 0)
+            # 2. 预处理优化
+            # 2.1 高斯模糊去噪
+            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-            # 2.2 自适应阈值 - 根据图像特征动态调整参数
-            # 计算图像亮度以调整阈值参数
-            mean_brightness = np.mean(blurred)
-            if mean_brightness > 200:  # 亮背景
-                block_size = 21
-                c_value = 8
-            elif mean_brightness > 150:  # 中等亮度
-                block_size = 19
-                c_value = 5
-            else:  # 暗背景
-                block_size = 15
-                c_value = 3
-
+            # 2.2 自适应阈值 (关键修改：比 OTSU 更适合处理光照不均的手写图)
+            # block_size=11, C=2 是经验值，将图像转为黑底白字
             binary = cv2.adaptiveThreshold(
                 blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                cv2.THRESH_BINARY_INV, block_size, c_value
+                cv2.THRESH_BINARY_INV, 19, 5
             )
 
-            if debug:
-                debug_info['brightness'] = float(mean_brightness)
-                debug_info['threshold_params'] = {'block_size': block_size, 'c_value': c_value}
-
-            # 2.3 清除边缘 - 动态边框大小
-            border_size = max(2, min(10, min(h_img, w_img) // 50))
+            # 2.3 清除边缘 (关键修改：防止图片边框被当成一个大轮廓)
+            h_img, w_img = binary.shape
+            border_size = 5
             cv2.rectangle(binary, (0, 0), (w_img, h_img), (0, 0, 0), border_size * 2)
 
-            # 2.4 智能形态学操作 - 根据笔画宽度调整
-            # 计算平均笔画宽度
-            stroke_width = self._estimate_stroke_width(binary)
-            
-            kernel_size = max(2, min(4, stroke_width // 2))
-            kernel = np.ones((kernel_size, kernel_size), np.uint8)
-            
-            # 根据粘连程度决定腐蚀强度
-            connectivity = self._analyze_connectivity(binary)
-            iterations = 1 if connectivity < 0.3 else (2 if connectivity < 0.6 else 0)
-            
-            if iterations > 0:
-                eroded = cv2.erode(binary, kernel, iterations=iterations)
-            else:
-                eroded = binary
+            # 2.4 形态学操作 - 腐蚀 (关键修改：用于分离粘连的数字)
+            # 在黑底白字模式下，腐蚀会“削细”白色笔画，从而断开连接
+            kernel = np.ones((3, 3), np.uint8)
+            # 这里的 iterations 可以调整，如果数字很细则设为 0 或 1，如果很粗且粘连则设为 2
+            eroded = cv2.erode(binary, kernel, iterations=1)
 
-            if debug:
-                debug_info['stroke_width'] = stroke_width
-                debug_info['connectivity'] = float(connectivity)
-                debug_info['morphology'] = {'kernel_size': kernel_size, 'iterations': iterations}
-
-            # 3. 查找轮廓 - 使用更精确的方法
-            contours, hierarchy = cv2.findContours(eroded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            # 3. 查找轮廓
+            # 使用 RETR_EXTERNAL 查找外轮廓
+            contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # cv2.imwrite("debug_binary.jpg", binary)
+            # cv2.imwrite("debug_eroded.jpg", eroded)
 
             if not contours:
                 logger.warning("未检测到任何轮廓")
                 return []
 
-            if debug:
-                debug_info['total_contours'] = len(contours)
-
-            # 4. 智能轮廓筛选与提取
+            # 4. 轮廓筛选与提取
             digits = []
             bounding_boxes = []
 
             image_area = h_img * w_img
 
-            # 分析轮廓层级关系
-            valid_contours = []
-            for i, contour in enumerate(contours):
-                # 跳过父轮廓（可能是整个图像）
-                if hierarchy[0][i][3] != -1:
-                    continue
-                    
+            for contour in contours:
                 x, y, w, h = cv2.boundingRect(contour)
                 area = w * h
 
-                # 多层过滤策略
-                if not self._is_valid_digit_contour(area, w, h, image_area, contour):
+                # 过滤 1: 噪点 (太小)
+                if area < 50 or w < 5 or h < 10:
                     continue
 
-                valid_contours.append((x, y, w, h, contour))
+                # 过滤 2: 边框/背景 (太大)
+                # 如果一个轮廓占了全图的 50% 以上，它肯定不是单个数字，而是背景或边框
+                if area > image_area * 0.5:
+                    logger.info(f"忽略过大轮廓: {w}x{h} (可能是背景)")
+                    continue
 
-            if debug:
-                debug_info['valid_contours'] = len(valid_contours)
-
-            # 合并重叠的轮廓（处理断裂的数字）
-            merged_contours = self._merge_overlapping_contours(valid_contours)
-
-            if debug:
-                debug_info['merged_contours'] = len(merged_contours)
+                bounding_boxes.append((x, y, w, h, contour))
 
             # 按 x 坐标排序 (从左到右)
-            merged_contours.sort(key=lambda b: b[0])
+            bounding_boxes.sort(key=lambda b: b[0])
 
-            for x, y, w, h, contour in merged_contours:
-                # 智能填充和边缘处理
-                digit_roi = self._extract_digit_roi(binary, x, y, w, h, h_img, w_img)
-                
-                if digit_roi is not None:
-                    # 使用优化的缩放方法
-                    processed_digit = self._resize_with_pad(digit_roi)
-                    digits.append(processed_digit)
+            for x, y, w, h, contour in bounding_boxes:
+                # 提取 ROI (注意：回到 binary 原图提取，而不是腐蚀后的图，以免笔画缺失)
+                # 适当外扩几个像素
+                pad = 4
+                x_pad = max(0, x - pad)
+                y_pad = max(0, y - pad)
+                w_pad = min(w_img - x_pad, w + 2 * pad)
+                h_pad = min(h_img - y_pad, h + 2 * pad)
 
-            processing_time = time.time() - start_time
-            
-            if debug:
-                debug_info['processing_time'] = round(processing_time, 3)
-                debug_info['final_digits'] = len(digits)
-                logger.info(f"分割调试信息: {debug_info}")
+                digit_roi = binary[y_pad:y_pad+h_pad, x_pad:x_pad+w_pad]
 
-            logger.info(f"成功分割出 {len(digits)} 个数字 (耗时: {processing_time:.3f}s)")
+                # 使用之前定义的保持比例缩放方法
+                processed_digit = self._resize_with_pad(digit_roi)
+                digits.append(processed_digit)
+
+            logger.info(f"成功分割出 {len(digits)} 个数字")
             return digits
 
         except Exception as e:
@@ -376,201 +314,6 @@ class ImageProcessor:
         shifted = cv2.warpAffine(image, M_affine, (w, h))
 
         return shifted
-
-    def _estimate_stroke_width(self, binary_image: np.ndarray) -> int:
-        """
-        估计笔画宽度 - 用于优化形态学操作
-        """
-        try:
-            # 使用距离变换估计笔画宽度
-            dist_transform = cv2.distanceTransform(binary_image, cv2.DIST_L2, 3)
-            
-            # 找到最大距离（笔画中心到边缘的距离）
-            max_dist = np.max(dist_transform)
-            
-            # 笔画宽度大约是最大距离的两倍
-            stroke_width = int(max_dist * 2)
-            
-            # 限制在合理范围内
-            return max(2, min(10, stroke_width))
-            
-        except Exception as e:
-            logger.warning(f"笔画宽度估计失败: {e}")
-            return 3  # 默认值
-
-    def _analyze_connectivity(self, binary_image: np.ndarray) -> float:
-        """
-        分析数字之间的粘连程度
-        """
-        try:
-            # 计算水平投影
-            horizontal_proj = np.sum(binary_image, axis=1)
-            
-            # 找到投影的谷值（数字之间的间隙）
-            valleys = []
-            for i in range(1, len(horizontal_proj) - 1):
-                if (horizontal_proj[i] < horizontal_proj[i-1] and 
-                    horizontal_proj[i] < horizontal_proj[i+1]):
-                    valleys.append(i)
-            
-            # 计算粘连程度 - 谷值越少，粘连越严重
-            if len(valleys) == 0:
-                return 1.0  # 完全粘连
-            
-            # 计算平均谷值深度
-            total_proj = np.sum(horizontal_proj)
-            avg_valley_depth = np.mean([horizontal_proj[v] for v in valleys]) if valleys else 0
-            
-            connectivity = avg_valley_depth / (total_proj / len(horizontal_proj)) if total_proj > 0 else 0
-            
-            return min(1.0, connectivity)
-            
-        except Exception as e:
-            logger.warning(f"粘连分析失败: {e}")
-            return 0.5  # 默认值
-
-    def _is_valid_digit_contour(self, area: int, width: int, height: int, image_area: int, contour: np.ndarray) -> bool:
-        """
-        智能判断轮廓是否为有效数字
-        """
-        try:
-            # 基本尺寸过滤
-            if area < 30 or width < 4 or height < 8:  # 太小
-                return False
-            
-            if area > image_area * 0.4:  # 太大（可能是背景）
-                return False
-            
-            # 长宽比过滤
-            aspect_ratio = width / height if height > 0 else 0
-            if aspect_ratio > 3.0 or aspect_ratio < 0.1:  # 过于细长
-                return False
-            
-            #  solidity 过滤（轮廓面积与边界框面积的比例）
-            contour_area = cv2.contourArea(contour)
-            solidity = contour_area / area if area > 0 else 0
-            if solidity < 0.2:  # 过于稀疏
-                return False
-            
-            # 密度过滤（像素密度）
-            pixel_density = np.sum(cv2.drawContours(np.zeros((height, width), dtype=np.uint8), 
-                                                 [contour], -1, 255, -1)) / area if area > 0 else 0
-            if pixel_density < 0.3:  # 像素密度太低
-                return False
-            
-            return True
-            
-        except Exception as e:
-            logger.warning(f"轮廓验证失败: {e}")
-            return False
-
-    def _merge_overlapping_contours(self, contours: List[tuple]) -> List[tuple]:
-        """
-        合并重叠的轮廓（处理断裂的数字）
-        """
-        if not contours:
-            return []
-        
-        try:
-            merged = []
-            used = [False] * len(contours)
-            
-            for i, (x1, y1, w1, h1, contour1) in enumerate(contours):
-                if used[i]:
-                    continue
-                
-                # 当前轮廓
-                current_x, current_y = x1, y1
-                current_right = x1 + w1
-                current_bottom = y1 + h1
-                
-                # 查找重叠的轮廓
-                for j in range(i + 1, len(contours)):
-                    if used[j]:
-                        continue
-                    
-                    x2, y2, w2, h2, contour2 = contours[j]
-                    
-                    # 检查是否重叠
-                    overlap_threshold = 0.3  # 30% 重叠
-                    
-                    # 计算重叠区域
-                    overlap_x1 = max(current_x, x2)
-                    overlap_y1 = max(current_y, y2)
-                    overlap_x2 = min(current_right, x2 + w2)
-                    overlap_y2 = min(current_bottom, y2 + h2)
-                    
-                    if overlap_x1 < overlap_x2 and overlap_y1 < overlap_y2:
-                        overlap_area = (overlap_x2 - overlap_x1) * (overlap_y2 - overlap_y1)
-                        area1 = w1 * h1
-                        area2 = w2 * h2
-                        
-                        # 检查重叠比例
-                        if (overlap_area / min(area1, area2) > overlap_threshold or
-                            abs(x1 - x2) < min(w1, w2) * 0.5):  # 水平距离很近
-                            
-                            # 合并轮廓
-                            current_x = min(current_x, x2)
-                            current_y = min(current_y, y2)
-                            current_right = max(current_right, x2 + w2)
-                            current_bottom = max(current_bottom, y2 + h2)
-                            
-                            used[j] = True
-                
-                # 添加合并后的轮廓
-                merged_width = current_right - current_x
-                merged_height = current_bottom - current_y
-                
-                # 创建合并后的边界框
-                merged_contour = np.array([[[current_x, current_y]], 
-                                         [[current_x + merged_width, current_y]],
-                                         [[current_x + merged_width, current_y + merged_height]],
-                                         [[current_x, current_y + merged_height]]])
-                
-                merged.append((current_x, current_y, merged_width, merged_height, merged_contour))
-                used[i] = True
-            
-            return merged
-            
-        except Exception as e:
-            logger.warning(f"轮廓合并失败: {e}")
-            return contours
-
-    def _extract_digit_roi(self, binary_image: np.ndarray, x: int, y: int, w: int, h: int, 
-                          img_height: int, img_width: int) -> Optional[np.ndarray]:
-        """
-        智能提取数字ROI区域
-        """
-        try:
-            # 动态填充大小
-            padding_scale = min(0.1, max(0.02, min(w, h) / 100))
-            pad = max(2, int(min(w, h) * padding_scale))
-            
-            x_pad = max(0, x - pad)
-            y_pad = max(0, y - pad)
-            w_pad = min(img_width - x_pad, w + 2 * pad)
-            h_pad = min(img_height - y_pad, h + 2 * pad)
-            
-            # 提取ROI
-            roi = binary_image[y_pad:y_pad+h_pad, x_pad:x_pad+w_pad]
-            
-            # 验证ROI质量
-            if roi.size == 0:
-                return None
-            
-            # 检查ROI是否包含足够的像素
-            pixel_count = np.count_nonzero(roi)
-            total_pixels = roi.size
-            pixel_ratio = pixel_count / total_pixels if total_pixels > 0 else 0
-            
-            if pixel_ratio < 0.05 or pixel_ratio > 0.9:  # 太稀疏或太密集
-                return None
-            
-            return roi
-            
-        except Exception as e:
-            logger.warning(f"ROI提取失败: {e}")
-            return None
 
     def validate_image(self, image_bytes: bytes, max_size: int = 5 * 1024 * 1024) -> bool:
         """
