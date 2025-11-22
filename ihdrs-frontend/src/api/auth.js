@@ -18,7 +18,7 @@ export function login(data) {
 // 用户注册
 export function register(data) {
     return request({
-        url: '/auth/register',
+        url: '/auth/register_admin',
         method: 'post',
         data
     })

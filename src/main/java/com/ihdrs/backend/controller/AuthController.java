@@ -23,10 +23,16 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @Operation(summary = "用户注册", description = "注册新用户账号")
+    @Operation(summary = "用户注册", description = "用户注册新用户账号")
     @PostMapping("/register")
     public Result<UserResponse> register(@Valid @RequestBody UserRegisterRequest request) {
         return authService.register(request);
+    }
+
+    @Operation(summary = "管理员注册", description = "管理员注册新用户账号")
+    @PostMapping("/register_admin")
+    public Result<UserResponse> register_admin(@Valid @RequestBody UserRegisterRequest request) {
+        return authService.register_admin(request);
     }
 
     @Operation(summary = "用户登录", description = "用户登录获取Token")

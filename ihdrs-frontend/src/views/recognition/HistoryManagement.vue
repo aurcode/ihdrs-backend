@@ -116,7 +116,6 @@
             <el-image
                 v-if="row.imagePath"
                 :src="row.imagePath"
-                :preview-src-list="[row.imagePath]"
                 fit="cover"
                 class="table-image"
             >
@@ -133,7 +132,7 @@
         <el-table-column label="识别结果" width="100" align="center">
           <template #default="{ row }">
             <el-tag type="primary" size="large" class="result-tag">
-              {{ row.recognitionResult }}
+              {{ row.recognitionResult ?? row.sequenceResult }}
             </el-tag>
           </template>
         </el-table-column>
@@ -227,7 +226,9 @@
           {{ currentRecord.userId }}
         </el-descriptions-item>
         <el-descriptions-item label="识别结果">
-          <el-tag type="primary" size="large">{{ currentRecord.recognitionResult }}</el-tag>
+          <el-tag type="primary" size="large">
+            {{ currentRecord.recognitionResult ?? currentRecord.sequenceResult }}
+          </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="置信度">
           {{ (currentRecord.confidence * 100).toFixed(2) }}%
@@ -322,6 +323,7 @@ const fetchData = async () => {
     const response = await getRecognitionHistory(params)
     if (response.code === 200) {
       const { records, total } = response.data
+      console.log('response data:', response.data)
       tableData.value = records || []
       pagination.total = total || 0
 
@@ -457,6 +459,7 @@ const getConfidenceColor = (confidence) => {
 const getInputTypeTag = (inputType) => {
   const typeMap = {
     'CANVAS': 'primary',
+    'MULTI': 'primary',
     'UPLOAD': 'success',
     'CAMERA': 'warning'
   }
@@ -467,6 +470,7 @@ const getInputTypeTag = (inputType) => {
 const getInputTypeText = (inputType) => {
   const typeMap = {
     'CANVAS': '手写板',
+    'MULTI' : '手写板',
     'UPLOAD': '图片上传',
     'CAMERA': '相机拍摄'
   }

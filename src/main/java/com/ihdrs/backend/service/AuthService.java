@@ -51,6 +51,43 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setPasswordHash(passwordUtil.encodePassword(request.getPassword()));
         user.setSalt(passwordUtil.generateSalt());
+        user.setRole(User.UserRole.USER);
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setStatus(true);
+        user.setLoginCount(0);
+
+        user = userRepository.save(user);
+        // 转换为响应对象
+        UserResponse response = convertToUserResponse(user);
+        return Result.success("注册成功", response);
+    }
+
+    /**
+     * 用户注册
+     */
+    @Transactional
+    public Result<UserResponse> register_admin(UserRegisterRequest request) {
+        // 检查用户名是否已存在
+        if (userRepository.existsByUsername(request.getUsername())) {
+            return Result.error(400, "用户名已存在");
+        }
+
+        // 检查邮箱是否已存在
+        if (request.getEmail() != null && userRepository.existsByEmail(request.getEmail())) {
+            return Result.error(400, "邮箱已被使用");
+        }
+
+        // 验证密码强度
+        if (!passwordUtil.isValidPassword(request.getPassword())) {
+            return Result.error(400, "密码强度不足，至少需要6个字符");
+        }
+
+        // 创建用户
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPasswordHash(passwordUtil.encodePassword(request.getPassword()));
+        user.setSalt(passwordUtil.generateSalt());
         user.setRole(User.UserRole.ADMIN);
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
@@ -58,9 +95,6 @@ public class AuthService {
         user.setLoginCount(0);
 
         user = userRepository.save(user);
-
-        log.info("用户注册成功: {}", user.getUsername());
-
         // 转换为响应对象
         UserResponse response = convertToUserResponse(user);
         return Result.success("注册成功", response);
