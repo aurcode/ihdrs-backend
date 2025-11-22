@@ -38,7 +38,7 @@ public class RecognitionController {
             @Valid @RequestBody RecognitionRequest request,
             HttpServletRequest httpRequest) {
 
-        Long userId = getUserIdFromRequest(httpRequest); // 如果有 token 则填 userId，否则 null（匿名）
+        Long userId = getUserIdFromRequest(httpRequest);
         return recognitionService.recognize(request, userId);
     }
 

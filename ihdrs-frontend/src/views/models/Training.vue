@@ -302,21 +302,24 @@
     <el-dialog
         v-model="createDialog.visible"
         title="创建训练任务"
-        width="700px"
+        width="800px"
         :close-on-click-modal="false"
     >
       <el-form
           ref="createFormRef"
           :model="createDialog.form"
           :rules="createDialog.rules"
-          label-width="120px"
+          label-width="140px"
       >
+        <!-- 基础配置 -->
+        <el-divider content-position="left">基础配置</el-divider>
+
         <el-form-item label="任务名称" prop="taskName">
           <el-input v-model="createDialog.form.taskName" placeholder="请输入任务名称"/>
         </el-form-item>
 
         <el-form-item label="数据集" prop="datasetId">
-          <el-select v-model="createDialog.form.datasetId" placeholder="请选择数据集">
+          <el-select v-model="createDialog.form.datasetId" placeholder="请选择数据集" style="width: 100%">
             <el-option
                 v-for="d in datasets"
                 :key="d.datasetId"
@@ -326,92 +329,210 @@
           </el-select>
         </el-form-item>
 
+        <!-- 模型配置 -->
+        <el-divider content-position="left">模型配置</el-divider>
+
         <el-form-item label="模型类型" prop="modelType">
-          <el-select v-model="createDialog.form.modelType" placeholder="请选择模型类型">
-            <el-option label="CNN" value="CNN"/>
-            <el-option label="Advanced CNN" value="ADVANCED_CNN"/>
+          <el-select v-model="createDialog.form.modelType" placeholder="请选择模型类型" style="width: 100%">
+            <el-option label="基础CNN" value="CNN">
+              <span>基础CNN</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">适合简单任务</span>
+            </el-option>
+            <el-option label="高级CNN" value="ADVANCED_CNN">
+              <span>高级CNN</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">带批归一化</span>
+            </el-option>
+            <el-option label="ResNet" value="RESNET">
+              <span>ResNet</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">残差网络，深层效果好</span>
+            </el-option>
+            <el-option label="VGG" value="VGG">
+              <span>VGG</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">经典深度网络</span>
+            </el-option>
+            <el-option label="MobileNet" value="MOBILENET">
+              <span>MobileNet</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">轻量级，速度快</span>
+            </el-option>
           </el-select>
         </el-form-item>
 
-        <el-form-item label="训练轮数" prop="totalEpochs">
-          <el-input-number
-              v-model="createDialog.form.totalEpochs"
-              :min="1"
-              :max="100"
-              style="width: 100%"
-          />
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="隐藏层大小" prop="hiddenSize">
+              <el-input-number
+                  v-model="createDialog.form.hiddenSize"
+                  :min="32"
+                  :max="2048"
+                  :step="32"
+                  style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="激活函数" prop="activation">
+              <el-select v-model="createDialog.form.activation" placeholder="请选择激活函数" style="width: 100%">
+                <el-option label="ReLU" value="relu"/>
+                <el-option label="LeakyReLU" value="leaky_relu"/>
+                <el-option label="ELU" value="elu"/>
+                <el-option label="Sigmoid" value="sigmoid"/>
+                <el-option label="Tanh" value="tanh"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Dropout率" prop="dropout">
+              <el-select v-model="createDialog.form.dropout" placeholder="请选择Dropout率" style="width: 100%">
+                <el-option label="0.0 (不使用)" value="0.0"/>
+                <el-option label="0.1" value="0.1"/>
+                <el-option label="0.2" value="0.2"/>
+                <el-option label="0.3" value="0.3"/>
+                <el-option label="0.4" value="0.4"/>
+                <el-option label="0.5" value="0.5"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="批归一化" prop="useBatchNorm">
+              <el-switch v-model="createDialog.form.useBatchNorm"/>
+              <span style="margin-left: 10px; color: #909399; font-size: 12px">提高训练稳定性</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 训练配置 -->
+        <el-divider content-position="left">训练配置</el-divider>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="训练轮数" prop="totalEpochs">
+              <el-input-number
+                  v-model="createDialog.form.totalEpochs"
+                  :min="1"
+                  :max="500"
+                  style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="批次大小" prop="batchSize">
+              <el-select v-model="createDialog.form.batchSize" placeholder="请选择批次大小" style="width: 100%">
+                <el-option label="8" :value="8"/>
+                <el-option label="16" :value="16"/>
+                <el-option label="32" :value="32"/>
+                <el-option label="64" :value="64"/>
+                <el-option label="128" :value="128"/>
+                <el-option label="256" :value="256"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="学习率" prop="learningRate">
+              <el-select v-model="createDialog.form.learningRate" placeholder="请选择学习率" style="width: 100%">
+                <el-option label="0.00001" value="0.00001"/>
+                <el-option label="0.0001" value="0.0001"/>
+                <el-option label="0.0005" value="0.0005"/>
+                <el-option label="0.001" value="0.001"/>
+                <el-option label="0.005" value="0.005"/>
+                <el-option label="0.01" value="0.01"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="优化器" prop="optimizer">
+              <el-select v-model="createDialog.form.optimizer" placeholder="请选择优化器" style="width: 100%">
+                <el-option label="Adam" value="adam"/>
+                <el-option label="AdamW" value="adamw"/>
+                <el-option label="SGD" value="sgd"/>
+                <el-option label="RMSprop" value="rmsprop"/>
+                <el-option label="Nadam" value="nadam"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 高级配置 -->
+        <el-divider content-position="left">高级配置</el-divider>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="损失函数" prop="lossFunction">
+              <el-select v-model="createDialog.form.lossFunction" placeholder="请选择损失函数" style="width: 100%">
+                <el-option label="Categorical Crossentropy" value="categorical_crossentropy"/>
+                <el-option label="Binary Crossentropy" value="binary_crossentropy"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="验证集比例" prop="validationSplit">
+              <el-select v-model="createDialog.form.validationSplit" placeholder="请选择验证集比例" style="width: 100%">
+                <el-option label="10%" value="0.1"/>
+                <el-option label="15%" value="0.15"/>
+                <el-option label="20%" value="0.2"/>
+                <el-option label="25%" value="0.25"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="L2正则化系数" prop="l2Regularization">
+              <el-select v-model="createDialog.form.l2Regularization" placeholder="请选择L2正则化" style="width: 100%">
+                <el-option label="0.0 (不使用)" value="0.0"/>
+                <el-option label="0.0001" value="0.0001"/>
+                <el-option label="0.001" value="0.001"/>
+                <el-option label="0.01" value="0.01"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="早停轮数" prop="earlyStoppingPatience">
+              <el-input-number
+                  v-model="createDialog.form.earlyStoppingPatience"
+                  :min="0"
+                  :max="50"
+                  style="width: 100%"
+                  placeholder="0表示不使用"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="学习率衰减策略" prop="lrScheduler">
+              <el-select v-model="createDialog.form.lrScheduler" placeholder="请选择学习率衰减" style="width: 100%">
+                <el-option label="不使用" value="none"/>
+                <el-option label="指数衰减" value="exponential"/>
+                <el-option label="余弦退火" value="cosine"/>
+                <el-option label="阶梯衰减" value="step"/>
+                <el-option label="性能衰减" value="reduce_on_plateau"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="数据增强" prop="useAugmentation">
+              <el-switch v-model="createDialog.form.useAugmentation"/>
+              <span style="margin-left: 10px; color: #909399; font-size: 12px">增加数据多样性</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="数据增强强度" prop="augmentationStrength" v-if="createDialog.form.useAugmentation">
+          <el-radio-group v-model="createDialog.form.augmentationStrength">
+            <el-radio label="light">轻度</el-radio>
+            <el-radio label="medium">中度</el-radio>
+            <el-radio label="strong">强度</el-radio>
+          </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="批次大小" prop="batchSize">
-          <el-select v-model="createDialog.form.batchSize" placeholder="请选择批次大小">
-            <el-option label="16" :value="16"/>
-            <el-option label="32" :value="32"/>
-            <el-option label="64" :value="64"/>
-            <el-option label="128" :value="128"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="学习率" prop="learningRate">
-          <el-select v-model="createDialog.form.learningRate" placeholder="请选择学习率">
-            <el-option label="0.0001" value="0.0001"/>
-            <el-option label="0.001" value="0.001"/>
-            <el-option label="0.01" value="0.01"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="优化器" prop="optimizer">
-          <el-select v-model="createDialog.form.optimizer" placeholder="请选择优化器">
-            <el-option label="Adam" value="adam"/>
-            <el-option label="SGD" value="sgd"/>
-            <el-option label="RMSprop" value="rmsprop"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="损失函数" prop="lossFunction">
-          <el-select v-model="createDialog.form.lossFunction" placeholder="请选择损失函数">
-            <el-option label="Categorical Crossentropy" value="categorical_crossentropy"/>
-            <el-option label="Sparse Categorical Crossentropy" value="sparse_categorical_crossentropy"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="激活函数" prop="activation">
-          <el-select v-model="createDialog.form.activation" placeholder="请选择激活函数">
-            <el-option label="ReLU" value="relu"/>
-            <el-option label="Sigmoid" value="sigmoid"/>
-            <el-option label="Tanh" value="tanh"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="Dropout率" prop="dropout">
-          <el-select v-model="createDialog.form.dropout" placeholder="请选择Dropout率">
-            <el-option label="0.0" value="0.0"/>
-            <el-option label="0.2" value="0.2"/>
-            <el-option label="0.3" value="0.3"/>
-            <el-option label="0.5" value="0.5"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="隐藏层大小" prop="hiddenSize">
-          <el-input-number
-              v-model="createDialog.form.hiddenSize"
-              :min="32"
-              :max="1024"
-              :step="32"
-              style="width: 100%"
-          />
-        </el-form-item>
-
-        <el-form-item label="验证集比例" prop="validationSplit">
-          <el-select v-model="createDialog.form.validationSplit" placeholder="请选择验证集比例">
-            <el-option label="10%" value="0.1"/>
-            <el-option label="15%" value="0.15"/>
-            <el-option label="20%" value="0.2"/>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="数据增强" prop="useAugmentation">
-          <el-switch v-model="createDialog.form.useAugmentation"/>
-        </el-form-item>
       </el-form>
 
       <template #footer>
@@ -686,27 +807,21 @@ const createDialog = reactive({
     dropout: '0.2',
     hiddenSize: 128,
     validationSplit: '0.2',
-    useAugmentation: false
+    useAugmentation: false,
+    augmentationStrength: 'medium',
+    useBatchNorm: true,
+    l2Regularization: '0.0',
+    earlyStoppingPatience: 5,
+    lrScheduler: 'none'
   },
   rules: {
-    taskName: [
-      {required: true, message: '请输入任务名称', trigger: 'blur'}
-    ],
-    datasetId: [
-      {required: true, message: '请选择数据集', trigger: 'change'}
-    ],
-    modelType: [
-      {required: true, message: '请选择模型类型', trigger: 'change'}
-    ],
-    totalEpochs: [
-      {required: true, message: '请输入训练轮数', trigger: 'blur'}
-    ],
-    batchSize: [
-      {required: true, message: '请选择批次大小', trigger: 'change'}
-    ],
-    learningRate: [
-      {required: true, message: '请选择学习率', trigger: 'change'}
-    ]
+    taskName: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
+    datasetId: [{ required: true, message: '请选择数据集', trigger: 'change' }],
+    modelType: [{ required: true, message: '请选择模型类型', trigger: 'change' }],
+    totalEpochs: [{ required: true, message: '请输入训练轮数', trigger: 'blur' }],
+    batchSize: [{ required: true, message: '请选择批次大小', trigger: 'change' }],
+    learningRate: [{ required: true, message: '请选择学习率', trigger: 'change' }],
+    optimizer: [{ required: true, message: '请选择优化器', trigger: 'change' }]
   }
 })
 
@@ -1112,43 +1227,6 @@ const confusionMatrixOption = computed(() => {
   }
 })
 
-// 方法
-const loadTaskList = async () => {
-  loading.value = true
-  try {
-    const params = {
-      current: pagination.current,
-      size: pagination.size,
-      status: filterForm.status || undefined
-    }
-
-    const response = await getTrainingTaskList(params)
-    if (response.code === 200) {
-      taskList.value = response.data.records
-      pagination.total = response.data.total
-
-      updateStatistics()
-
-      // 默认选中第一个任务，并加载日志
-      if (!selectedTask.value && taskList.value.length > 0) {
-        selectedTask.value = taskList.value[0]
-        loadLogsForSelectedTask()
-      } else if (
-          selectedTask.value &&
-          taskList.value.some(t => t.taskId === selectedTask.value.taskId)
-      ) {
-        // 保持选中任务对象为最新
-        selectedTask.value = taskList.value.find(t => t.taskId === selectedTask.value.taskId)
-      }
-    }
-  } catch (error) {
-    console.error('获取训练任务列表失败', error)
-    ElMessage.error('获取训练任务列表失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 const loadLogsForSelectedTask = async () => {
   if (!selectedTask.value) return
   inlineLogsLoading.value = true
@@ -1177,27 +1255,6 @@ const updateStatistics = () => {
   }
 }
 
-const handleSearch = () => {
-  pagination.current = 1
-  loadTaskList()
-}
-
-const resetFilter = () => {
-  filterForm.keyword = ''
-  filterForm.status = ''
-  handleSearch()
-}
-
-const handleSizeChange = (size) => {
-  pagination.size = size
-  loadTaskList()
-}
-
-const handleCurrentChange = (current) => {
-  pagination.current = current
-  loadTaskList()
-}
-
 const showCreateDialog = () => {
   createDialog.visible = true
   createDialog.form = {
@@ -1213,7 +1270,12 @@ const showCreateDialog = () => {
     dropout: '0.2',
     hiddenSize: 128,
     validationSplit: '0.2',
-    useAugmentation: false
+    useAugmentation: false,
+    augmentationStrength: 'medium',
+    useBatchNorm: true,
+    l2Regularization: '0.0',
+    earlyStoppingPatience: 5,
+    lrScheduler: 'none'
   }
 }
 
@@ -1222,154 +1284,205 @@ const handleCreateTask = async () => {
     await createFormRef.value.validate()
     createDialog.loading = true
 
-    const response = await createTrainingTask(createDialog.form)
-    if (response.code === 200) {
+    const res = await createTrainingTask(createDialog.form)
+
+    if (res.code === 200) {
       ElMessage.success('训练任务创建成功')
       createDialog.visible = false
       loadTaskList()
+    } else {
+      ElMessage.error(res.message || '创建失败')
     }
   } catch (error) {
-    console.error('创建训练任务失败', error)
+    console.error('创建任务失败', error)
     if (error !== false) {
-      ElMessage.error('创建训练任务失败')
+      ElMessage.error('创建任务失败')
     }
   } finally {
     createDialog.loading = false
   }
 }
 
+const handleSearch = () => {
+  pagination.current = 1
+  loadTaskList()
+}
+
+const resetFilter = () => {
+  filterForm.keyword = ''
+  filterForm.status = ''
+  pagination.current = 1
+  loadTaskList()
+}
+
+const loadTaskList = async () => {
+  try {
+    loading.value = true
+    const params = {
+      current: pagination.current,
+      size: pagination.size,
+      status: filterForm.status || undefined
+    }
+
+    const res = await getTrainingTaskList(params)
+
+    if (res.code === 200) {
+      taskList.value = res.data.records
+      pagination.total = res.data.total
+    }
+  } catch (error) {
+    console.error('加载任务列表失败', error)
+    ElMessage.error('加载任务列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleSizeChange = (size) => {
+  pagination.size = size
+  pagination.current = 1
+  loadTaskList()
+}
+
+const handleCurrentChange = (current) => {
+  pagination.current = current
+  loadTaskList()
+}
+
+const handleRowClick = (row) => {
+  selectedTask.value = row
+  loadInlineLogs(row.taskId)
+}
+
+const loadInlineLogs = async (taskId) => {
+  try {
+    inlineLogsLoading.value = true
+    const res = await getTrainingLogs(taskId)
+
+    if (res.code === 200) {
+      logsDialog.logs = res.data
+    }
+  } catch (error) {
+    console.error('加载日志失败', error)
+  } finally {
+    inlineLogsLoading.value = false
+  }
+}
+
 const viewDetail = async (row) => {
   try {
-    const response = await getTrainingTaskDetail(row.taskId)
-    if (response.code === 200) {
-      detailDialog.task = response.data
+    const res = await getTrainingTaskDetail(row.taskId)
 
-      // 解析超参数 JSON
-      detailDialog.task.trainingConfigParsed = JSON.parse(response.data.trainingConfig || "{}")
-      detailDialog.task.datasetConfigParsed = JSON.parse(response.data.datasetConfig || "{}")
+    if (res.code === 200) {
+      detailDialog.task = res.data
+
+      // 解析训练配置
+      try {
+        detailDialog.task.trainingConfigParsed = JSON.parse(res.data.trainingConfig)
+      } catch (e) {
+        detailDialog.task.trainingConfigParsed = {}
+      }
 
       detailDialog.visible = true
     }
   } catch (error) {
-    console.error('获取任务详情失败', error)
-    ElMessage.error('获取任务详情失败')
+    console.error('加载详情失败', error)
+    ElMessage.error('加载详情失败')
   }
 }
 
-
-const openLogsDialog = async row => {
-  logsDialog.visible = true
-  logsDialog.loading = true
+const openLogsDialog = async (row) => {
   try {
-    const response = await getTrainingLogs(row.taskId)
-    if (response.code === 200) {
-      logsDialog.logs = response.data || []
+    logsDialog.loading = true
+    logsDialog.visible = true
+
+    const res = await getTrainingLogs(row.taskId)
+
+    if (res.code === 200) {
+      logsDialog.logs = res.data
     }
   } catch (error) {
-    console.error('获取训练日志失败', error)
-    ElMessage.error('获取训练日志失败')
+    console.error('加载日志失败', error)
+    ElMessage.error('加载日志失败')
   } finally {
     logsDialog.loading = false
   }
 }
 
-const viewLogs = async (row) => {
-  logsDialog.loading = true
-  logsDialog.visible = true
+const handleCancelTask = (row) => {
+  ElMessageBox.confirm(
+      '确定要取消该训练任务吗？',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+  ).then(async () => {
+    try {
+      const res = await cancelTrainingTask(row.taskId)
 
-  try {
-    const response = await getTrainingLogs(row.taskId)
-    if (response.code === 200) {
-      logsDialog.logs = response.data
+      if (res.code === 200) {
+        ElMessage.success('任务已取消')
+        loadTaskList()
+      } else {
+        ElMessage.error(res.message || '取消失败')
+      }
+    } catch (error) {
+      console.error('取消任务失败', error)
+      ElMessage.error('取消任务失败')
     }
-  } catch (error) {
-    console.error('获取训练日志失败', error)
-    ElMessage.error('获取训练日志失败')
-  } finally {
-    logsDialog.loading = false
-  }
-}
-
-const handleCancelTask = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-        '确定要取消该训练任务吗？',
-        '取消确认',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-    )
-
-    const response = await cancelTrainingTask(row.taskId)
-    if (response.code === 200) {
-      ElMessage.success('训练任务已取消')
-      loadTaskList()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('取消训练任务失败', error)
-      ElMessage.error('取消训练任务失败')
-    }
-  }
+  }).catch(() => {})
 }
 
 const getStatusType = (status) => {
-  const statusMap = {
-    'PENDING': 'info',
-    'RUNNING': 'warning',
-    'COMPLETED': 'success',
-    'FAILED': 'danger',
-    'CANCELLED': 'info'
+  const types = {
+    PENDING: 'info',
+    RUNNING: 'warning',
+    COMPLETED: 'success',
+    FAILED: 'danger',
+    CANCELLED: 'info'
   }
-  return statusMap[status] || 'info'
+  return types[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const statusMap = {
-    'PENDING': '等待中',
-    'RUNNING': '训练中',
-    'COMPLETED': '已完成',
-    'FAILED': '已失败',
-    'CANCELLED': '已取消'
+  const texts = {
+    PENDING: '等待中',
+    RUNNING: '训练中',
+    COMPLETED: '已完成',
+    FAILED: '已失败',
+    CANCELLED: '已取消'
   }
-  return statusMap[status] || status
+  return texts[status] || status
 }
 
 const formatDate = (date) => {
-  return date ? dayjs(date).format('YYYY-MM-DD HH:mm:ss') : '-'
+  if (!date) return '-'
+  return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
 }
 
-// 点击行：切换当前选中任务并加载日志
-const handleRowClick = row => {
-  selectedTask.value = row
-  loadLogsForSelectedTask()
-}
-
-// 高亮选中行
-const tableRowClassName = ({row}) => {
+const tableRowClassName = ({ row }) => {
   if (selectedTask.value && row.taskId === selectedTask.value.taskId) {
     return 'selected-row'
   }
   return ''
 }
 
-// 生命周期
+// 页面加载时执行
 onMounted(() => {
   loadDatasets()
   loadTaskList()
 
-  // 每2秒刷新一次列表（如果有正在运行的任务），并自动更新选中任务信息/日志
-  setInterval(() => {
-    const hasRunning = taskList.value.some(t => t.status === 'RUNNING')
-    if (hasRunning) {
+  // 定时刷新正在运行的任务
+  const interval = setInterval(() => {
+    if (taskList.value.some(t => t.status === 'RUNNING')) {
       loadTaskList()
-      if (selectedTask.value) {
-        loadLogsForSelectedTask()
+      if (selectedTask.value && selectedTask.value.status === 'RUNNING') {
+        loadInlineLogs(selectedTask.value.taskId)
       }
     }
-  }, 2000)
+  }, 3000)
 })
 </script>
 
@@ -1431,137 +1544,107 @@ onMounted(() => {
   }
 }
 
-.filter-card {
+.filter-card, .table-card {
   margin-bottom: 20px;
-
-  .filter-form {
-    margin-bottom: 0;
-  }
 }
 
-.table-card {
-  .progress-text {
-    font-size: 12px;
-    color: #909399;
-    margin-top: 4px;
-  }
+.progress-text {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
 }
 
 .pagination-container {
   margin-top: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.charts-container {
-  .chart-item {
-    margin-bottom: 30px;
-
-    h4 {
-      margin-bottom: 10px;
-      color: #303133;
-    }
-  }
-}
-
-.dialog-footer {
   display: flex;
   justify-content: flex-end;
 }
 
 .selected-task-card {
   margin-top: 20px;
+  background: #f5f7fa;
 }
 
 .selected-task-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 10px;
-
-  h3 {
-    margin: 0 0 8px;
-  }
-
-  .selected-task-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    font-size: 13px;
-    color: #606266;
-
-    span {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-  }
-
-  .selected-task-time {
-    text-align: right;
-    font-size: 13px;
-    color: #909399;
-
-    > div + div {
-      margin-top: 4px;
-    }
-  }
-}
-
-.logs-summary {
-  margin-bottom: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 13px;
-  color: #606266;
-
-  span {
-    display: inline-flex;
-    align-items: center;
-  }
-}
-
-.no-logs-tip {
-  padding: 20px 0;
-  text-align: center;
-  color: #909399;
-}
-
-.table-card {
   margin-bottom: 20px;
-
-  .progress-text {
-    font-size: 12px;
-    color: #909399;
-    margin-top: 4px;
-  }
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e4e7ed;
 }
 
-.pagination-container {
-  margin-top: 20px;
+.selected-task-meta {
   display: flex;
-  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.selected-task-meta span {
+  color: #606266;
+  font-size: 14px;
+}
+
+.selected-task-time {
+  text-align: right;
+  color: #909399;
+  font-size: 13px;
 }
 
 .charts-container {
-  .chart-item {
-    margin-bottom: 30px;
-
-    h4 {
-      margin-bottom: 10px;
-      color: #303133;
-    }
-  }
+  min-height: 200px;
 }
 
-.dialog-footer {
+.no-logs-tip {
+  text-align: center;
+  padding: 40px;
+  color: #909399;
+  font-size: 14px;
+}
+
+.logs-summary {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-around;
+  padding: 15px;
+  background: #ecf5ff;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-/* 高亮选中行 */
-:deep(.el-table__row.selected-row) {
+.logs-summary span {
+  color: #409eff;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.chart-item {
+  margin-bottom: 20px;
+}
+
+.chart-item h4 {
+  margin: 0 0 10px 0;
+  color: #303133;
+  font-size: 16px;
+}
+
+:deep(.el-table .selected-row) {
   background-color: #ecf5ff !important;
+}
+
+:deep(.el-dialog__body) {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+:deep(.el-divider__text) {
+  font-weight: 600;
+  color: #409eff;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 </style>
