@@ -208,25 +208,6 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
         }
     };
 
-    const useDemoCredentials = () => {
-        // 填充动画
-        Animated.sequence([
-            Animated.timing(scaleAnim, {
-                toValue: 1.02,
-                duration: 150,
-                useNativeDriver: true,
-            }),
-            Animated.timing(scaleAnim, {
-                toValue: 1,
-                duration: 150,
-                useNativeDriver: true,
-            }),
-        ]).start();
-
-        setUsername('weiwo');
-        setPassword('weiwo123');
-    };
-
     // 渲染粒子背景
     const renderParticles = () => {
         return particles.current.map((particle, index) => (
@@ -489,45 +470,6 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
                                 <Text style={styles.loginButtonText}>登录</Text>
                             )}
                         </TouchableOpacity>
-
-                        {/* 演示账号区域 */}
-                        <Animated.View
-                            style={[
-                                styles.demoContainer,
-                                {
-                                    opacity: fadeAnim.interpolate({
-                                        inputRange: [0, 0.9, 1],
-                                        outputRange: [0, 0, 1]
-                                    })
-                                }
-                            ]}
-                        >
-                            <View style={styles.divider}>
-                                <View style={styles.dividerLine} />
-                                <Text style={styles.dividerText}>演示账号</Text>
-                                <View style={styles.dividerLine} />
-                            </View>
-
-                            <View style={styles.demoCredentials}>
-                                <View style={styles.demoRow}>
-                                    <Text style={styles.demoLabel}>用户名：</Text>
-                                    <Text style={styles.demoValue}>weiwo</Text>
-                                </View>
-                                <View style={styles.demoRow}>
-                                    <Text style={styles.demoLabel}>密码：</Text>
-                                    <Text style={styles.demoValue}>weiwo123</Text>
-                                </View>
-                            </View>
-
-                            <TouchableOpacity
-                                style={styles.demoButton}
-                                onPress={useDemoCredentials}
-                                disabled={loading}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.demoButtonText}>使用演示账号</Text>
-                            </TouchableOpacity>
-                        </Animated.View>
 
                         {/* 注册链接 */}
                         <Animated.View
