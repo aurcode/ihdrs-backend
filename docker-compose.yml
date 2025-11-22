@@ -69,14 +69,6 @@ services:
       start_period: 40s
     restart: unless-stopped
 
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
   # Java Backend Service
   backend:
     build:

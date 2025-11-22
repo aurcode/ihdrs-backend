@@ -16,6 +16,7 @@ scikit-image
 pandas
 matplotlib
 seaborn
+scikit-learn
 
 # API and Validation
 marshmallow
