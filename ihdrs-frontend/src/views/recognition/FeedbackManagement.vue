@@ -129,7 +129,6 @@
             <el-image
                 v-if="row.recordInfo?.imagePath"
                 :src="row.recordInfo.imagePath"
-                :preview-src-list="[row.recordInfo.imagePath]"
                 fit="cover"
                 style="width: 60px; height: 60px; border-radius: 6px"
             >

@@ -323,6 +323,7 @@ public class RecognitionService {
                             .recordId(record.getRecordId())
                             .recognitionResult(record.getRecognitionResult())
                             .confidence(record.getConfidence())
+                            .sequenceResult(record.getSequenceResult())
                             .processingTime(record.getProcessingTime())
                             .message("历史记录")
                             .needRewrite(false)

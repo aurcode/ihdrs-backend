@@ -125,7 +125,6 @@ public class UserService {
         user.setStatus(status);
         userRepository.save(user);
 
-        log.info("更新用户状态: userId={}, status={}", userId, status);
         return Result.success("更新成功", null);
     }
 
@@ -185,7 +184,6 @@ public class UserService {
             }
 
             user.setUsername(req.getUsername());
-            log.info("用户 {} 的用户名已更新为: {}", userId, req.getUsername());
         }
 
         // 2. 处理邮箱更新（可以为空）
@@ -199,7 +197,6 @@ public class UserService {
         }
 
         userRepository.save(user);
-        log.info("用户资料更新成功: userId={}", userId);
 
         return Result.success("更新成功", null);
     }
@@ -222,7 +219,6 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        log.info("用户 {} 密码修改成功", userId);
         return Result.success("密码修改成功", null);
     }
 
@@ -249,13 +245,10 @@ public class UserService {
 
             userRepository.save(user);
 
-            log.info("修改用户角色成功: userId={}, role={}", userId, role);
             return Result.success("角色修改成功", null);
         } catch (IllegalArgumentException e) {
-            log.error("角色参数错误: {}", role);
             return Result.error(400, "角色参数错误");
         } catch (Exception e) {
-            log.error("修改用户角色失败: userId={}, role={}", userId, role, e);
             return Result.error(500, "修改角色失败");
         }
     }
@@ -296,7 +289,6 @@ public class UserService {
 
             return Result.success(result);
         } catch (Exception e) {
-            log.error("获取用户日志失败: userId={}", userId, e);
             return Result.error(500, "获取用户日志失败");
         }
     }
