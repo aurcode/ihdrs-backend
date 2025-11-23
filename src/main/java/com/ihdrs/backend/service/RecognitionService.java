@@ -363,15 +363,6 @@ public class RecognitionService {
                 return Result.error(404, "识别记录不存在");
             }
 
-            // 如果是记录所有者，允许删除，管理员需要另行判断
-            Long ownerId = record.getUserId();
-            if (ownerId == null) {
-                // 匿名记录，仅管理员允许删除
-                return Result.error(403, "无法删除匿名记录（仅管理员可操作）");
-            }
-
-            // 如果不是同一用户，需要判断是否是管理员
-            // TODO
             recordRepository.deleteById(recordId);
             return Result.success("删除成功", null);
         } catch (Exception e) {

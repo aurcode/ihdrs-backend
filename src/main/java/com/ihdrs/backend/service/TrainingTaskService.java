@@ -1,5 +1,3 @@
-// TrainingTaskService.java
-
 package com.ihdrs.backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +30,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Slf4j
 @Service
@@ -98,15 +93,12 @@ public class TrainingTaskService {
                 body.put("taskId", task.getTaskId());
                 body.put("taskName", task.getTaskName());
                 body.put("trainingConfig", task.getTrainingConfig());
-                log.info(task.getTrainingConfig());
                 body.put("datasetConfig", task.getDatasetConfig());
-                log.info(task.getDatasetConfig());
 
                 HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
                 ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
 
                 if (response.getStatusCode() != HttpStatus.OK) {
-                    // 只有失败时才更新状态
                     updateTaskStatusToFailed(task.getTaskId(), "无法启动训练服务");
                 }
             } catch (Exception e) {
@@ -116,7 +108,6 @@ public class TrainingTaskService {
         }).start();
     }
 
-    // 使用新事务更新失败状态
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateTaskStatusToFailed(Long taskId, String errorMessage) {
         TrainingTask task = taskRepository.findById(taskId).orElse(null);
@@ -126,7 +117,6 @@ public class TrainingTaskService {
             taskRepository.save(task);
         }
     }
-
 
     public Result<PageResult<TrainingTaskResponse>> getTaskList(PageRequest pageRequest, Long creatorId, String status) {
         org.springframework.data.domain.PageRequest springPageRequest =
@@ -224,7 +214,6 @@ public class TrainingTaskService {
         task.setEndTime(LocalDateTime.now());
         taskRepository.save(task);
 
-        log.info("取消训练任务成功，taskId: {}", taskId);
         return Result.success("取消训练任务成功", null);
     }
 
@@ -268,11 +257,9 @@ public class TrainingTaskService {
         log.setBatchSize(batchSize);
 
         logRepository.save(log);
-
         taskRepository.save(task);
         return Result.success(null);
     }
-
 
     public Result<Void> completeTask(Long taskId, Map<String, Object> resultData) {
         TrainingTask task = taskRepository.findById(taskId).orElse(null);
@@ -310,7 +297,7 @@ public class TrainingTaskService {
 
         Model model = new Model();
         model.setModelName(task.getTaskName());
-        model.setModelVersion("v" + "1.0.0");
+        model.setModelVersion("v1.0.0");
         model.setModelPath(modelPath);
         model.setAccuracy(finalAccuracy != null ? BigDecimal.valueOf(finalAccuracy) : null);
         model.setLoss(finalLoss != null ? BigDecimal.valueOf(finalLoss) : null);
@@ -332,7 +319,6 @@ public class TrainingTaskService {
         return Result.success(null);
     }
 
-
     @Transactional
     public Result<Void> failTask(Long taskId, String errorMessage) {
         TrainingTask task = taskRepository.findById(taskId).orElse(null);
@@ -348,25 +334,49 @@ public class TrainingTaskService {
         return Result.success(null);
     }
 
-
+    /**
+     * 构建训练配置JSON
+     */
     private String buildTrainingConfig(TrainingTaskRequest request) {
-        return String.format(
-                "{\"learningrate\": \"%s\", \"batchsize\": %d, \"epochs\": %d, \"optimizer\": \"%s\", " +
-                        "\"lossfunction\": \"%s\", \"modeltype\": \"%s\", \"hiddensize\": %d, \"activation\": \"%s\", \"dropout\": \"%s\"}",
-                request.getLearningRate(),
-                request.getBatchSize(),
-                request.getTotalEpochs(),
-                request.getOptimizer(),
-                request.getLossFunction(),
-                request.getModelType(),
-                request.getHiddenSize(),
-                request.getActivation(),
-                request.getDropout()
-        );
+        Map<String, Object> config = new HashMap<>();
+
+        // 基础训练参数
+        config.put("learningrate", request.getLearningRate().toString());
+        config.put("batchsize", request.getBatchSize());
+        config.put("epochs", request.getTotalEpochs());
+        config.put("optimizer", request.getOptimizer());
+        config.put("lossfunction", request.getLossFunction());
+
+        // 模型配置
+        config.put("modeltype", request.getModelType());
+        config.put("hiddensize", request.getHiddenSize());
+        config.put("activation", request.getActivation());
+        config.put("dropout", request.getDropout().toString());
+        config.put("useBatchNorm", request.getUseBatchNorm());
+
+        // 高级配置
+        config.put("l2Regularization", request.getL2Regularization().toString());
+        config.put("earlyStoppingPatience", request.getEarlyStoppingPatience());
+        config.put("lrScheduler", request.getLrScheduler());
+
+        // 数据增强
+        config.put("useAugmentation", request.getUseAugmentation());
+        if (request.getUseAugmentation()) {
+            config.put("augmentationStrength", request.getAugmentationStrength());
+        }
+
+        config.put("validationSplit", request.getValidationSplit().toString());
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writeValueAsString(config);
+        } catch (JsonProcessingException e) {
+            log.error("构建训练配置失败", e);
+            throw new RuntimeException("构建训练配置失败", e);
+        }
     }
 
     private String buildDatasetConfig(TrainingTaskRequest request) throws JsonProcessingException {
-
         Dataset dataset = datasetRepository.findById(request.getDatasetId())
                 .orElseThrow(() -> new RuntimeException("数据集不存在"));
 
@@ -386,7 +396,6 @@ public class TrainingTaskService {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(config);
     }
-
 
     private TrainingTaskResponse convertToTaskResponse(TrainingTask task) {
         return TrainingTaskResponse.builder()

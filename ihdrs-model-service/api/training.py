@@ -4,6 +4,7 @@ import threading
 import time
 import requests
 from services.training_service import TrainingService
+from services.tasks_registry import tasks
 
 training_bp = Blueprint('training', __name__)
 
@@ -34,6 +35,11 @@ def start_training():
         )
         training_thread.start()
 
+        tasks[task_id] = {
+            "thread": training_thread,
+            "service": training_service
+        }
+
         return jsonify({
             "status": "success",
             "message": "训练任务已启动",
@@ -53,16 +59,21 @@ def start_training():
 
 @training_bp.route('/train/cancel', methods=['POST'])
 def cancel_training():
-    """取消训练任务"""
     try:
         data = request.get_json()
         task_id = data.get('taskId')
 
-        # 这里实现取消逻辑（可以使用全局字典存储训练状态）
+        if task_id not in tasks:
+            return jsonify({"status": "error", "message": "任务不存在"}), 404
+
+        task = tasks[task_id]
+        service = task["service"]
+
+        service.is_cancelled = True
 
         return jsonify({
             "status": "success",
-            "message": "训练任务已取消"
+            "message": "训练已标记为取消"
         })
 
     except Exception as e:
