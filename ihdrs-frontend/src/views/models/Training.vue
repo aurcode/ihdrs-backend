@@ -231,6 +231,7 @@
                 selectedTask.finalAccuracy ? (selectedTask.finalAccuracy * 100).toFixed(2) + '%' : '-'
               }}</span>
             <span>最终损失：{{ selectedTask.finalLoss ? selectedTask.finalLoss.toFixed(6) : '-' }}</span>
+            <span>提示：混淆矩阵将在训练完成后自动生成</span>
           </div>
         </div>
         <div class="selected-task-time">
@@ -1478,6 +1479,10 @@ onMounted(() => {
   const interval = setInterval(() => {
     if (taskList.value.some(t => t.status === 'RUNNING')) {
       loadTaskList()
+      if (selectedTask.value) {
+        const updated = taskList.value.find(t => t.taskId === selectedTask.value.taskId)
+        if (updated) selectedTask.value = updated
+      }
       if (selectedTask.value && selectedTask.value.status === 'RUNNING') {
         loadInlineLogs(selectedTask.value.taskId)
       }
