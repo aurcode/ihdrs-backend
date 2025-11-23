@@ -1,17 +1,19 @@
 import os
-
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import layers
 import numpy as np
 import time
 import logging
 import requests
 import json
-from models_code.cnn_model import create_cnn_model
+from models_code.model_factory import create_model
 from config import Config
 from sklearn.metrics import confusion_matrix
+from services.tasks_registry import tasks
 
 logger = logging.getLogger(__name__)
+
 
 class TrainingService:
     def __init__(self, task_id, springboot_url='http://localhost:8080'):
@@ -31,7 +33,11 @@ class TrainingService:
             batch_size = int(training_config.get("batchsize", 32))
             learning_rate = float(training_config.get("learningrate", 0.001))
             optimizer_name = training_config.get("optimizer", "adam").lower()
-            model_type = training_config.get("modeltype", "cnn").lower()
+            model_type = training_config.get("modeltype", "cnn")
+            use_augmentation = training_config.get("useAugmentation", False)
+            augmentation_strength = training_config.get("augmentationStrength", "medium")
+            early_stopping_patience = int(training_config.get("earlyStoppingPatience", 0))
+            lr_scheduler_type = training_config.get("lrScheduler", "none")
 
             # 读取数据集配置
             relative_path = dataset_config["file_path"]
@@ -55,13 +61,7 @@ class TrainingService:
                 train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size)
                 test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size)
 
-                # 选择模型
-                if model_type == "cnn":
-                    model = create_cnn_model(input_shape=(28, 28, 1), num_classes=10)
-                elif model_type == "advanced_cnn":
-                    model = create_cnn_model(input_shape=(28, 28, 1), num_classes=10)
-                else:
-                    raise ValueError(f"MNIST 不支持该模型类型: {model_type}")
+                input_shape = (28, 28, 1)
 
             else:
                 print("加载用户数据集：", dataset_path)
@@ -96,101 +96,97 @@ class TrainingService:
                     test_ds = train_ds.take(val_size)
                     train_ds = train_ds.skip(val_size)
 
+                # 数据增强
+                if use_augmentation:
+                    data_augmentation = self.create_data_augmentation(augmentation_strength)
+                    train_ds = train_ds.map(
+                        lambda x, y: (data_augmentation(x, training=True), y),
+                        num_parallel_calls=tf.data.AUTOTUNE
+                    )
+
                 # 标准化
                 train_ds = train_ds.map(lambda x, y: (x / 255.0, tf.one_hot(y, num_classes)))
                 test_ds = test_ds.map(lambda x, y: (x / 255.0, tf.one_hot(y, num_classes)))
 
-                # 选择模型
-                if model_type == "cnn":
-                    model = create_cnn_model(input_shape=(img_h, img_w, 3), num_classes=num_classes)
-                elif model_type == "advanced_cnn":
-                    model = create_cnn_model(input_shape=(img_h, img_w, 3), num_classes=num_classes)
-                else:
-                    raise ValueError(f"不支持的模型类型: {model_type}")
+                input_shape = (img_h, img_w, 3)
 
-            optimizer = {
-                "adam": keras.optimizers.Adam(learning_rate),
-                "sgd": keras.optimizers.SGD(learning_rate),
-                "rmsprop": keras.optimizers.RMSprop(learning_rate),
-            }.get(optimizer_name)
+            # 预取优化
+            train_ds = train_ds.prefetch(buffer_size=tf.data.AUTOTUNE)
+            test_ds = test_ds.prefetch(buffer_size=tf.data.AUTOTUNE)
 
-            if optimizer is None:
-                raise ValueError(f"不支持的优化器: {optimizer_name}")
+            # 创建模型
+            model = create_model(model_type, input_shape, num_classes, training_config)
 
+            # 创建优化器
+            optimizer = self.create_optimizer(optimizer_name, learning_rate)
+
+            # 编译模型
+            loss_fn = training_config.get("lossfunction", "categorical_crossentropy")
             model.compile(
                 optimizer=optimizer,
-                loss="categorical_crossentropy",
-                metrics=["accuracy"]
+                loss=loss_fn,
+                metrics=['accuracy']
             )
 
-            # 回调，用于向 SpringBoot 发送进度
-            class ProgressCallback(keras.callbacks.Callback):
-                def __init__(self, service, batch_size, learning_rate):
-                    super().__init__()
-                    self.service = service
-                    self.batch_size = batch_size
-                    self.learning_rate = learning_rate
-                    self.global_step = 0
+            # 创建回调函数
+            callbacks = [
+                ProgressCallback(self, batch_size=batch_size, learning_rate=learning_rate)
+            ]
 
-                def on_train_batch_end(self, batch, logs=None):
-                    # 如需 finer-grained 的 step，可以用这个
-                    self.global_step += 1
+            # 早停
+            if early_stopping_patience > 0:
+                callbacks.append(
+                    keras.callbacks.EarlyStopping(
+                        monitor='val_loss',
+                        patience=early_stopping_patience,
+                        restore_best_weights=True,
+                        verbose=1
+                    )
+                )
 
-                def on_epoch_end(self, epoch, logs=None):
-                    logs = logs or {}
-                    progress = (epoch + 1) / epochs * 100
-
-                    progress_data = {
-                        "currentEpoch": epoch + 1,
-                        "progress": progress,
-                        "loss": float(logs.get("loss", 0.0)),
-                        "accuracy": float(logs.get("accuracy", 0.0)),
-                        "valLoss": float(logs.get("val_loss", 0.0)),
-                        "valAccuracy": float(logs.get("val_accuracy", 0.0)),
-                        "step": self.global_step,
-                        "learningRate": float(self.learning_rate),
-                        "batchSize": int(self.batch_size),
-                    }
-
-                    self.service.report_progress(progress_data)
+            # 学习率调度
+            lr_callback = self.create_lr_scheduler(lr_scheduler_type, learning_rate, epochs)
+            if lr_callback:
+                callbacks.append(lr_callback)
 
             # 开始训练
+            print(f"开始训练，模型类型: {model_type}, 总轮数: {epochs}")
             history = model.fit(
                 train_ds,
                 validation_data=test_ds,
                 epochs=epochs,
-                callbacks=[ProgressCallback(self, batch_size=batch_size, learning_rate=learning_rate)],
+                callbacks=callbacks,
                 verbose=1
             )
+
+            if self.is_cancelled:
+                self.report_failure("任务已取消")
+                return
 
             # 保存模型
             model_path = f"models/model_{self.task_id}_{int(time.time())}.h5"
             model.save(model_path)
+            print(f"模型已保存到: {model_path}")
 
             # 最终评估
             loss, accuracy = model.evaluate(test_ds, verbose=0)
 
             # 计算混淆矩阵
-            # 收集测试集的真实标签和预测结果
             y_true = []
             y_pred = []
 
-            # 注意：test_ds 里 y 是 one-hot 形式（上面有 tf.one_hot）
             for batch_x, batch_y in test_ds:
-                # batch_y: [batch, num_classes] one-hot -> 转回整数标签
-                true_labels = tf.argmax(batch_y, axis=-1).numpy()         # shape [batch]
+                true_labels = tf.argmax(batch_y, axis=-1).numpy()
                 preds = model.predict(batch_x, verbose=0)
-                pred_labels = np.argmax(preds, axis=-1)                    # shape [batch]
+                pred_labels = np.argmax(preds, axis=-1)
 
                 y_true.extend(true_labels.tolist())
                 y_pred.extend(pred_labels.tolist())
 
-            # 计算混淆矩阵
-            cm = confusion_matrix(y_true, y_pred)  # shape [num_classes, num_classes]
-            cm_list = cm.tolist()                  # Python list，方便 JSON 序列化
+            cm = confusion_matrix(y_true, y_pred)
+            cm_list = cm.tolist()
 
-            # 从 dataset_config 中取类名（如果有）
-            class_names = dataset_config.get("class_names")  # 可能是 list[str] 或 None
+            class_names = dataset_config.get("class_names")
 
             self.report_completion({
                 "finalAccuracy": float(accuracy),
@@ -207,11 +203,91 @@ class TrainingService:
             logger.error(f"训练失败: {e}", exc_info=True)
             self.report_failure(str(e))
 
+    def create_optimizer(self, optimizer_name, learning_rate):
+        """创建优化器"""
+        optimizers = {
+            "adam": keras.optimizers.Adam(learning_rate),
+            "adamw": keras.optimizers.AdamW(learning_rate),
+            "sgd": keras.optimizers.SGD(learning_rate, momentum=0.9),
+            "rmsprop": keras.optimizers.RMSprop(learning_rate),
+            "nadam": keras.optimizers.Nadam(learning_rate),
+        }
+
+        optimizer = optimizers.get(optimizer_name)
+        if optimizer is None:
+            raise ValueError(f"不支持的优化器: {optimizer_name}")
+
+        return optimizer
+
+    def create_lr_scheduler(self, scheduler_type, initial_lr, epochs):
+        """创建学习率调度器"""
+        if scheduler_type == "none" or not scheduler_type:
+            return None
+
+        if scheduler_type == "exponential":
+            # 指数衰减
+            decay_rate = 0.96
+            decay_steps = epochs // 5
+            return keras.callbacks.LearningRateScheduler(
+                lambda epoch: initial_lr * (decay_rate ** (epoch // decay_steps))
+            )
+
+        elif scheduler_type == "cosine":
+            # 余弦退火
+            return keras.callbacks.LearningRateScheduler(
+                lambda epoch: initial_lr * 0.5 * (1 + np.cos(np.pi * epoch / epochs))
+            )
+
+        elif scheduler_type == "step":
+            # 阶梯衰减
+            return keras.callbacks.LearningRateScheduler(
+                lambda epoch: initial_lr * (0.5 ** (epoch // (epochs // 3)))
+            )
+
+        elif scheduler_type == "reduce_on_plateau":
+            # 基于性能的衰减
+            return keras.callbacks.ReduceLROnPlateau(
+                monitor='val_loss',
+                factor=0.5,
+                patience=3,
+                min_lr=initial_lr * 0.001,
+                verbose=1
+            )
+
+        return None
+
+    def create_data_augmentation(self, strength="medium"):
+        """创建数据增强层"""
+        if strength == "light":
+            return keras.Sequential([
+                layers.RandomFlip("horizontal"),
+                layers.RandomRotation(0.05),
+            ])
+        elif strength == "medium":
+            return keras.Sequential([
+                layers.RandomFlip("horizontal"),
+                layers.RandomRotation(0.1),
+                layers.RandomZoom(0.1),
+            ])
+        elif strength == "strong":
+            return keras.Sequential([
+                layers.RandomFlip("horizontal"),
+                layers.RandomFlip("vertical"),
+                layers.RandomRotation(0.2),
+                layers.RandomZoom(0.2),
+                layers.RandomTranslation(0.1, 0.1),
+                layers.RandomContrast(0.2),
+            ])
+        else:
+            return keras.Sequential([
+                layers.RandomFlip("horizontal"),
+                layers.RandomRotation(0.1),
+            ])
+
     def report_progress(self, progress_data):
         """向SpringBoot报告训练进度"""
         try:
             url = f"{self.springboot_url}/api/training/tasks/{self.task_id}/progress"
-            logger.warning(f"{self.springboot_url}/api/training/tasks/{self.task_id}/progress")
             headers = {'Content-Type': 'application/json'}
             response = requests.post(url, json=progress_data, headers=headers, timeout=5)
 
@@ -244,3 +320,43 @@ class TrainingService:
                 logger.warning(f"报告失败状态失败: {response.status_code}")
         except Exception as e:
             logger.error(f"报告失败状态异常: {e}")
+
+
+class ProgressCallback(keras.callbacks.Callback):
+    """训练进度回调"""
+    def __init__(self, service, batch_size, learning_rate):
+        super().__init__()
+        self.service = service
+        self.batch_size = batch_size
+        self.initial_learning_rate = learning_rate
+        self.global_step = 0
+
+    def on_train_batch_end(self, batch, logs=None):
+        self.global_step += 1
+
+    def on_epoch_end(self, epoch, logs=None):
+        if self.service.is_cancelled:
+            self.model.stop_training = True
+            return
+        logs = logs or {}
+
+        # 获取当前学习率
+        current_lr = float(keras.backend.get_value(self.model.optimizer.learning_rate))
+
+        # 计算进度
+        total_epochs = self.params['epochs']
+        progress = (epoch + 1) / total_epochs * 100
+
+        progress_data = {
+            "currentEpoch": epoch + 1,
+            "progress": progress,
+            "loss": float(logs.get("loss", 0.0)),
+            "accuracy": float(logs.get("accuracy", 0.0)),
+            "valLoss": float(logs.get("val_loss", 0.0)),
+            "valAccuracy": float(logs.get("val_accuracy", 0.0)),
+            "step": self.global_step,
+            "learningRate": current_lr,
+            "batchSize": int(self.batch_size),
+        }
+
+        self.service.report_progress(progress_data)

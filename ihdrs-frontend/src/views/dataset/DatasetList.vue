@@ -190,7 +190,18 @@ const emptyDescription = computed(() => {
 // 生命周期
 onMounted(() => {
   loadDatasets()
+
+  const interval = setInterval(() => {
+    // 判断是否存在正在处理的 dataset
+    const hasProcessing = datasetList.value.some(
+        d => d.status === 'PROCESSING'
+    )
+    if (hasProcessing) {
+      loadDatasets()
+    }
+  }, 5000)
 })
+
 
 // 方法
 function loadDatasets() {

@@ -72,8 +72,8 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
 
                 if (mode === 'multi') {
                     // 使用后端返回的 sequence 字段
-                    const sequence = response.data.sequence || 
-                                    response.data.results.map(r => r.digit).join('');
+                    const sequence = response.data.sequence ||
+                        response.data.results.map(r => r.digit).join('');
 
                     const historyItem = {
                         id: Date.now(),
@@ -138,29 +138,41 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         setMenuVisible(!menuVisible);
                     }}
                 >
-                    <Text style={[styles.menuIcon, !user && { opacity: 0.3 } ]}>⋮</Text>
+                    <Text style={[styles.menuIcon, !user && {opacity: 0.3}]}>⋮</Text>
                 </TouchableOpacity>
 
                 {menuVisible && (
                     <View style={styles.dropdownMenu}>
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onProfile(); }}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            setMenuVisible(false);
+                            onProfile();
+                        }}>
                             <Text style={styles.menuItemIcon}>👤</Text>
                             <Text style={styles.menuItemText}>个人中心</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onHistory(); }}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            setMenuVisible(false);
+                            onHistory();
+                        }}>
                             <Text style={styles.menuItemIcon}>📊</Text>
                             <Text style={styles.menuItemText}>识别记录</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onFeedback(); }}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            setMenuVisible(false);
+                            onFeedback();
+                        }}>
                             <Text style={styles.menuItemIcon}>💬</Text>
                             <Text style={styles.menuItemText}>反馈记录</Text>
                         </TouchableOpacity>
 
                         <View style={styles.menuDivider}></View>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onLogout(); }}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                            setMenuVisible(false);
+                            onLogout();
+                        }}>
                             <Text style={styles.menuItemIcon}>🚪</Text>
                             <Text style={styles.menuItemText}>Logout</Text>
                         </TouchableOpacity>
@@ -185,7 +197,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('draw')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'draw' && styles.modeButtonTextActive]}>
-                                Draw
+                                Draw{"\n"}(Single-digit)
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -193,15 +205,18 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('multi')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'multi' && styles.modeButtonTextActive]}>
-                                Multi-digit
+                                Draw{"\n"}(Multi-digit)
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.modeButton, mode === 'upload' && styles.modeButtonActive]}
                             onPress={() => setMode('upload')}
                         >
-                            <Text style={[styles.modeButtonText, mode === 'upload' && styles.modeButtonTextActive]}>
-                                Upload Image
+                            <Text style={[
+                                styles.modeButtonText,
+                                mode === 'upload' && styles.modeButtonTextActive
+                            ]}>
+                                Image{"\n"}(Single-digit)
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -224,9 +239,9 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         }}
                     >
                         {mode === 'draw' || mode === 'multi' ? (
-                            <DrawingCanvas onDrawingComplete={handleRecognition} />
+                            <DrawingCanvas onDrawingComplete={handleRecognition}/>
                         ) : (
-                            <ImagePickerComponent onImageSelected={handleRecognition} />
+                            <ImagePickerComponent onImageSelected={handleRecognition}/>
                         )}
                     </View>
 
@@ -251,12 +266,12 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                                     </Text>
                                     <Text style={styles.resultSubtext}>
                                         {result.count || 0} 个数字 | 平均置信度: {
-                                            result.results 
-                                                ? (result.results.reduce((sum, r) => sum + r.confidence, 0) / result.results.length * 100).toFixed(1)
-                                                : '0'
-                                        }%
+                                        result.results
+                                            ? (result.results.reduce((sum, r) => sum + r.confidence, 0) / result.results.length * 100).toFixed(1)
+                                            : '0'
+                                    }%
                                     </Text>
-                                    
+
                                     {/* 显示每个数字的详情 */}
                                     <View style={styles.multiResultDetails}>
                                         {result.results?.map((r, idx) => (
@@ -328,7 +343,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         width: 160,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
+        shadowOffset: {width: 0, height: 6},
         shadowOpacity: 0.25,
         shadowRadius: 12,
         elevation: 10,
@@ -436,25 +451,30 @@ const styles = StyleSheet.create({
     },
     modeButton: {
         flex: 1,
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        backgroundColor: '#fff',
-        borderWidth: 2,
-        borderColor: '#e5e7eb',
+        paddingVertical: 14,
+        paddingHorizontal: 13,
+        borderRadius: 12,
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
         alignItems: 'center',
+        justifyContent: 'center',
     },
     modeButtonActive: {
-        backgroundColor: '#6366f1',
-        borderColor: '#6366f1',
+        backgroundColor: '#4f46e5',
+        borderColor: '#4f46e5',
+        shadowOpacity: 0.15,
+        elevation: 3,
     },
     modeButtonText: {
         fontSize: 15,
         fontWeight: '600',
         color: '#6b7280',
+        textAlign: 'center',
+        lineHeight: 20,
     },
     modeButtonTextActive: {
-        color: '#fff',
+        color: '#ffffff',
     },
     contentCard: {
         backgroundColor: '#fff',
