@@ -171,6 +171,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
 
                         <TouchableOpacity style={styles.menuItem} onPress={() => {
                             setMenuVisible(false);
+                            Alert.alert("提示", "已退出登录");
                             onLogout();
                         }}>
                             <Text style={styles.menuItemIcon}>🚪</Text>

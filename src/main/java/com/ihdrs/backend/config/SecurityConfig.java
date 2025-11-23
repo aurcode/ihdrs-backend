@@ -52,7 +52,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/training/tasks/*/progress",
                                 "/training/tasks/*/complete",
-                                "/training/tasks/*/fail"
+                                "/training/tasks/*/fail",
+                                "/users/**"
                         ).permitAll()
 
                         // 需要USER或ADMIN角色的端点
@@ -66,7 +67,6 @@ public class SecurityConfig {
                                 "/admin/**",
                                 "/models/**",
                                 "/training/**",
-                                "/users/**",
                                 "/statistics/**"
                         ).hasRole("ADMIN")
 
