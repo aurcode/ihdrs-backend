@@ -116,7 +116,7 @@ class ModelService:
                 logger.debug(f"使用CNN输入: {processed_input.shape}")
 
             else:
-                logger.warning("未知模型类型，尝试自动适配...")
+                logger.debug("尝试自动适配...")
                 if len(image.shape) == 2:
                     processed_input = image.reshape(1, 28, 28, 1)
                 else:
