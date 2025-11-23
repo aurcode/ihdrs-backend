@@ -34,10 +34,14 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
     const [emailFocused, setEmailFocused] = useState(false);
     const [phoneFocused, setPhoneFocused] = useState(false);
 
+    // 密码一致性状态
+    const [passwordMatch, setPasswordMatch] = useState(null); // null: 未检查, true: 匹配, false: 不匹配
+
     // 动画引用
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const backgroundY = useRef(new Animated.Value(0)).current;
+    const passwordMatchAnim = useRef(new Animated.Value(0)).current;
 
     // 粒子效果
     const particles = useRef([]);
@@ -73,6 +77,30 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
         createParticles();
 
     }, [fadeAnim, backgroundY]);
+
+    // 实时检查密码一致性
+    useEffect(() => {
+        if (confirmPassword.length > 0) {
+            const match = password === confirmPassword;
+            setPasswordMatch(match);
+
+            // 添加动画效果
+            Animated.sequence([
+                Animated.timing(passwordMatchAnim, {
+                    toValue: match ? 1 : 0.5,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else {
+            setPasswordMatch(null);
+            Animated.timing(passwordMatchAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [password, confirmPassword]);
 
     const createParticles = () => {
         const newParticles = [];
@@ -319,6 +347,16 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                 <View style={styles.circleMiddle} />
             </Animated.View>
 
+            {/* 返回按钮 - 固定在左上角 */}
+            <TouchableOpacity
+                onPress={onCancel}
+                style={styles.backButton}
+                disabled={loading}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.backButtonText}>← 返回</Text>
+            </TouchableOpacity>
+
             <KeyboardAwareScrollView
                 enableOnAndroid={true}
                 extraScrollHeight={Platform.OS === 'android' ? 20 : 10}
@@ -332,79 +370,6 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                         { transform: [{ scale: scaleAnim }] }
                     ]}
                 >
-                    {/* 头部Logo区域 */}
-                    <View style={styles.header}>
-                        <Animated.View
-                            style={[
-                                styles.logoContainer,
-                                { opacity: fadeAnim.interpolate({
-                                        inputRange: [0, 0.5, 1],
-                                        outputRange: [0, 0.5, 1]
-                                    })}
-                            ]}
-                        >
-                            <Animated.View
-                                style={[
-                                    styles.logoCircle,
-                                    {
-                                        transform: [
-                                            { scale: fadeAnim.interpolate({
-                                                    inputRange: [0, 1],
-                                                    outputRange: [0.5, 1]
-                                                })},
-                                            { rotate: fadeAnim.interpolate({
-                                                    inputRange: [0, 1],
-                                                    outputRange: ['-180deg', '0deg']
-                                                })}
-                                        ]
-                                    }
-                                ]}
-                            >
-                                <Text style={styles.logoText}>✍️</Text>
-                            </Animated.View>
-                        </Animated.View>
-
-                        <Animated.Text
-                            style={[
-                                styles.title,
-                                {
-                                    opacity: fadeAnim.interpolate({
-                                        inputRange: [0, 0.7, 1],
-                                        outputRange: [0, 0, 1]
-                                    }),
-                                    transform: [{
-                                        translateY: fadeAnim.interpolate({
-                                            inputRange: [0, 0.7, 1],
-                                            outputRange: [20, 20, 0]
-                                        })
-                                    }]
-                                }
-                            ]}
-                        >
-                            手写数字识别系统
-                        </Animated.Text>
-
-                        <Animated.Text
-                            style={[
-                                styles.subtitle,
-                                {
-                                    opacity: fadeAnim.interpolate({
-                                        inputRange: [0, 0.8, 1],
-                                        outputRange: [0, 0, 1]
-                                    }),
-                                    transform: [{
-                                        translateY: fadeAnim.interpolate({
-                                            inputRange: [0, 0.8, 1],
-                                            outputRange: [20, 20, 0]
-                                        })
-                                    }]
-                                }
-                            ]}
-                        >
-                            Handwritten Digit Recognition System
-                        </Animated.Text>
-                    </View>
-
                     {/* 注册卡片 */}
                     <Animated.View
                         style={[
@@ -451,7 +416,7 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                                 ]}>👤</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="3-50个字符，仅字母数字下划线"
+                                    placeholder="3-50字符，仅字母数字下划线"
                                     placeholderTextColor="#94a3b8"
                                     value={username}
                                     onChangeText={setUsername}
@@ -489,7 +454,7 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                                 ]}>🔒</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="6-20个字符"
+                                    placeholder="6-20字符"
                                     placeholderTextColor="#94a3b8"
                                     value={password}
                                     onChangeText={setPassword}
@@ -506,7 +471,9 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                         <View style={styles.inputContainer}>
                             <Text style={[
                                 styles.label,
-                                confirmPasswordFocused && styles.labelFocused
+                                confirmPasswordFocused && styles.labelFocused,
+                                passwordMatch === false && styles.labelError,
+                                passwordMatch === true && styles.labelSuccess
                             ]}>
                                 确认密码 <Text style={styles.required}>*</Text>
                             </Text>
@@ -514,17 +481,39 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                                 style={[
                                     styles.inputWrapper,
                                     {
-                                        borderColor: confirmPasswordFocused ? '#2563eb' : '#e2e8f0',
-                                        backgroundColor: confirmPasswordFocused ? '#eff6ff' : '#f8fafc',
-                                        shadowColor: confirmPasswordFocused ? '#2563eb' : 'transparent',
-                                        shadowOpacity: confirmPasswordFocused ? 0.2 : 0,
+                                        borderColor: passwordMatch === true
+                                            ? '#10b981'
+                                            : passwordMatch === false
+                                                ? '#ef4444'
+                                                : confirmPasswordFocused
+                                                    ? '#2563eb'
+                                                    : '#e2e8f0',
+                                        backgroundColor: passwordMatch === true
+                                            ? '#f0fdf4'
+                                            : passwordMatch === false
+                                                ? '#fef2f2'
+                                                : confirmPasswordFocused
+                                                    ? '#eff6ff'
+                                                    : '#f8fafc',
+                                        shadowColor: passwordMatch === true
+                                            ? '#10b981'
+                                            : passwordMatch === false
+                                                ? '#ef4444'
+                                                : confirmPasswordFocused
+                                                    ? '#2563eb'
+                                                    : 'transparent',
+                                        shadowOpacity: (passwordMatch !== null || confirmPasswordFocused) ? 0.2 : 0,
                                     }
                                 ]}
                             >
                                 <Text style={[
                                     styles.inputIcon,
-                                    confirmPasswordFocused && styles.inputIconFocused
-                                ]}>🔐</Text>
+                                    confirmPasswordFocused && styles.inputIconFocused,
+                                    passwordMatch === true && styles.inputIconSuccess,
+                                    passwordMatch === false && styles.inputIconError
+                                ]}>
+                                    {passwordMatch === true ? '✅' : passwordMatch === false ? '❌' : '🔐'}
+                                </Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="再次输入密码"
@@ -534,9 +523,33 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                                     secureTextEntry
                                     onFocus={() => handleInputFocus('confirmPassword')}
                                     onBlur={() => handleInputBlur('confirmPassword')}
-                                    selectionColor="#2563eb"
+                                    selectionColor={passwordMatch === true ? '#10b981' : passwordMatch === false ? '#ef4444' : '#2563eb'}
                                 />
                             </Animated.View>
+                            {/* 密码一致性提示 */}
+                            {confirmPassword.length > 0 && passwordMatch !== null && (
+                                <Animated.View
+                                    style={[
+                                        styles.passwordMatchHint,
+                                        {
+                                            opacity: passwordMatchAnim,
+                                            transform: [{
+                                                translateY: passwordMatchAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [-10, 0]
+                                                })
+                                            }]
+                                        }
+                                    ]}
+                                >
+                                    <Text style={[
+                                        styles.passwordMatchText,
+                                        passwordMatch ? styles.passwordMatchTextSuccess : styles.passwordMatchTextError
+                                    ]}>
+                                        {passwordMatch ? '密码匹配' : '密码不匹配'}
+                                    </Text>
+                                </Animated.View>
+                            )}
                         </View>
 
                         {/* EMAIL */}
@@ -656,16 +669,6 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                             </TouchableOpacity>
                         </Animated.View>
                     </Animated.View>
-
-                    {/* 返回按钮 */}
-                    <TouchableOpacity
-                        onPress={onCancel}
-                        style={styles.backButton}
-                        disabled={loading}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.backButtonText}>← 返回</Text>
-                    </TouchableOpacity>
                 </Animated.View>
             </KeyboardAwareScrollView>
         </View>
@@ -835,6 +838,32 @@ const styles = StyleSheet.create({
         color: '#2563eb',
         transform: [{ scale: 1.1 }],
     },
+    inputIconSuccess: {
+        color: '#10b981',
+    },
+    inputIconError: {
+        color: '#ef4444',
+    },
+    labelSuccess: {
+        color: '#10b981',
+    },
+    labelError: {
+        color: '#ef4444',
+    },
+    passwordMatchHint: {
+        marginTop: 8,
+        marginLeft: 4,
+    },
+    passwordMatchText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    passwordMatchTextSuccess: {
+        color: '#10b981',
+    },
+    passwordMatchTextError: {
+        color: '#ef4444',
+    },
     input: {
         flex: 1,
         fontSize: 18,
@@ -888,14 +917,21 @@ const styles = StyleSheet.create({
         textUnderlineOffset: 4,
     },
     backButton: {
-        marginTop: 30,
-        alignSelf: 'center',
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 20,
+        zIndex: 1000,
         padding: 12,
         borderRadius: 25,
         backgroundColor: 'rgba(255, 255, 255, 0.7)',
         backdropFilter: 'blur(10px)',
         borderWidth: 1,
         borderColor: 'rgba(59, 130, 246, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 5,
     },
     backButtonText: {
         color: '#1e293b',

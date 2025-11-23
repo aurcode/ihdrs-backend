@@ -34,6 +34,7 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
     const usernameScale = useRef(new Animated.Value(1)).current;
     const passwordScale = useRef(new Animated.Value(1)).current;
     const backgroundY = useRef(new Animated.Value(0)).current;
+    const eyeIconScale = useRef(new Animated.Value(1)).current;
 
     // 粒子效果
     const particles = useRef([]);
@@ -247,6 +248,16 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
                 <View style={styles.circleMiddle} />
             </Animated.View>
 
+            {/* 返回按钮 - 固定在左上角 */}
+            <TouchableOpacity
+                onPress={onCancel}
+                style={styles.backButton}
+                disabled={loading}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.backButtonText}>← 返回</Text>
+            </TouchableOpacity>
+
             <KeyboardAwareScrollView
                 enableOnAndroid={true}
                 extraScrollHeight={Platform.OS === 'android' ? 20 : 10}
@@ -440,12 +451,40 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
                                 />
                                 <TouchableOpacity
                                     style={styles.togglePassword}
-                                    onPress={() => setShowPassword(!showPassword)}
+                                    onPress={() => {
+                                        // 添加点击动画反馈
+                                        Animated.sequence([
+                                            Animated.timing(eyeIconScale, {
+                                                toValue: 0.8,
+                                                duration: 100,
+                                                useNativeDriver: true,
+                                            }),
+                                            Animated.timing(eyeIconScale, {
+                                                toValue: 1.1,
+                                                duration: 100,
+                                                useNativeDriver: true,
+                                            }),
+                                            Animated.spring(eyeIconScale, {
+                                                toValue: 1,
+                                                tension: 50,
+                                                friction: 3,
+                                                useNativeDriver: true,
+                                            }),
+                                        ]).start();
+                                        setShowPassword(!showPassword);
+                                    }}
                                     disabled={loading}
+                                    activeOpacity={0.7}
                                 >
-                                    <Text style={styles.togglePasswordText}>
+                                    <Animated.Text
+                                        style={[
+                                            styles.togglePasswordText,
+                                            passwordFocused && styles.togglePasswordTextFocused,
+                                            { transform: [{ scale: eyeIconScale }] }
+                                        ]}
+                                    >
                                         {showPassword ? '👁️' : '👁️'}
-                                    </Text>
+                                    </Animated.Text>
                                 </TouchableOpacity>
                             </Animated.View>
                         </Animated.View>
@@ -492,16 +531,6 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
                             </TouchableOpacity>
                         </Animated.View>
                     </Animated.View>
-
-                    {/* 返回按钮 */}
-                    <TouchableOpacity
-                        onPress={onCancel}
-                        style={styles.backButton}
-                        disabled={loading}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.backButtonText}>← 返回</Text>
-                    </TouchableOpacity>
                 </Animated.View>
             </KeyboardAwareScrollView>
         </View>
@@ -676,10 +705,18 @@ const styles = StyleSheet.create({
     },
     togglePassword: {
         padding: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minWidth: 36,
+        minHeight: 36,
     },
     togglePasswordText: {
-        fontSize: 20,
+        fontSize: 22,
         color: '#94a3b8',
+        transition: 'color 0.3s ease',
+    },
+    togglePasswordTextFocused: {
+        color: '#2563eb',
     },
     loginButton: {
         borderRadius: 16,
@@ -786,14 +823,21 @@ const styles = StyleSheet.create({
         textUnderlineOffset: 4,
     },
     backButton: {
-        marginTop: 30,
-        alignSelf: 'center',
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 20,
+        zIndex: 1000,
         padding: 12,
         borderRadius: 25,
         backgroundColor: 'rgba(255, 255, 255, 0.7)',
         backdropFilter: 'blur(10px)',
         borderWidth: 1,
         borderColor: 'rgba(59, 130, 246, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 5,
     },
     backButtonText: {
         color: '#1e293b',
