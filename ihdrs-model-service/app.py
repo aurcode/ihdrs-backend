@@ -34,7 +34,7 @@ def create_app(config_name=None):
     # 在这里初始化模型服务（只初始化一次）
     model_service = ModelService()
 
-    # 立即加载模型（而不是在first_request时）
+    # 立即加载模型
     try:
         if model_service.load_default_model():
             app.logger.info("默认模型加载并预热成功")

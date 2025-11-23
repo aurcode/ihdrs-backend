@@ -414,7 +414,6 @@ onMounted(() => {
 .user-management {
   padding: 20px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 /* 深色模式：保持渐变背景，但调暗 */
@@ -428,7 +427,7 @@ html.dark .user-management {
 }
 
 .header h1 {
-  color: white;
+  color: black;
   font-size: 24px;
   font-weight: 600;
   margin: 0;

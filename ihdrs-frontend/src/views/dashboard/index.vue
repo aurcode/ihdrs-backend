@@ -580,10 +580,10 @@ const refreshCharts = async () => {
 
 const getImageUrl = (fileName) => {
   if (!fileName) return '';
-  let VITE_BASE_API = 'http://192.168.193.1:8080'; //TODO: 从环境变量或配置中获取基础URL
-  console.log(`${VITE_BASE_API}${fileName}`);
-  return `${VITE_BASE_API}${fileName}`;
-}
+  const baseApi = import.meta.env.VITE_BASE_API;
+  return `${baseApi}${fileName}`;
+};
+
 
 const formatTime = (time) => {
   return dayjs(time).format('MM-DD HH:mm')

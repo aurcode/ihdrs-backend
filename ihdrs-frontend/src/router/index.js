@@ -201,16 +201,7 @@ export const routes = [
                 }
             }
         ]
-    }/*,
-    {
-        path: '/:pathMatch(.*)*',
-        name: 'NotFound',
-        component: () => import('@/views/error/404.vue'),
-        meta: {
-            title: '页面未找到',
-            hideInMenu: true
-        }
-    }*/
+    }
 ]
 
 const router = createRouter({

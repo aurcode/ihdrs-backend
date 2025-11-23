@@ -82,9 +82,6 @@ class ImageProcessor:
         # 5. 归一化到[0,1]
         normalized = resized.astype(np.float32) / 255.0
 
-        # 6. 数据增强
-        # enhanced = self._apply_augmentation(normalized)
-
         return normalized
 
     def _extract_roi(self, binary_image: np.ndarray) -> np.ndarray:
@@ -130,20 +127,6 @@ class ImageProcessor:
         except Exception as e:
             logger.warning(f"ROI提取失败，使用原图像: {e}")
             return binary_image
-
-    def _apply_augmentation(self, image: np.ndarray) -> np.ndarray:
-        """
-        应用数据增强（仅在训练时使用）
-
-        Args:
-            image: 输入图像
-
-        Returns:
-            增强后的图像
-        """
-        # 可以添加轻微的旋转、平移等
-        # 这里暂不实现，保持原图像
-        return image
 
     def segment_digits(self, image_bytes: bytes) -> List[np.ndarray]:
         """
@@ -248,7 +231,7 @@ class ImageProcessor:
         2. 适当加粗笔画
         3. 使用重心(Center of Mass)居中，而不是几何中心
         """
-        # --- 步骤 1: 适当加粗 (解决笔画太细的问题) ---
+        # 适当加粗
         # 如果原图很大，先做一次轻微膨胀，防止缩放后断裂
         # 这里的 kernel 大小取决于原图的分辨率，如果原图是 Canvas 导出的高也就是几百像素，(2,2) 或 (3,3) 比较合适
         kernel = np.ones((3, 3), np.uint8)
@@ -261,7 +244,7 @@ class ImageProcessor:
         # 留出 4 像素的边距 (padding)
         inner_size = 20
 
-        # --- 步骤 2: 保持比例缩放 ---
+        # 保持比例缩放
         scale = min(inner_size / h, inner_size / w)
         new_w = int(w * scale)
         new_h = int(h * scale)
@@ -277,11 +260,10 @@ class ImageProcessor:
         x_offset = (target_w - new_w) // 2
         canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
 
-        # --- 步骤 3: 重心校正 (Center of Mass) ---
-        # 这是大幅提升准确率的关键
+        # 重心校正 (Center of Mass)
         final_image = self._center_image(canvas)
 
-        # --- 步骤 4: 归一化 ---
+        # 归一化
         normalized = final_image.astype(np.float32) / 255.0
 
         return normalized

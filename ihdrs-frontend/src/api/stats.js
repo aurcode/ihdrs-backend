@@ -1,6 +1,9 @@
 // api/stats.js
 import request from '@/utils/request'
 
+/**
+ * 获取仪表盘统计数据
+ */
 export function getDashboardStats() {
     return request({
         url: '/stats/dashboard',
@@ -8,6 +11,9 @@ export function getDashboardStats() {
     })
 }
 
+/**
+ * 获取最近的识别记录
+ */
 export function getRecentRecognitions(limit = 10) {
     return request({
         url: '/stats/recognitions',
@@ -16,24 +22,12 @@ export function getRecentRecognitions(limit = 10) {
     })
 }
 
+/**
+ * 获取性能指标数据
+ */
 export function getPerformanceMetrics() {
     return request({
         url: '/stats/performance',
         method: 'get'
-    })
-}
-
-export function getErrorAnalysis() {
-    return request({
-        url: '/stats/analysis',
-        method: 'get'
-    })
-}
-
-export function getStatsByTimeRange(startTime, endTime) {
-    return request({
-        url: '/stats/time-range',
-        method: 'get',
-        params: { startTime, endTime }
     })
 }

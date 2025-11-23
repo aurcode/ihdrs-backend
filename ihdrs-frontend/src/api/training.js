@@ -42,11 +42,3 @@ export function cancelTrainingTask(taskId) {
         method: 'put'
     })
 }
-
-// 获取训练统计
-export function getTrainingStatistics() {
-    return request({
-        url: '/training/statistics',
-        method: 'get'
-    })
-}

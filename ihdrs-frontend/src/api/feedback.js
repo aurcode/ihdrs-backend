@@ -32,16 +32,6 @@ export function reviewFeedback(feedbackId, data) {
 }
 
 /**
- * 获取反馈详情
- */
-export function getFeedbackDetail(feedbackId) {
-    return request({
-        url: `/feedback/${feedbackId}`,
-        method: 'get'
-    })
-}
-
-/**
  * 批量审核反馈
  */
 export function batchReviewFeedback(feedbackIds, status, reviewNote) {
