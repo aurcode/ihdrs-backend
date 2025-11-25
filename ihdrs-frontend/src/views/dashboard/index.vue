@@ -216,7 +216,15 @@
                 />
               </div>
               <div class="activity-content">
-                <div class="activity-title">{{ record.result }}</div>
+                <div class="activity-title">识别结果：
+                  {{
+                    record.result === null ||
+                    record.result === undefined ||
+                    record.result === 'null'
+                        ? record.sequenceResult
+                        : record.result
+                  }}
+                </div>
                 <div class="activity-meta">
                   <span class="confidence">
                     <el-icon><SuccessFilled/></el-icon>
@@ -514,7 +522,7 @@ const updateCharts = (performanceData) => {
     digitDistributionOption.value.series[0].data =
         performanceData.digitDistribution.map((item, index) => ({
           value: item.count ?? item.value ?? 0,
-          name: `数字${item.digit ?? item.name ?? 0}`,
+          name: item.digit == null ? '连续数字' : `数字${item.digit}`,
           itemStyle: {color: colors[index % colors.length]}
         }))
   }

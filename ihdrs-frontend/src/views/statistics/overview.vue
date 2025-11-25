@@ -169,9 +169,9 @@
           <div class="recent-list" v-loading="tableLoading">
             <el-table :data="recentRecognitions" style="width: 100%" max-height="320">
               <el-table-column prop="imageName" label="图片路径" min-width="120" show-overflow-tooltip />
-              <el-table-column prop="result" label="结果" width="150" align="center">
+              <el-table-column prop="result" label="识别结果" width="150" align="center">
                 <template #default="{ row }">
-                  <el-tag>{{ row.result }}</el-tag>
+                  <el-tag>{{ (row.result === null || row.result === 'null') ? row.sequenceResult : row.result }}</el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="confidence" label="置信度" width="100" align="center">
@@ -454,7 +454,7 @@ const updateCharts = (data) => {
     const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#C0C4CC', '#00D7FF', '#FF6B9D', '#C71585', '#FFD700']
     digitDistributionOption.value.series[0].data = data.digitDistribution.map((item, index) => ({
       value: item.count,
-      name: `数字${item.digit}`,
+      name: item.digit == null ? '连续数字' : `数字${item.digit}`,
       itemStyle: { color: colors[index % colors.length] }
     }))
   }

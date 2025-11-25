@@ -138,13 +138,13 @@ export const routes = [
                 path: 'list',
                 name: 'DatasetList',
                 component: () => import('@/views/dataset/DatasetList.vue'),
-                meta: { title: '数据集列表', requireAuth: true }
+                meta: { title: '数据集列表', requireAuth: true, icon: 'Collection' }
             },
             {
                 path: 'upload',
                 name: 'DatasetUpload',
                 component: () => import('@/views/dataset/DatasetUpload.vue'),
-                meta: { title: '上传数据集', requireAuth: true }
+                meta: { title: '上传数据集', requireAuth: true, icon: 'FolderAdd' }
             },
             {
                 path: 'detail/:id',

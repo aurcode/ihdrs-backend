@@ -10,6 +10,7 @@ public class RecognitionHistoryDTO {
     private String imageName;
     private String result;
     private String status;
+    private String sequenceResult;
     private Double confidence;
     private Long processingTime;
     private LocalDateTime createTime;

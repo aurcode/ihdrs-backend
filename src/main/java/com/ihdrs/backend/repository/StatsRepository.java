@@ -84,7 +84,7 @@ public class StatsRepository {
     public List<RecognitionHistoryDTO> getRecentRecognitions(int limit) {
         String sql = """
             SELECT 
-                r.record_id, r.image_path, r.recognition_result, 
+                r.record_id, r.image_path, r.sequence_result, r.recognition_result, 
                 CASE WHEN r.is_correct = 1 THEN 'SUCCESS' ELSE 'FAILED' END as status,
                 r.confidence, r.processing_time, r.create_time, 
                 m.model_name, u.username
@@ -106,17 +106,18 @@ public class StatsRepository {
         RecognitionHistoryDTO dto = new RecognitionHistoryDTO();
         dto.setId(((Number) result[0]).longValue());
         dto.setImageName((String) result[1]);
-        dto.setResult("识别结果: " + result[2]);
-        dto.setStatus((String) result[3]);
-        dto.setConfidence(result[4] != null ? ((Number) result[4]).doubleValue() : null);
-        dto.setProcessingTime(result[5] != null ? ((Number) result[5]).longValue() : null);
+        dto.setSequenceResult((String) result[2]);
+        dto.setResult(""+result[3]);
+        dto.setStatus((String) result[4]);
+        dto.setConfidence(result[5] != null ? ((Number) result[5]).doubleValue() : null);
+        dto.setProcessingTime(result[6] != null ? ((Number) result[6]).longValue() : null);
         
-        if (result[6] != null) {
-            dto.setCreateTime(((java.sql.Timestamp) result[6]).toLocalDateTime());
+        if (result[7] != null) {
+            dto.setCreateTime(((java.sql.Timestamp) result[7]).toLocalDateTime());
         }
         
-        String modelName = (String) result[7];
-        String username = (String) result[8];
+        String modelName = (String) result[8];
+        String username = (String) result[9];
         dto.setErrorMessage("模型: " + modelName + ", 用户: " + username);
         
         return dto;
