@@ -180,19 +180,6 @@
               </el-icon>
               取消
             </el-button>
-
-            <el-button
-                v-if="row.status === 'RUNNING' || row.status === 'COMPLETED'"
-                size="small"
-                type="success"
-                link
-                @click.stop="openLogsDialog(row)"
-            >
-              <el-icon>
-                <Document/>
-              </el-icon>
-              日志弹窗
-            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -240,11 +227,52 @@
         </div>
       </div>
 
+      <!-- 实时进度条 -->
+      <div v-if="selectedTask.status === 'RUNNING'" class="real-time-progress">
+        <div class="progress-header">
+          <span class="progress-epoch">Epoch {{ batchProgress.epoch }}/{{ batchProgress.totalEpochs }}</span>
+          <span class="progress-speed" v-if="batchProgress.msPerStep > 0">
+      {{ batchProgress.msPerStep }}ms/step
+    </span>
+        </div>
+
+        <div class="progress-bar-container">
+          <span class="progress-counter">{{ batchProgress.currentBatch }}/{{ batchProgress.totalBatches }}</span>
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar-track">
+              <div
+                  class="progress-bar-fill"
+                  :style="{ width: batchProgressPercent + '%' }"
+              >
+              </div>
+            </div>
+            <span class="progress-bar-text">{{ batchProgressBar }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="charts-container" v-loading="inlineLogsLoading">
         <div v-if="!logsDialog.logs.length" class="no-logs-tip">
           暂无训练日志，请等待训练过程中产生日志。
         </div>
         <template v-else>
+          <!-- 终端输出 -->
+          <div class="chart-item" style="position: relative">
+            <h4>
+              终端输出
+              <el-button
+                  size="small"
+                  text
+                  @click="scrollToBottom"
+                  style="position: absolute; right: 10px; top: 0"
+              >
+                跳到最新 ↓
+              </el-button>
+            </h4>
+            <el-scrollbar ref="terminalScrollbar" height="250px">
+              <pre class="terminal-log">{{ terminalLogsText }}</pre>
+            </el-scrollbar>
+          </div>
           <!-- 上方增加一些汇总信息 -->
           <div class="logs-summary">
             <span>最新 Epoch：{{ latestLog?.epoch ?? '-' }}</span>
@@ -292,9 +320,11 @@
               <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
                 <h4>
                   混淆矩阵
-                  <el-tooltip content="混淆矩阵用于评估分类模型，通过对比预测与真实标签，展示正确和错误分类的数量，让你直观看到模型在哪些类别上表现良好或存在误判" placement="top">
+                  <el-tooltip
+                      content="混淆矩阵用于评估分类模型，通过对比预测与真实标签，展示正确和错误分类的数量，让你直观看到模型在哪些类别上表现良好或存在误判"
+                      placement="top">
                     <el-icon>
-                      <QuestionFilled />
+                      <QuestionFilled/>
                     </el-icon>
                   </el-tooltip>
                 </h4>
@@ -327,7 +357,7 @@
             <span>任务名称</span>
             <el-tooltip content="为训练任务设置一个便于识别的名称" placement="top">
               <el-icon style="margin-left: 4px; cursor: help;">
-                <QuestionFilled />
+                <QuestionFilled/>
               </el-icon>
             </el-tooltip>
           </template>
@@ -339,7 +369,7 @@
             <span>数据集</span>
             <el-tooltip content="选择用于训练的数据集，数据集必须已经上传并预处理完成" placement="top">
               <el-icon style="margin-left: 4px; cursor: help;">
-                <QuestionFilled />
+                <QuestionFilled/>
               </el-icon>
             </el-tooltip>
           </template>
@@ -361,7 +391,7 @@
             <span>模型类型</span>
             <el-tooltip content="选择神经网络架构类型，不同模型适合不同复杂度的任务" placement="top">
               <el-icon style="margin-left: 4px; cursor: help;">
-                <QuestionFilled />
+                <QuestionFilled/>
               </el-icon>
             </el-tooltip>
           </template>
@@ -396,7 +426,7 @@
                 <span>隐藏层大小</span>
                 <el-tooltip content="全连接层的神经元数量，越大模型容量越大，但训练时间更长" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -415,7 +445,7 @@
                 <span>激活函数</span>
                 <el-tooltip content="神经元激活函数，ReLU 最常用，LeakyReLU 避免神经元死亡" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -437,7 +467,7 @@
                 <span>Dropout率</span>
                 <el-tooltip content="随机丢弃神经元的比例，用于防止过拟合，0.0 表示不使用" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -457,7 +487,7 @@
                 <span>批归一化</span>
                 <el-tooltip content="标准化每一层的输入，提高训练稳定性和收敛速度" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -477,7 +507,7 @@
                 <span>训练轮数</span>
                 <el-tooltip content="模型遍历整个训练集的次数，越多效果可能越好但容易过拟合" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -495,7 +525,7 @@
                 <span>批次大小</span>
                 <el-tooltip content="每次训练使用的样本数量，越大训练越稳定但显存占用越高" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -518,7 +548,7 @@
                 <span>学习率</span>
                 <el-tooltip content="控制参数更新的步长，过大可能不收敛，过小训练太慢" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -538,7 +568,7 @@
                 <span>优化器</span>
                 <el-tooltip content="参数更新算法，Adam 自适应学习率最常用，SGD 需要精细调参" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -563,7 +593,7 @@
                 <span>损失函数</span>
                 <el-tooltip content="用于计算预测值与真实值的差异，多分类用 Categorical Crossentropy" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -579,7 +609,7 @@
                 <span>验证集比例</span>
                 <el-tooltip content="从训练集中划分出用于验证的数据比例，用于监控过拟合" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -600,7 +630,7 @@
                 <span>L2正则化系数</span>
                 <el-tooltip content="权重衰减系数，防止模型过拟合，值越大约束越强" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -618,7 +648,7 @@
                 <span>早停轮数</span>
                 <el-tooltip content="验证损失连续多少轮不下降时停止训练，0 表示不使用早停" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -640,7 +670,7 @@
                 <span>学习率衰减策略</span>
                 <el-tooltip content="训练过程中动态调整学习率的策略，有助于模型更好收敛" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -659,7 +689,7 @@
                 <span>数据增强</span>
                 <el-tooltip content="对图像进行随机变换（旋转、翻转等），增加数据多样性，防止过拟合" placement="top">
                   <el-icon style="margin-left: 4px; cursor: help;">
-                    <QuestionFilled />
+                    <QuestionFilled/>
                   </el-icon>
                 </el-tooltip>
               </template>
@@ -674,7 +704,7 @@
             <span>数据增强强度</span>
             <el-tooltip content="数据增强的变换幅度，轻度适合高质量数据，强度适合数据量少的情况" placement="top">
               <el-icon style="margin-left: 4px; cursor: help;">
-                <QuestionFilled />
+                <QuestionFilled/>
               </el-icon>
             </el-tooltip>
           </template>
@@ -796,9 +826,11 @@
       <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
         <h4>
           混淆矩阵
-          <el-tooltip content="混淆矩阵用于评估分类模型，通过对比预测与真实标签，展示正确和错误分类的数量，让你直观看到模型在哪些类别上表现良好或存在误判" placement="top">
+          <el-tooltip
+              content="混淆矩阵用于评估分类模型，通过对比预测与真实标签，展示正确和错误分类的数量，让你直观看到模型在哪些类别上表现良好或存在误判"
+              placement="top">
             <el-icon>
-              <QuestionFilled />
+              <QuestionFilled/>
             </el-icon>
           </el-tooltip>
         </h4>
@@ -808,65 +840,6 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="detailDialog.visible = false">关闭</el-button>
-        </div>
-      </template>
-    </el-dialog>
-
-    <!-- 训练日志对话框 -->
-    <el-dialog
-        v-model="logsDialog.visible"
-        title="训练日志"
-        width="1000px"
-        :close-on-click-modal="false"
-    >
-      <div class="charts-container" v-loading="logsDialog.loading">
-        <div v-if="!logsDialog.logs.length" class="no-logs-tip">
-          暂无训练日志。
-        </div>
-        <template v-else>
-          <div class="logs-summary">
-            <span>最新 Epoch：{{ latestLog?.epoch ?? '-' }}</span>
-            <span>最新 Step：{{ latestLog?.step ?? '-' }}</span>
-            <span>当前学习率：{{ latestLog?.learningRate ?? '-' }}</span>
-            <span>Batch Size：{{ latestLog?.batchSize ?? '-' }}</span>
-            <span>最近日志时间：{{ latestLog ? formatDate(latestLog.timestamp) : '-' }}</span>
-          </div>
-
-          <div class="chart-item">
-            <h4>准确率曲线</h4>
-            <v-chart :option="accuracyChartOption" autoresize style="height: 300px"/>
-          </div>
-
-          <div class="chart-item">
-            <h4>损失曲线</h4>
-            <v-chart :option="lossChartOption" autoresize style="height: 300px"/>
-          </div>
-
-          <div class="chart-item">
-            <h4>学习率曲线</h4>
-            <v-chart :option="lrChartOption" autoresize style="height: 300px"/>
-          </div>
-
-          <div class="chart-item">
-            <h4>准确率差（过拟合观察）</h4>
-            <v-chart :option="gapAccChartOption" autoresize style="height: 300px"/>
-          </div>
-
-          <div class="chart-item">
-            <h4>每个 Epoch 时长</h4>
-            <v-chart :option="epochDurationChartOption" autoresize style="height: 300px"/>
-          </div>
-
-          <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
-            <h4>混淆矩阵</h4>
-            <v-chart :option="confusionMatrixOption" autoresize style="height: 400px"/>
-          </div>
-        </template>
-      </div>
-
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="logsDialog.visible = false">关闭</el-button>
         </div>
       </template>
     </el-dialog>
@@ -911,7 +884,7 @@ import {
 import VChart from 'vue-echarts'
 import dayjs from 'dayjs'
 import {getAvailableDatasets} from '@/api/dataset'
-
+import {getBatchProgress} from '@/api/training'
 
 // 注册ECharts组件
 use([
@@ -937,6 +910,18 @@ const statistics = ref({
   runningTasks: 0,
   avgAccuracy: 0
 })
+
+// 实时 batch 进度
+const batchProgress = reactive({
+  epoch: 0,
+  totalEpochs: 0,
+  currentBatch: 0,
+  totalBatches: 0,
+  msPerStep: 0,
+  status: 'waiting'
+})
+
+let batchProgressTimer = null
 
 const selectedTask = ref(null)
 
@@ -975,13 +960,13 @@ const createDialog = reactive({
     lrScheduler: 'none'
   },
   rules: {
-    taskName: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-    datasetId: [{ required: true, message: '请选择数据集', trigger: 'change' }],
-    modelType: [{ required: true, message: '请选择模型类型', trigger: 'change' }],
-    totalEpochs: [{ required: true, message: '请输入训练轮数', trigger: 'blur' }],
-    batchSize: [{ required: true, message: '请选择批次大小', trigger: 'change' }],
-    learningRate: [{ required: true, message: '请选择学习率', trigger: 'change' }],
-    optimizer: [{ required: true, message: '请选择优化器', trigger: 'change' }]
+    taskName: [{required: true, message: '请输入任务名称', trigger: 'blur'}],
+    datasetId: [{required: true, message: '请选择数据集', trigger: 'change'}],
+    modelType: [{required: true, message: '请选择模型类型', trigger: 'change'}],
+    totalEpochs: [{required: true, message: '请输入训练轮数', trigger: 'blur'}],
+    batchSize: [{required: true, message: '请选择批次大小', trigger: 'change'}],
+    learningRate: [{required: true, message: '请选择学习率', trigger: 'change'}],
+    optimizer: [{required: true, message: '请选择优化器', trigger: 'change'}]
   }
 })
 
@@ -1010,10 +995,95 @@ const logsDialog = reactive({
   logs: []
 })
 
+// batch 进度百分比
+const batchProgressPercent = computed(() => {
+  if (batchProgress.totalBatches === 0) return 0
+  return Math.min(100, (batchProgress.currentBatch / batchProgress.totalBatches) * 100)
+})
+
+// 进度条字符（绿色方块）
+const batchProgressBar = computed(() => {
+  const width = 40
+  const filled = Math.floor(width * batchProgressPercent.value / 100)
+  return '━'.repeat(filled) + '─'.repeat(width - filled)
+})
+
+// 开始轮询 batch 进度
+const startBatchProgressPolling = () => {
+  if (batchProgressTimer) return
+
+  batchProgressTimer = setInterval(async () => {
+    if (!selectedTask.value || selectedTask.value.status !== 'RUNNING') {
+      stopBatchProgressPolling()
+      return
+    }
+
+    try {
+      const res = await getBatchProgress(selectedTask.value.taskId)
+      if (res.code === 200 && res.data) {
+        Object.assign(batchProgress, res.data)
+      }
+    } catch (err) {
+      console.error('获取 batch 进度失败', err)
+    }
+  }, 500) // 每 500ms 更新一次
+}
+
+// 停止轮询
+const stopBatchProgressPolling = () => {
+  if (batchProgressTimer) {
+    clearInterval(batchProgressTimer)
+    batchProgressTimer = null
+  }
+}
+
 const latestLog = computed(() => {
   if (!logsDialog.logs || !logsDialog.logs.length) return null
   return logsDialog.logs[logsDialog.logs.length - 1]
 })
+
+const terminalScrollbar = ref(null)
+
+const terminalLogsText = computed(() => {
+  if (!logsDialog.logs || !logsDialog.logs.length) return ''
+  return logsDialog.logs
+      .filter((log) => log.message)
+      .map((log) => {
+        const timeStr = log.timestamp ? formatDate(log.timestamp) : ''
+        return timeStr ? `[${timeStr}] ${log.message}` : log.message
+      })
+      .join('\n\n')
+})
+
+// 自动滚动到底部（仅当用户在底部附近时）
+watch(
+    () => logsDialog.logs,
+    async () => {
+      await nextTick()
+      if (terminalScrollbar.value) {
+        const scrollContainer = terminalScrollbar.value.wrapRef
+        if (!scrollContainer) return
+
+        const isNearBottom =
+            scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 50
+
+        if (isNearBottom) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight
+        }
+      }
+    },
+    {deep: true}
+)
+
+// 手动跳到最新
+const scrollToBottom = () => {
+  if (terminalScrollbar.value) {
+    const scrollContainer = terminalScrollbar.value.wrapRef
+    if (scrollContainer) {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight
+    }
+  }
+}
 
 // 图表配置
 const accuracyChartOption = computed(() => {
@@ -1516,18 +1586,26 @@ const handleCurrentChange = (current) => {
 const handleRowClick = (row) => {
   selectedTask.value = row
   loadInlineLogs(row.taskId)
+
+  if (row.status === 'RUNNING') {
+    startBatchProgressPolling()
+  } else {
+    stopBatchProgressPolling()
+  }
 }
 
 const loadInlineLogs = async (taskId) => {
+  if (!taskId) return
+
   try {
     inlineLogsLoading.value = true
     const res = await getTrainingLogs(taskId)
-
     if (res.code === 200) {
-      logsDialog.logs = res.data
+      logsDialog.logs = res.data || []
     }
-  } catch (error) {
-    console.error('加载日志失败', error)
+  } catch (err) {
+    console.error('加载训练日志失败', err)
+    ElMessage.error('加载训练日志失败')
   } finally {
     inlineLogsLoading.value = false
   }
@@ -1555,24 +1633,6 @@ const viewDetail = async (row) => {
   }
 }
 
-const openLogsDialog = async (row) => {
-  try {
-    logsDialog.loading = true
-    logsDialog.visible = true
-
-    const res = await getTrainingLogs(row.taskId)
-
-    if (res.code === 200) {
-      logsDialog.logs = res.data
-    }
-  } catch (error) {
-    console.error('加载日志失败', error)
-    ElMessage.error('加载日志失败')
-  } finally {
-    logsDialog.loading = false
-  }
-}
-
 const handleCancelTask = (row) => {
   ElMessageBox.confirm(
       '确定要取消该训练任务吗？',
@@ -1596,7 +1656,8 @@ const handleCancelTask = (row) => {
       console.error('取消任务失败', error)
       ElMessage.error('取消任务失败')
     }
-  }).catch(() => {})
+  }).catch(() => {
+  })
 }
 
 const getStatusType = (status) => {
@@ -1626,7 +1687,7 @@ const formatDate = (date) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
 }
 
-const tableRowClassName = ({ row }) => {
+const tableRowClassName = ({row}) => {
   if (selectedTask.value && row.taskId === selectedTask.value.taskId) {
     return 'selected-row'
   }
@@ -1651,6 +1712,12 @@ onMounted(() => {
       }
     }
   }, 3000)
+})
+
+import {onUnmounted} from 'vue'
+
+onUnmounted(() => {
+  stopBatchProgressPolling()
 })
 </script>
 
@@ -1715,6 +1782,7 @@ onMounted(() => {
 .el-form-item {
   .el-icon {
     color: #909399;
+
     &:hover {
       color: #409EFF;
     }
@@ -1823,5 +1891,102 @@ onMounted(() => {
 
 :deep(.el-form-item__label) {
   font-weight: 500;
+}
+
+.terminal-log {
+  background: #111;
+  color: #0f0;
+  padding: 12px;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  min-height: 100%;
+}
+
+/* 实时进度条样式 */
+.real-time-progress {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border: 1px solid #00ff00;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progress-epoch {
+  color: #00ff00;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.progress-speed {
+  color: #00cc88;
+  font-size: 13px;
+}
+
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-counter {
+  color: #00ff00;
+  font-size: 14px;
+  min-width: 100px;
+  font-weight: bold;
+}
+
+.progress-bar-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.progress-bar-track {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, #00ff00 0%, #00cc00 100%);
+  height: 100%;
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+  }
+}
+
+.progress-bar-text {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  color: #00ff00;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
 }
 </style>

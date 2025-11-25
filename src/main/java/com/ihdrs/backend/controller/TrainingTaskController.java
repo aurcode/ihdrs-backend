@@ -26,6 +26,21 @@ public class TrainingTaskController {
 
     private final TrainingTaskService trainingTaskService;
 
+    @Operation(summary = "更新批次进度", description = "由Flask服务调用，更新batch级别实时进度")
+    @PostMapping("/tasks/{taskId}/batch-progress")
+    public Result<Void> updateBatchProgress(
+            @PathVariable Long taskId,
+            @RequestBody Map<String, Object> batchData
+    ) {
+        return trainingTaskService.updateBatchProgress(taskId, batchData);
+    }
+
+    @Operation(summary = "获取批次进度", description = "获取任务的实时batch进度")
+    @GetMapping("/tasks/{taskId}/batch-progress")
+    public Result<Map<String, Object>> getBatchProgress(@PathVariable Long taskId) {
+        return trainingTaskService.getBatchProgress(taskId);
+    }
+
     @Operation(summary = "创建训练任务", description = "创建新的模型训练任务")
     @PostMapping("/tasks")
     public Result<TrainingTaskResponse> createTask(

@@ -29,6 +29,7 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,6 +43,52 @@ public class TrainingTaskService {
     private final RestTemplate restTemplate;
     private final ModelServiceConfig modelServiceConfig;
     private final DatasetRepository datasetRepository;
+    private final ConcurrentHashMap<Long, Map<String, Object>> batchProgressCache = new ConcurrentHashMap<>();
+
+    /**
+     * 更新 batch 级别进度（存到内存缓存）
+     */
+    public Result<Void> updateBatchProgress(Long taskId, Map<String, Object> batchData) {
+        try {
+            // 验证任务是否存在
+            if (!taskRepository.existsById(taskId)) {
+                return Result.error(404, "训练任务不存在");
+            }
+
+            // 存到内存缓存
+            batchProgressCache.put(taskId, batchData);
+
+            log.debug("更新任务 {} 的 batch 进度: epoch={}, batch={}/{}",
+                    taskId,
+                    batchData.get("epoch"),
+                    batchData.get("currentBatch"),
+                    batchData.get("totalBatches")
+            );
+
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("更新 batch 进度失败", e);
+            return Result.error(500, "更新进度失败");
+        }
+    }
+
+    /**
+     * 获取任务的最新 batch 进度
+     */
+    public Result<Map<String, Object>> getBatchProgress(Long taskId) {
+        Map<String, Object> progress = batchProgressCache.get(taskId);
+
+        if (progress == null) {
+            // 返回空数据
+            progress = new HashMap<>();
+            progress.put("epoch", 0);
+            progress.put("currentBatch", 0);
+            progress.put("totalBatches", 0);
+            progress.put("status", "waiting");
+        }
+
+        return Result.success(progress);
+    }
 
     @Transactional
     public Result<TrainingTaskResponse> createTrainingTask(TrainingTaskRequest request, Long creatorId) {
@@ -177,6 +224,7 @@ public class TrainingTaskService {
                         .learningRate(log.getLearningRate())
                         .batchSize(log.getBatchSize())
                         .timestamp(log.getTimestamp())
+                        .message(log.getMessage())
                         .build())
                 .collect(Collectors.toList());
 
@@ -244,6 +292,39 @@ public class TrainingTaskService {
             }
         }
 
+        StringBuilder sb = new StringBuilder();
+        sb.append("Epoch ").append(currentEpoch).append("/")
+                .append(task.getTotalEpochs() != null ? task.getTotalEpochs() : "?")
+                .append("\n");
+
+        // 这里没有 step/秒 的详细进度条，只做一个简化版
+        List<String> metrics = new ArrayList<>();
+        if (accuracy != null) {
+            metrics.add(String.format("accuracy: %.4f", accuracy));
+        }
+        if (loss != null) {
+            metrics.add(String.format("loss: %.4f", loss));
+        }
+        if (valAccuracy != null) {
+            metrics.add(String.format("val_accuracy: %.4f", valAccuracy));
+        }
+        if (valLoss != null) {
+            metrics.add(String.format("val_loss: %.4f", valLoss));
+        }
+        if (learningRate != null) {
+            metrics.add(String.format("lr: %.6f", learningRate));
+        }
+        if (batchSize != null) {
+            metrics.add("batch_size: " + batchSize);
+        }
+
+        // 形如：Epoch 1/3\nmetrics...
+        if (!metrics.isEmpty()) {
+            sb.append(String.join(" - ", metrics));
+        }
+
+        String message = sb.toString();
+
         // 保存训练日志
         TrainingLog log = new TrainingLog();
         log.setTaskId(taskId);
@@ -255,6 +336,7 @@ public class TrainingTaskService {
         log.setStep(step);
         log.setLearningRate(learningRate != null ? BigDecimal.valueOf(learningRate) : null);
         log.setBatchSize(batchSize);
+        log.setMessage(message);
 
         logRepository.save(log);
         taskRepository.save(task);

@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 "/training/tasks/*/progress",
                                 "/training/tasks/*/complete",
                                 "/training/tasks/*/fail",
+                                "/training/tasks/*/batch-progress",
                                 "/users/**"
                         ).permitAll()
 

@@ -73,4 +73,9 @@ public class TrainingLogResponse {
      * 时间戳
      */
     private LocalDateTime timestamp;
+
+    /**
+     * 额外信息
+     */
+    private String message;
 }

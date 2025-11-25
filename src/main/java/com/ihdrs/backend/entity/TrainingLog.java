@@ -48,6 +48,9 @@ public class TrainingLog {
     @Column(name = "batch_size")
     private Integer batchSize;
 
+    @Column(name = "message", length = 2000)
+    private String message;
+
     @CreationTimestamp
     @Column(name = "timestamp", nullable = false, updatable = false)
     private LocalDateTime timestamp;

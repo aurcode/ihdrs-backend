@@ -296,6 +296,18 @@ class TrainingService:
         except Exception as e:
             logger.error(f"报告进度异常: {e}")
 
+    def report_batch_progress(self, batch_data):
+        """向SpringBoot报告batch级别的进度"""
+        try:
+            url = f"{self.springboot_url}/api/training/tasks/{self.task_id}/batch-progress"
+            headers = {'Content-Type': 'application/json'}
+            response = requests.post(url, json=batch_data, headers=headers, timeout=2)
+            if response.status_code != 200:
+                logger.debug(f"报告batch进度失败: {response.status_code}")
+        except Exception as e:
+            # batch进度上报失败不影响训练，只记录debug日志
+            logger.debug(f"报告batch进度异常: {e}")
+
     def report_completion(self, result_data):
         """向SpringBoot报告训练完成"""
         try:
@@ -315,7 +327,6 @@ class TrainingService:
             headers = {'Content-Type': 'application/json'}
             data = {'errorMessage': error_message}
             response = requests.post(url, json=data, headers=headers, timeout=5)
-
             if response.status_code != 200:
                 logger.warning(f"报告失败状态失败: {response.status_code}")
         except Exception as e:
@@ -330,14 +341,52 @@ class ProgressCallback(keras.callbacks.Callback):
         self.batch_size = batch_size
         self.initial_learning_rate = learning_rate
         self.global_step = 0
+        self.current_epoch = 0
+        self.total_batches = 0
+        self.epoch_start_time = None
+
+    def on_epoch_begin(self, epoch, logs=None):
+        """Epoch 开始时记录信息"""
+        self.current_epoch = epoch + 1
+        # 获取当前 epoch 的总 batch 数
+        self.total_batches = self.params.get('steps', 0)
+        self.epoch_start_time = time.time()
+
+        # 上报 epoch 开始
+        self.service.report_batch_progress({
+            "epoch": self.current_epoch,
+            "totalEpochs": self.params['epochs'],
+            "currentBatch": 0,
+            "totalBatches": self.total_batches,
+            "status": "epoch_start"
+        })
 
     def on_train_batch_end(self, batch, logs=None):
+        """每个 batch 结束时上报进度"""
         self.global_step += 1
+        current_batch = batch + 1
+
+        # 每 5 个 batch 或最后一个 batch 上报一次（避免请求过多）
+        if current_batch % 5 == 0 or current_batch == self.total_batches:
+            # 计算当前速度（每步耗时）
+            elapsed = time.time() - self.epoch_start_time if self.epoch_start_time else 0
+            ms_per_step = (elapsed / current_batch * 1000) if current_batch > 0 else 0
+
+            self.service.report_batch_progress({
+                "epoch": self.current_epoch,
+                "totalEpochs": self.params['epochs'],
+                "currentBatch": current_batch,
+                "totalBatches": self.total_batches,
+                "msPerStep": round(ms_per_step, 1),
+                "status": "training"
+            })
 
     def on_epoch_end(self, epoch, logs=None):
+        """Epoch 结束时上报完整指标"""
         if self.service.is_cancelled:
             self.model.stop_training = True
             return
+
         logs = logs or {}
 
         # 获取当前学习率
@@ -346,6 +395,9 @@ class ProgressCallback(keras.callbacks.Callback):
         # 计算进度
         total_epochs = self.params['epochs']
         progress = (epoch + 1) / total_epochs * 100
+
+        # 计算 epoch 耗时
+        elapsed = time.time() - self.epoch_start_time if self.epoch_start_time else 0
 
         progress_data = {
             "currentEpoch": epoch + 1,
@@ -357,6 +409,16 @@ class ProgressCallback(keras.callbacks.Callback):
             "step": self.global_step,
             "learningRate": current_lr,
             "batchSize": int(self.batch_size),
+            "epochDuration": round(elapsed, 1)
         }
 
         self.service.report_progress(progress_data)
+
+        # 上报 epoch 完成状态
+        self.service.report_batch_progress({
+            "epoch": epoch + 1,
+            "totalEpochs": total_epochs,
+            "currentBatch": self.total_batches,
+            "totalBatches": self.total_batches,
+            "status": "epoch_end"
+        })

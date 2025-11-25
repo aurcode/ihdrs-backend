@@ -276,6 +276,7 @@ CREATE TABLE IF NOT EXISTS `training_logs` (
                                                `val_accuracy` decimal(5,4) DEFAULT NULL COMMENT '验证准确率',
                                                `learning_rate` decimal(10,8) DEFAULT NULL COMMENT '学习率',
                                                `batch_size` int DEFAULT NULL COMMENT '批次大小',
+                                               `message` text DEFAULT NULL COMMENT '终端信息',
                                                `timestamp` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '时间戳',
                                                PRIMARY KEY (`log_id`),
                                                KEY `idx_task_epoch` (`task_id`,`epoch`),
