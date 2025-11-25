@@ -290,7 +290,14 @@
             <el-col :span="24">
               <!-- 混淆矩阵区域 -->
               <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
-                <h4>混淆矩阵</h4>
+                <h4>
+                  混淆矩阵
+                  <el-tooltip content="混淆矩阵用于评估分类模型，通过对比预测与真实标签，展示正确和错误分类的数量，让你直观看到模型在哪些类别上表现良好或存在误判" placement="top">
+                    <el-icon>
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </h4>
                 <v-chart :option="confusionMatrixOption" autoresize style="height: 400px"/>
               </div>
             </el-col>
@@ -315,11 +322,27 @@
         <!-- 基础配置 -->
         <el-divider content-position="left">基础配置</el-divider>
 
-        <el-form-item label="任务名称" prop="taskName">
+        <el-form-item prop="taskName">
+          <template #label>
+            <span>任务名称</span>
+            <el-tooltip content="为训练任务设置一个便于识别的名称" placement="top">
+              <el-icon style="margin-left: 4px; cursor: help;">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </template>
           <el-input v-model="createDialog.form.taskName" placeholder="请输入任务名称"/>
         </el-form-item>
 
         <el-form-item label="数据集" prop="datasetId">
+          <template #label>
+            <span>数据集</span>
+            <el-tooltip content="选择用于训练的数据集，数据集必须已经上传并预处理完成" placement="top">
+              <el-icon style="margin-left: 4px; cursor: help;">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </template>
           <el-select v-model="createDialog.form.datasetId" placeholder="请选择数据集" style="width: 100%">
             <el-option
                 v-for="d in datasets"
@@ -334,6 +357,14 @@
         <el-divider content-position="left">模型配置</el-divider>
 
         <el-form-item label="模型类型" prop="modelType">
+          <template #label>
+            <span>模型类型</span>
+            <el-tooltip content="选择神经网络架构类型，不同模型适合不同复杂度的任务" placement="top">
+              <el-icon style="margin-left: 4px; cursor: help;">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </template>
           <el-select v-model="createDialog.form.modelType" placeholder="请选择模型类型" style="width: 100%">
             <el-option label="基础CNN" value="CNN">
               <span>基础CNN</span>
@@ -361,6 +392,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="隐藏层大小" prop="hiddenSize">
+              <template #label>
+                <span>隐藏层大小</span>
+                <el-tooltip content="全连接层的神经元数量，越大模型容量越大，但训练时间更长" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-input-number
                   v-model="createDialog.form.hiddenSize"
                   :min="32"
@@ -372,6 +411,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="激活函数" prop="activation">
+              <template #label>
+                <span>激活函数</span>
+                <el-tooltip content="神经元激活函数，ReLU 最常用，LeakyReLU 避免神经元死亡" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.activation" placeholder="请选择激活函数" style="width: 100%">
                 <el-option label="ReLU" value="relu"/>
                 <el-option label="LeakyReLU" value="leaky_relu"/>
@@ -386,6 +433,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Dropout率" prop="dropout">
+              <template #label>
+                <span>Dropout率</span>
+                <el-tooltip content="随机丢弃神经元的比例，用于防止过拟合，0.0 表示不使用" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.dropout" placeholder="请选择Dropout率" style="width: 100%">
                 <el-option label="0.0 (不使用)" value="0.0"/>
                 <el-option label="0.1" value="0.1"/>
@@ -398,6 +453,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="批归一化" prop="useBatchNorm">
+              <template #label>
+                <span>批归一化</span>
+                <el-tooltip content="标准化每一层的输入，提高训练稳定性和收敛速度" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-switch v-model="createDialog.form.useBatchNorm"/>
               <span style="margin-left: 10px; color: #909399; font-size: 12px">提高训练稳定性</span>
             </el-form-item>
@@ -410,6 +473,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="训练轮数" prop="totalEpochs">
+              <template #label>
+                <span>训练轮数</span>
+                <el-tooltip content="模型遍历整个训练集的次数，越多效果可能越好但容易过拟合" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-input-number
                   v-model="createDialog.form.totalEpochs"
                   :min="1"
@@ -420,6 +491,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="批次大小" prop="batchSize">
+              <template #label>
+                <span>批次大小</span>
+                <el-tooltip content="每次训练使用的样本数量，越大训练越稳定但显存占用越高" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.batchSize" placeholder="请选择批次大小" style="width: 100%">
                 <el-option label="8" :value="8"/>
                 <el-option label="16" :value="16"/>
@@ -435,6 +514,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="学习率" prop="learningRate">
+              <template #label>
+                <span>学习率</span>
+                <el-tooltip content="控制参数更新的步长，过大可能不收敛，过小训练太慢" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.learningRate" placeholder="请选择学习率" style="width: 100%">
                 <el-option label="0.00001" value="0.00001"/>
                 <el-option label="0.0001" value="0.0001"/>
@@ -447,6 +534,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="优化器" prop="optimizer">
+              <template #label>
+                <span>优化器</span>
+                <el-tooltip content="参数更新算法，Adam 自适应学习率最常用，SGD 需要精细调参" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.optimizer" placeholder="请选择优化器" style="width: 100%">
                 <el-option label="Adam" value="adam"/>
                 <el-option label="AdamW" value="adamw"/>
@@ -464,6 +559,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="损失函数" prop="lossFunction">
+              <template #label>
+                <span>损失函数</span>
+                <el-tooltip content="用于计算预测值与真实值的差异，多分类用 Categorical Crossentropy" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.lossFunction" placeholder="请选择损失函数" style="width: 100%">
                 <el-option label="Categorical Crossentropy" value="categorical_crossentropy"/>
                 <el-option label="Binary Crossentropy" value="binary_crossentropy"/>
@@ -472,6 +575,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="验证集比例" prop="validationSplit">
+              <template #label>
+                <span>验证集比例</span>
+                <el-tooltip content="从训练集中划分出用于验证的数据比例，用于监控过拟合" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.validationSplit" placeholder="请选择验证集比例" style="width: 100%">
                 <el-option label="10%" value="0.1"/>
                 <el-option label="15%" value="0.15"/>
@@ -485,6 +596,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="L2正则化系数" prop="l2Regularization">
+              <template #label>
+                <span>L2正则化系数</span>
+                <el-tooltip content="权重衰减系数，防止模型过拟合，值越大约束越强" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.l2Regularization" placeholder="请选择L2正则化" style="width: 100%">
                 <el-option label="0.0 (不使用)" value="0.0"/>
                 <el-option label="0.0001" value="0.0001"/>
@@ -495,6 +614,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="早停轮数" prop="earlyStoppingPatience">
+              <template #label>
+                <span>早停轮数</span>
+                <el-tooltip content="验证损失连续多少轮不下降时停止训练，0 表示不使用早停" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-input-number
                   v-model="createDialog.form.earlyStoppingPatience"
                   :min="0"
@@ -509,6 +636,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="学习率衰减策略" prop="lrScheduler">
+              <template #label>
+                <span>学习率衰减策略</span>
+                <el-tooltip content="训练过程中动态调整学习率的策略，有助于模型更好收敛" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-select v-model="createDialog.form.lrScheduler" placeholder="请选择学习率衰减" style="width: 100%">
                 <el-option label="不使用" value="none"/>
                 <el-option label="指数衰减" value="exponential"/>
@@ -520,6 +655,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="数据增强" prop="useAugmentation">
+              <template #label>
+                <span>数据增强</span>
+                <el-tooltip content="对图像进行随机变换（旋转、翻转等），增加数据多样性，防止过拟合" placement="top">
+                  <el-icon style="margin-left: 4px; cursor: help;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
               <el-switch v-model="createDialog.form.useAugmentation"/>
               <span style="margin-left: 10px; color: #909399; font-size: 12px">增加数据多样性</span>
             </el-form-item>
@@ -527,6 +670,14 @@
         </el-row>
 
         <el-form-item label="数据增强强度" prop="augmentationStrength" v-if="createDialog.form.useAugmentation">
+          <template #label>
+            <span>数据增强强度</span>
+            <el-tooltip content="数据增强的变换幅度，轻度适合高质量数据，强度适合数据量少的情况" placement="top">
+              <el-icon style="margin-left: 4px; cursor: help;">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </template>
           <el-radio-group v-model="createDialog.form.augmentationStrength">
             <el-radio label="light">轻度</el-radio>
             <el-radio label="medium">中度</el-radio>
@@ -643,7 +794,14 @@
 
       <!-- 混淆矩阵区域 -->
       <div v-if="confusionMatrixData && confusionMatrixData.length" style="margin-top: 20px">
-        <h4>混淆矩阵</h4>
+        <h4>
+          混淆矩阵
+          <el-tooltip content="混淆矩阵用于评估分类模型，通过对比预测与真实标签，展示正确和错误分类的数量，让你直观看到模型在哪些类别上表现良好或存在误判" placement="top">
+            <el-icon>
+              <QuestionFilled />
+            </el-icon>
+          </el-tooltip>
+        </h4>
         <v-chart :option="confusionMatrixOption" autoresize style="height: 400px"/>
       </div>
 
@@ -737,7 +895,8 @@ import {
   Plus,
   View,
   VideoPause,
-  Document
+  Document,
+  QuestionFilled
 } from '@element-plus/icons-vue'
 import {use} from 'echarts/core'
 import {CanvasRenderer} from 'echarts/renderers'
@@ -1133,9 +1292,11 @@ const epochDurationChartOption = computed(() => {
 })
 
 const confusionMatrixData = computed(() => {
-  if (!detailDialog.task || !detailDialog.task.confusionMatrixJson) return null
+  const targetTask = detailDialog.visible ? detailDialog.task : selectedTask.value
+
+  if (!targetTask || !targetTask.confusionMatrixJson) return null
   try {
-    return JSON.parse(detailDialog.task.confusionMatrixJson) // 2D array
+    return JSON.parse(targetTask.confusionMatrixJson)
   } catch (e) {
     console.error('解析 confusionMatrixJson 失败', e)
     return null
@@ -1143,9 +1304,11 @@ const confusionMatrixData = computed(() => {
 })
 
 const confusionClassNames = computed(() => {
-  if (!detailDialog.task || !detailDialog.task.classNamesJson) return null
+  const targetTask = detailDialog.visible ? detailDialog.task : selectedTask.value
+
+  if (!targetTask || !targetTask.classNamesJson) return null
   try {
-    return JSON.parse(detailDialog.task.classNamesJson) // array of strings
+    return JSON.parse(targetTask.classNamesJson)
   } catch (e) {
     console.error('解析 classNamesJson 失败', e)
     return null
@@ -1546,6 +1709,15 @@ onMounted(() => {
 
   &.info .stat-icon {
     color: #909399;
+  }
+}
+
+.el-form-item {
+  .el-icon {
+    color: #909399;
+    &:hover {
+      color: #409EFF;
+    }
   }
 }
 
