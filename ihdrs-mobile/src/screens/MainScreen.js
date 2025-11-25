@@ -115,7 +115,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Handwriting Recognition</Text>
+                <Text style={styles.headerTitle}>Handwritten Digit Recognition</Text>
                 <View style={styles.headerRight}>
                     {user ? (
                         <Text
@@ -127,7 +127,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         </Text>
                     ) : (
                         <TouchableOpacity style={styles.logoutButton} onPress={onLogin}>
-                            <Text style={styles.logoutButtonText}>Login</Text>
+                            <Text style={styles.logoutButtonText}>登录</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -175,7 +175,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onLogout();
                         }}>
                             <Text style={styles.menuItemIcon}>🚪</Text>
-                            <Text style={styles.menuItemText}>Logout</Text>
+                            <Text style={styles.menuItemText}>退出登录</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -186,9 +186,9 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                 scrollEnabled={scrollEnabled}
             >
                 <View style={styles.mainContent}>
-                    <Text style={styles.pageTitle}>Handwriting Recognition</Text>
+                    <Text style={styles.pageTitle}>手写数字识别</Text>
                     <Text style={styles.pageSubtitle}>
-                        Capture or upload handwritten text for recognition
+                        Capture or upload handwritten digit for recognition
                     </Text>
 
                     {/* Mode Selector */}
@@ -198,7 +198,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('draw')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'draw' && styles.modeButtonTextActive]}>
-                                Draw{"\n"}(Single-digit)
+                                手写{"\n"}(单数字)
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -206,7 +206,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             onPress={() => setMode('multi')}
                         >
                             <Text style={[styles.modeButtonText, mode === 'multi' && styles.modeButtonTextActive]}>
-                                Draw{"\n"}(Multi-digit)
+                                手写{"\n"}(连续数字)
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -217,7 +217,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                                 styles.modeButtonText,
                                 mode === 'upload' && styles.modeButtonTextActive
                             ]}>
-                                Image{"\n"}(Single-digit)
+                                照片{"\n"}(单数字)
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -257,7 +257,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     {/* Recognition Result */}
                     {result && !loading && (
                         <View style={styles.resultCard}>
-                            <Text style={styles.resultTitle}>Recognition Result</Text>
+                            <Text style={styles.resultTitle}>识别结果</Text>
 
                             {mode === 'multi' ? (
                                 <View style={styles.resultContent}>
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 17,
         fontWeight: 'bold',
         color: '#fff',
     },
@@ -420,6 +420,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 6,
+        marginRight:3
     },
     logoutButtonText: {
         color: '#fff',

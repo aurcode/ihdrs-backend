@@ -149,7 +149,7 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
 
       {/* Brush Size Slider */}
       <View style={styles.brushSizeContainer}>
-        <Text style={styles.brushSizeLabel}>Brush Size:</Text>
+        <Text style={styles.brushSizeLabel}>刷子大小:</Text>
         <Slider
           style={styles.slider}
           minimumValue={5}
@@ -166,13 +166,13 @@ const DrawingCanvas = ({ onDrawingComplete }) => {
       {/* Action Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.clearButton} onPress={clearCanvas}>
-          <Text style={styles.buttonText}>🗑️ Clear</Text>
+          <Text style={styles.buttonText}>🗑️ 重置</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.recognizeButton}
           onPress={captureDrawing}
         >
-          <Text style={styles.buttonText}>🔍 Recognize</Text>
+          <Text style={styles.buttonText}>🔍 识别</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -205,6 +205,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     marginRight: 10,
+    marginLeft: 10,
   },
   slider: {
     flex: 1,

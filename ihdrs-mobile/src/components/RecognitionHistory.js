@@ -72,7 +72,7 @@ const RecognitionHistory = ({history}) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Recognition History</Text>
+            <Text style={styles.title}>识别历史</Text>
             <FlatList
                 data={history}
                 renderItem={renderHistoryItem}
