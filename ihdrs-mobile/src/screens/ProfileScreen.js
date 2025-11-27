@@ -266,6 +266,15 @@ const ProfileScreen = ({ user, token, onProfileUpdated, onCancel }) => {
                 <View style={styles.circleBottom} />
             </View>
 
+            {/* Back Button - 固定在左上角 */}
+            <TouchableOpacity
+                onPress={onCancel}
+                style={styles.backButton}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.backButtonText}>← 返回</Text>
+            </TouchableOpacity>
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
@@ -533,15 +542,6 @@ const ProfileScreen = ({ user, token, onProfileUpdated, onCancel }) => {
                                 </View>
                             )}
                         </View>
-
-                        {/* Back Button */}
-                        <TouchableOpacity
-                            onPress={onCancel}
-                            style={styles.backButton}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.backButtonText}>← 返回</Text>
-                        </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -802,13 +802,24 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     backButton: {
-        marginTop: 24,
-        alignSelf: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 20,
+        zIndex: 1000,
+        padding: 12,
+        borderRadius: 25,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(10px)',
+        borderWidth: 1,
+        borderColor: 'rgba(59, 130, 246, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 5,
     },
     backButtonText: {
-        color: '#ffffff',
+        color: '#1e293b',
         fontSize: 16,
         fontWeight: '600',
         textShadowColor: 'rgba(0, 0, 0, 0.1)',

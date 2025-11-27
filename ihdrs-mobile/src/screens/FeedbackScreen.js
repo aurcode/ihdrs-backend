@@ -11,6 +11,8 @@ import {
     StatusBar,
     ActivityIndicator,
     Modal,
+    Platform,
+    KeyboardAvoidingView,
 } from 'react-native';
 import feedbackService from '../services/feedbackService';
 import { Image } from 'react-native';
@@ -314,143 +316,176 @@ const FeedbackScreen = ({ user, token, onCancel }) => {
                 <View style={styles.circleBottom} />
             </View>
 
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onCancel} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>← 返回</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>我的反馈</Text>
-                <TouchableOpacity
-                    onPress={() => setShowFilters(!showFilters)}
-                    style={styles.filterButton}
-                >
-                    <Text style={styles.filterButtonText}>筛选</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Filters */}
-            {showFilters && (
-                <View style={styles.filtersContainer}>
-                    <View style={styles.filterSection}>
-                        <Text style={styles.filterSectionTitle}>审核状态：</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <TouchableOpacity
-                                style={[styles.filterChip, filterStatus === null && styles.filterChipActive]}
-                                onPress={() => {
-                                    setFilterStatus(null);
-                                    setCurrentPage(1);
-                                }}
-                            >
-                                <Text style={[styles.filterChipText, filterStatus === null && styles.filterChipTextActive]}>
-                                    全部
-                                </Text>
-                            </TouchableOpacity>
-                            {['PENDING', 'ACCEPTED', 'REJECTED'].map((status) => (
-                                <TouchableOpacity
-                                    key={status}
-                                    style={[styles.filterChip, filterStatus === status && styles.filterChipActive]}
-                                    onPress={() => {
-                                        setFilterStatus(status);
-                                        setCurrentPage(1);
-                                    }}
-                                >
-                                    <Text style={[styles.filterChipText, filterStatus === status && styles.filterChipTextActive]}>
-                                        {getStatusText(status)}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-
-                    <View style={styles.filterSection}>
-                        <Text style={styles.filterSectionTitle}>反馈类型：</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <TouchableOpacity
-                                style={[styles.filterChip, filterType === null && styles.filterChipActive]}
-                                onPress={() => {
-                                    setFilterType(null);
-                                    setCurrentPage(1);
-                                }}
-                            >
-                                <Text style={[styles.filterChipText, filterType === null && styles.filterChipTextActive]}>
-                                    全部
-                                </Text>
-                            </TouchableOpacity>
-                            {['WRONG_RESULT', 'LOW_CONFIDENCE', 'OTHER'].map((type) => (
-                                <TouchableOpacity
-                                    key={type}
-                                    style={[styles.filterChip, filterType === type && styles.filterChipActive]}
-                                    onPress={() => {
-                                        setFilterType(type);
-                                        setCurrentPage(1);
-                                    }}
-                                >
-                                    <Text style={[styles.filterChipText, filterType === type && styles.filterChipTextActive]}>
-                                        {getTypeText(type)}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </View>
-            )}
-
-            {/* Statistics */}
-            <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>共 {totalRecords} 条反馈</Text>
-                <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-                    <Text style={styles.refreshButtonText}>刷新</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Feedback List */}
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
+            {/* Back Button - 固定在左上角 */}
+            <TouchableOpacity
+                onPress={onCancel}
+                style={styles.backButton}
+                activeOpacity={0.8}
             >
-                <Animated.View
-                    style={{
-                        opacity: fadeAnim,
-                        transform: [{ translateY: slideAnim }],
-                    }}
-                >
-                    {feedbackList.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyIcon}>💬</Text>
-                            <Text style={styles.emptyText}>暂无反馈记录</Text>
-                            <Text style={styles.emptySubtext}>提交识别反馈帮助我们改进</Text>
-                        </View>
-                    ) : (
-                        <>
-                            {feedbackList.map(renderFeedbackItem)}
+                <Text style={styles.backButtonText}>← 返回</Text>
+            </TouchableOpacity>
 
-                            {/* Pagination */}
-                            {totalPages > 1 && (
-                                <View style={styles.pagination}>
-                                    <TouchableOpacity
-                                        style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
-                                        onPress={() => setCurrentPage(currentPage - 1)}
-                                        disabled={currentPage === 1}
-                                    >
-                                        <Text style={styles.pageButtonText}>上一页</Text>
-                                    </TouchableOpacity>
-                                    <Text style={styles.pageInfo}>
-                                        {currentPage} / {totalPages}
-                                    </Text>
-                                    <TouchableOpacity
-                                        style={[styles.pageButton, currentPage >= totalPages && styles.pageButtonDisabled]}
-                                        onPress={() => setCurrentPage(currentPage + 1)}
-                                        disabled={currentPage >= totalPages}
-                                    >
-                                        <Text style={styles.pageButtonText}>下一页</Text>
-                                    </TouchableOpacity>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.keyboardView}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <Animated.View
+                        style={[
+                            styles.contentContainer,
+                            {
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideAnim }],
+                            },
+                        ]}
+                    >
+                        {/* Header Section */}
+                        <View style={styles.header}>
+                            <View style={styles.logoContainer}>
+                                <View style={styles.logoCircle}>
+                                    <Text style={styles.logoText}>💬</Text>
                                 </View>
-                            )}
-                        </>
-                    )}
-                </Animated.View>
-            </ScrollView>
+                            </View>
+                            <Text style={styles.title}>我的反馈</Text>
+                            <Text style={styles.subtitle}>My Feedback</Text>
+                        </View>
+
+                        {/* Filter Button */}
+                        <View style={styles.filterSection}>
+                            <TouchableOpacity
+                                onPress={() => setShowFilters(!showFilters)}
+                                style={styles.filterButton}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.filterButtonText}>
+                                    {showFilters ? '收起筛选' : '筛选'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Filters */}
+                        {showFilters && (
+                            <View style={styles.filtersCard}>
+                                <View style={styles.filterSectionInner}>
+                                    <Text style={styles.filterSectionTitle}>审核状态：</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                                        <TouchableOpacity
+                                            style={[styles.filterChip, filterStatus === null && styles.filterChipActive]}
+                                            onPress={() => {
+                                                setFilterStatus(null);
+                                                setCurrentPage(1);
+                                            }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={[styles.filterChipText, filterStatus === null && styles.filterChipTextActive]}>
+                                                全部
+                                            </Text>
+                                        </TouchableOpacity>
+                                        {['PENDING', 'ACCEPTED', 'REJECTED'].map((status) => (
+                                            <TouchableOpacity
+                                                key={status}
+                                                style={[styles.filterChip, filterStatus === status && styles.filterChipActive]}
+                                                onPress={() => {
+                                                    setFilterStatus(status);
+                                                    setCurrentPage(1);
+                                                }}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={[styles.filterChipText, filterStatus === status && styles.filterChipTextActive]}>
+                                                    {getStatusText(status)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+
+                                <View style={styles.filterSectionInner}>
+                                    <Text style={styles.filterSectionTitle}>反馈类型：</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                                        <TouchableOpacity
+                                            style={[styles.filterChip, filterType === null && styles.filterChipActive]}
+                                            onPress={() => {
+                                                setFilterType(null);
+                                                setCurrentPage(1);
+                                            }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={[styles.filterChipText, filterType === null && styles.filterChipTextActive]}>
+                                                全部
+                                            </Text>
+                                        </TouchableOpacity>
+                                        {['WRONG_RESULT', 'LOW_CONFIDENCE', 'OTHER'].map((type) => (
+                                            <TouchableOpacity
+                                                key={type}
+                                                style={[styles.filterChip, filterType === type && styles.filterChipActive]}
+                                                onPress={() => {
+                                                    setFilterType(type);
+                                                    setCurrentPage(1);
+                                                }}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={[styles.filterChipText, filterType === type && styles.filterChipTextActive]}>
+                                                    {getTypeText(type)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Statistics Card */}
+                        <View style={styles.statsCard}>
+                            <Text style={styles.statsText}>共 {totalRecords} 条反馈</Text>
+                            <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton} activeOpacity={0.8}>
+                                <Text style={styles.refreshButtonText}>刷新</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Feedback List */}
+                        {feedbackList.length === 0 ? (
+                            <View style={styles.emptyCard}>
+                                <Text style={styles.emptyIcon}>💬</Text>
+                                <Text style={styles.emptyText}>暂无反馈记录</Text>
+                                <Text style={styles.emptySubtext}>提交识别反馈帮助我们改进</Text>
+                            </View>
+                        ) : (
+                            <>
+                                {feedbackList.map(renderFeedbackItem)}
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <View style={styles.pagination}>
+                                        <TouchableOpacity
+                                            style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
+                                            onPress={() => setCurrentPage(currentPage - 1)}
+                                            disabled={currentPage === 1}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text style={styles.pageButtonText}>上一页</Text>
+                                        </TouchableOpacity>
+                                        <Text style={styles.pageInfo}>
+                                            {currentPage} / {totalPages}
+                                        </Text>
+                                        <TouchableOpacity
+                                            style={[styles.pageButton, currentPage >= totalPages && styles.pageButtonDisabled]}
+                                            onPress={() => setCurrentPage(currentPage + 1)}
+                                            disabled={currentPage >= totalPages}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text style={styles.pageButtonText}>下一页</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </>
+                        )}
+                    </Animated.View>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Detail Modal */}
             <Modal
@@ -642,31 +677,31 @@ const FeedbackScreen = ({ user, token, onCancel }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f3f4f6',
+        backgroundColor: '#667eea',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f3f4f6',
+        backgroundColor: '#667eea',
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#64748b',
+        color: '#ffffff',
     },
     backgroundGradient: {
         position: 'absolute',
         width: '100%',
-        height: 300,
+        height: '100%',
     },
     circleTop: {
         position: 'absolute',
         width: width * 1.5,
         height: width * 1.5,
         borderRadius: width * 0.75,
-        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-        top: -width * 0.8,
+        backgroundColor: 'rgba(118, 75, 162, 0.3)',
+        top: -width * 0.5,
         right: -width * 0.3,
     },
     circleBottom: {
@@ -674,66 +709,139 @@ const styles = StyleSheet.create({
         width: width * 1.2,
         height: width * 1.2,
         borderRadius: width * 0.6,
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        top: -width * 0.5,
-        left: -width * 0.4,
+        backgroundColor: 'rgba(237, 137, 54, 0.2)',
+        bottom: -width * 0.4,
+        left: -width * 0.3,
+    },
+    keyboardView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        padding: 20,
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingBottom: 40,
+    },
+    contentContainer: {
+        width: '100%',
+        maxWidth: 440,
+        alignSelf: 'center',
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 50,
-        paddingBottom: 15,
-        paddingHorizontal: 20,
-        backgroundColor: '#667eea',
+        marginBottom: 20,
     },
-    backButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-    },
-    backButtonText: {
-        color: '#ffffff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#ffffff',
-    },
-    filterButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: 8,
-    },
-    filterButtonText: {
-        color: '#ffffff',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    filtersContainer: {
-        backgroundColor: '#ffffff',
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
-    },
-    filterSection: {
+    logoContainer: {
         marginBottom: 12,
     },
-    filterSectionTitle: {
+    logoCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    logoText: {
+        fontSize: 40,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#ffffff',
+        marginBottom: 4,
+        textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: 'rgba(255, 255, 255, 0.9)',
+        textAlign: 'center',
+        letterSpacing: 1,
+        marginBottom: 0,
+    },
+    backButton: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 20,
+        zIndex: 1000,
+        padding: 12,
+        borderRadius: 25,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(10px)',
+        borderWidth: 1,
+        borderColor: 'rgba(59, 130, 246, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    backButtonText: {
+        color: '#1e293b',
+        fontSize: 16,
+        fontWeight: '600',
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
+    },
+    filterSection: {
+        marginBottom: 16,
+        alignItems: 'flex-end',
+    },
+    filterButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    filterButtonText: {
+        color: '#667eea',
         fontSize: 14,
+        fontWeight: '700',
+    },
+    filtersCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 8,
+    },
+    filterSectionInner: {
+        marginBottom: 16,
+    },
+    filterSectionTitle: {
+        fontSize: 16,
         fontWeight: '600',
         color: '#334155',
-        marginBottom: 10,
+        marginBottom: 12,
+    },
+    filterScroll: {
+        marginHorizontal: -4,
     },
     filterChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
         backgroundColor: '#f1f5f9',
         borderRadius: 20,
-        marginRight: 8,
-        borderWidth: 1,
+        marginRight: 10,
+        borderWidth: 2,
         borderColor: '#e2e8f0',
     },
     filterChipActive: {
@@ -743,53 +851,56 @@ const styles = StyleSheet.create({
     filterChipText: {
         fontSize: 14,
         color: '#64748b',
-        fontWeight: '500',
+        fontWeight: '600',
     },
     filterChipTextActive: {
         color: '#ffffff',
     },
-    statsContainer: {
+    statsCard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        backgroundColor: '#ffffff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 8,
     },
     statsText: {
-        fontSize: 14,
-        color: '#64748b',
-        fontWeight: '500',
+        fontSize: 15,
+        color: '#334155',
+        fontWeight: '600',
     },
     refreshButton: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
         backgroundColor: '#667eea',
-        borderRadius: 6,
+        borderRadius: 16,
+        shadowColor: '#667eea',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
     refreshButtonText: {
         color: '#ffffff',
-        fontSize: 13,
-        fontWeight: '600',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        padding: 20,
+        fontSize: 14,
+        fontWeight: '700',
     },
     feedbackItem: {
-        backgroundColor: '#ffffff',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 16,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowRadius: 20,
+        elevation: 8,
     },
     feedbackHeader: {
         flexDirection: 'row',
@@ -821,14 +932,19 @@ const styles = StyleSheet.create({
         marginHorizontal: 12,
     },
     statusBadge: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     statusText: {
-        fontSize: 12,
+        fontSize: 13,
         color: '#ffffff',
-        fontWeight: '600',
+        fontWeight: '700',
     },
     feedbackMeta: {
         marginBottom: 12,
@@ -861,28 +977,32 @@ const styles = StyleSheet.create({
     },
     reasonContainer: {
         backgroundColor: '#f8fafc',
-        borderRadius: 8,
-        padding: 12,
+        borderRadius: 16,
+        padding: 16,
         marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
     reasonLabel: {
-        fontSize: 12,
+        fontSize: 13,
         color: '#64748b',
         fontWeight: '600',
-        marginBottom: 4,
+        marginBottom: 6,
     },
     reasonText: {
-        fontSize: 13,
+        fontSize: 14,
         color: '#334155',
-        lineHeight: 18,
+        lineHeight: 20,
     },
     reviewContainer: {
         backgroundColor: '#eff6ff',
-        borderRadius: 8,
-        padding: 12,
+        borderRadius: 16,
+        padding: 16,
         marginBottom: 12,
-        borderLeftWidth: 3,
+        borderLeftWidth: 4,
         borderLeftColor: '#3b82f6',
+        borderWidth: 1,
+        borderColor: '#dbeafe',
     },
     reviewHeader: {
         flexDirection: 'row',
@@ -913,31 +1033,48 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     viewButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
         backgroundColor: '#667eea',
-        borderRadius: 8,
-        marginRight: 8,
+        borderRadius: 16,
+        marginRight: 10,
+        shadowColor: '#667eea',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
     viewButtonText: {
         color: '#ffffff',
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: 14,
+        fontWeight: '700',
     },
     deleteButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
         backgroundColor: '#ef4444',
-        borderRadius: 8,
+        borderRadius: 16,
+        shadowColor: '#ef4444',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
     deleteButtonText: {
         color: '#ffffff',
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: 14,
+        fontWeight: '700',
     },
-    emptyContainer: {
+    emptyCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 24,
+        padding: 40,
         alignItems: 'center',
-        paddingVertical: 60,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 8,
     },
     emptyIcon: {
         fontSize: 64,
@@ -959,26 +1096,41 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 20,
         marginBottom: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 24,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 8,
     },
     pageButton: {
         paddingVertical: 10,
         paddingHorizontal: 20,
         backgroundColor: '#667eea',
-        borderRadius: 8,
+        borderRadius: 16,
         marginHorizontal: 8,
+        shadowColor: '#667eea',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
     pageButtonDisabled: {
         backgroundColor: '#cbd5e1',
+        shadowOpacity: 0,
+        elevation: 0,
     },
     pageButtonText: {
         color: '#ffffff',
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     pageInfo: {
-        fontSize: 14,
-        color: '#64748b',
-        fontWeight: '500',
+        fontSize: 15,
+        color: '#334155',
+        fontWeight: '600',
         marginHorizontal: 12,
     },
     modalOverlay: {
@@ -989,12 +1141,17 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     modalContent: {
-        backgroundColor: '#ffffff',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
         borderRadius: 24,
         padding: 24,
         width: '100%',
         maxWidth: 400,
         maxHeight: '80%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 10,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -1008,16 +1165,22 @@ const styles = StyleSheet.create({
         color: '#1e293b',
     },
     closeButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: '#f1f5f9',
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     closeButtonText: {
         fontSize: 20,
         color: '#64748b',
+        fontWeight: '600',
     },
     detailSection: {
         marginBottom: 20,
@@ -1054,8 +1217,10 @@ const styles = StyleSheet.create({
     },
     detailInfo: {
         backgroundColor: '#f8fafc',
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 16,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
     detailRow: {
         flexDirection: 'row',
@@ -1067,6 +1232,7 @@ const styles = StyleSheet.create({
         color: '#64748b',
         marginRight: 8,
         minWidth: 80,
+        fontWeight: '600',
     },
     detailRowValue: {
         fontSize: 14,
@@ -1075,14 +1241,19 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     detailStatusBadge: {
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     detailStatusText: {
-        fontSize: 12,
+        fontSize: 13,
         color: '#ffffff',
-        fontWeight: '600',
+        fontWeight: '700',
     },
     detailScoreStars: {
         flexDirection: 'row',
@@ -1097,11 +1268,13 @@ const styles = StyleSheet.create({
     },
     detailReason: {
         backgroundColor: '#f8fafc',
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 16,
         fontSize: 14,
         color: '#334155',
         lineHeight: 20,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
 });
 
