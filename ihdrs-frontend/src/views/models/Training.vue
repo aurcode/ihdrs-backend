@@ -246,7 +246,6 @@
               >
               </div>
             </div>
-            <span class="progress-bar-text">{{ batchProgressBar }}</span>
           </div>
         </div>
       </div>
@@ -1976,17 +1975,5 @@ onUnmounted(() => {
   50% {
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
   }
-}
-
-.progress-bar-text {
-  position: absolute;
-  top: 50%;
-  left: 8px;
-  transform: translateY(-50%);
-  color: #00ff00;
-  font-size: 12px;
-  letter-spacing: 0;
-  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
-  pointer-events: none;
 }
 </style>

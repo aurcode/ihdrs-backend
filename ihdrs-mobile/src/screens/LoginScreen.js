@@ -20,13 +20,14 @@ import authService from '../services/authService';
 
 const { width, height } = Dimensions.get('window');
 
-const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister, initialCredentials }) => {
+    const [username, setUsername] = useState(initialCredentials?.username || '');
+    const [password, setPassword] = useState(initialCredentials?.password || '');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [usernameFocused, setUsernameFocused] = useState(false);
     const [passwordFocused, setPasswordFocused] = useState(false);
+    const [showCredentialsHint, setShowCredentialsHint] = useState(false);
 
     // 动画引用
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -70,6 +71,18 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
         createParticles();
 
     }, [fadeAnim, backgroundY]);
+
+    // 显示预填充凭证提示
+    useEffect(() => {
+        if (initialCredentials?.username && initialCredentials?.password) {
+            setShowCredentialsHint(true);
+            // 3秒后自动隐藏提示
+            const timer = setTimeout(() => {
+                setShowCredentialsHint(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [initialCredentials]);
 
     const createParticles = () => {
         const newParticles = [];
@@ -363,6 +376,15 @@ const LoginScreen = ({ onLoginSuccess, onCancel, onNavigateToRegister }) => {
                     >
                         <Text style={styles.welcomeText}>欢迎回来</Text>
                         <Text style={styles.welcomeSubtext}>请登录您的账户</Text>
+
+                        {/* 预填充凭证提示 */}
+                        {showCredentialsHint && (
+                            <View style={styles.credentialsHint}>
+                                <Text style={styles.credentialsHintText}>
+                                    用户名和密码已自动填充
+                                </Text>
+                            </View>
+                        )}
 
                         {/* 用户名输入框 */}
                         <Animated.View
@@ -659,6 +681,20 @@ const styles = StyleSheet.create({
         color: '#64748b',
         marginBottom: 25,
         textAlign: 'center',
+    },
+    credentialsHint: {
+        backgroundColor: '#f0fdf4',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#bbf7d0',
+    },
+    credentialsHintText: {
+        fontSize: 14,
+        color: '#15803d',
+        textAlign: 'center',
+        fontWeight: '500',
     },
     inputContainer: {
         marginBottom: 20,

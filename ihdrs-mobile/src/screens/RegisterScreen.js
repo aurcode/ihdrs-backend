@@ -258,7 +258,7 @@ const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin, onCancel }) => {
                 ]).start();
 
                 Alert.alert('注册成功', '您的账户已创建成功！', [
-                    { text: '去登录', onPress: () => onNavigateToLogin() },
+                    { text: '去登录', onPress: () => onNavigateToLogin({ username, password }) },
                 ]);
             } else {
                 // 失败动画

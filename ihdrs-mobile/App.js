@@ -12,10 +12,12 @@ export default function App() {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'login', 'register', 'profile', 'history', 'feedback'
+    const [initialCredentials, setInitialCredentials] = useState(null);
 
     const handleLoginSuccess = (userData) => {
         setUser(userData.user || userData);
         setToken(userData.token);
+        setInitialCredentials(null);
         setCurrentScreen('main');
     };
 
@@ -23,7 +25,8 @@ export default function App() {
         setCurrentScreen('login');
     };
 
-    const handleNavigateToLogin = () => {
+    const handleNavigateToLogin = (credentials) => {
+        setInitialCredentials(credentials || null);
         setCurrentScreen('login');
     };
 
@@ -123,6 +126,7 @@ export default function App() {
                     onLoginSuccess={handleLoginSuccess}
                     onNavigateToRegister={handleNavigateToRegister}
                     onCancel={handleCancelAuth}
+                    initialCredentials={initialCredentials}
                 />
             </View>
         );
