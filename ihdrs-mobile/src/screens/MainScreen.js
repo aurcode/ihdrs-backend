@@ -20,6 +20,7 @@ import RecognitionHistory from '../components/RecognitionHistory';
 import recognitionService from '../services/recognitionService';
 
 const { width, height } = Dimensions.get('window');
+const CONFIDENCE_THRESHOLD = 0.7;
 
 const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback}) => {
     const [mode, setMode] = useState('draw'); // draw | upload | multi
@@ -120,12 +121,43 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
     };
 
     /**
+     * 检查置信度是否低于阈值，并提示用户
+     * @param {number} confidence - 置信度值 (0-1)
+     * @param {string} inputType - 输入类型 ('CANVAS' | 'UPLOAD')
+     * @returns {boolean} - 如果置信度低于阈值返回 true
+     */
+    const checkLowConfidence = (confidence, inputType) => {
+        if (confidence < CONFIDENCE_THRESHOLD && inputType === 'UPLOAD') {
+            Alert.alert(
+                '置信度较低',
+                `识别置信度仅为 ${(confidence * 100). toFixed(1)}%，低于 ${CONFIDENCE_THRESHOLD * 100}%。\n\n建议：\n• 确保图片中的数字清晰可见\n• 避免图片模糊或光线不足\n• 尝试重新拍摄或上传更清晰的图片`,
+                [
+                    {
+                        text: '知道了',
+                        style: 'default',
+                    },
+                    {
+                        text: '重新上传',
+                        onPress: () => {
+                            setResult(null);
+                        },
+                        style: 'cancel',
+                    },
+                ]
+            );
+            return true;
+        }
+        return false;
+    };
+
+
+    /**
      * Handles the recognition request for both drawing and uploading.
      * @param {string} base64Image - The base64 encoded image string.
      */
     const handleRecognition = async (base64Image) => {
         if (!base64Image) {
-            Alert.alert('Error', 'No image data received.');
+            Alert. alert('Error', 'No image data received.');
             return;
         }
 
@@ -144,7 +176,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     sessionId,
                     {
                         platform: 'mobile',
-                        appVersion: '1.0.0',
+                        appVersion: '1. 0.0',
                     }
                 );
             } else {
@@ -154,7 +186,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     sessionId,
                     {
                         platform: 'mobile',
-                        appVersion: '1.0.0',
+                        appVersion: '1.0. 0',
                     }
                 );
             }
@@ -164,18 +196,18 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
 
                 if (mode === 'multi') {
                     // 使用后端返回的 sequence 字段
-                    const sequence = response.data.sequence ||
-                        response.data.results.map(r => r.digit).join('');
+                    const sequence = response.data. sequence ||
+                        response. data.results. map(r => r.digit). join('');
 
                     const historyItem = {
                         id: Date.now(),
                         type: "MULTI",
                         sequence: sequence,
-                        details: response.data.results.map(r => ({
+                        details: response.data. results. map(r => ({
                             digit: r.digit,
                             confidence: r.confidence,
                         })),
-                        timestamp: new Date().toLocaleTimeString(),
+                        timestamp: new Date(). toLocaleTimeString(),
                     };
 
                     setHistory([historyItem, ...history]);
@@ -184,20 +216,23 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     const recognitionData = response.data;
                     const historyItem = {
                         id: Date.now(),
-                        digit: recognitionData.predictedDigit,
+                        digit: recognitionData. predictedDigit,
                         confidence: recognitionData.confidence,
                         probabilities: recognitionData.probabilities || null,
                         timestamp: new Date().toLocaleTimeString(),
                         inputType: inputType,
                     };
-                    setHistory([historyItem, ...history]);
+                    setHistory([historyItem, ... history]);
+
+                    // 检查置信度是否过低（仅在上传模式下）
+                    checkLowConfidence(recognitionData.confidence, inputType);
                 }
             } else {
                 Alert.alert('Error', response.error || 'Recognition failed');
             }
         } catch (error) {
-            console.error('Recognition error:', error);
-            Alert.alert('Error', 'Failed to recognize digit. Please try again.');
+            console. error('Recognition error:', error);
+            Alert.alert('Error', 'Failed to recognize digit.  Please try again.');
         } finally {
             setLoading(false);
         }
@@ -219,7 +254,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
             >
                 {renderParticles()}
                 <View style={styles.circleTop} />
-                <View style={styles.circleBottom} />
+                <View style={styles. circleBottom} />
                 <View style={styles.circleMiddle} />
             </Animated.View>
 
@@ -228,7 +263,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                 style={[
                     styles.headerSection,
                     {
-                        opacity: fadeAnim.interpolate({
+                        opacity: fadeAnim. interpolate({
                             inputRange: [0, 0.7, 1],
                             outputRange: [0, 0, 1]
                         }),
@@ -243,9 +278,9 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
             >
                 <Animated.View
                     style={[
-                        styles.headerRow,
+                        styles. headerRow,
                         {
-                            opacity: fadeAnim.interpolate({
+                            opacity: fadeAnim. interpolate({
                                 inputRange: [0, 1],
                                 outputRange: [0, 1]
                             })
@@ -257,12 +292,12 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         style={[
                             styles.logoContainer,
                             {
-                                opacity: fadeAnim.interpolate({
+                                opacity: fadeAnim. interpolate({
                                     inputRange: [0, 0.5, 1],
                                     outputRange: [0, 0.5, 1]
                                 }),
                                 transform: [{
-                                    scale: fadeAnim.interpolate({
+                                    scale: fadeAnim. interpolate({
                                         inputRange: [0, 1],
                                         outputRange: [0.5, 1]
                                     })
@@ -281,7 +316,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             style={[
                                 styles.headerTitle,
                                 {
-                                    opacity: fadeAnim.interpolate({
+                                    opacity: fadeAnim. interpolate({
                                         inputRange: [0, 0.7, 1],
                                         outputRange: [0, 0, 1]
                                     }),
@@ -322,7 +357,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
 
                 {/* User Actions */}
                 <View style={styles.headerActions}>
-                    {user ? (
+                    {user ?  (
                         <View style={styles.userTextContainer}>
                             <Text
                                 style={styles.userText}
@@ -334,17 +369,17 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         </View>
                     ) : (
                         <TouchableOpacity style={styles.loginButton} onPress={onLogin}>
-                            <Text style={styles.loginButtonText}>登录</Text>
+                            <Text style={styles. loginButtonText}>登录</Text>
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity
                         style={styles.menuButton}
                         onPress={() => {
-                            if (!user) return;  // 未登录时禁止打开菜单
-                            setMenuVisible(!menuVisible);
+                            if (! user) return;  // 未登录时禁止打开菜单
+                            setMenuVisible(! menuVisible);
                         }}
                     >
-                        <Text style={[styles.menuIcon, !user && {opacity: 0.3}]}>⋮</Text>
+                        <Text style={[styles.menuIcon, ! user && {opacity: 0.3}]}>⋮</Text>
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -356,12 +391,12 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
                         <View style={styles.menuOverlay} />
                     </TouchableWithoutFeedback>
-                    <View style={styles.dropdownMenu}>
+                    <View style={styles. dropdownMenu}>
                         <TouchableOpacity style={styles.menuItem} onPress={() => {
                             setMenuVisible(false);
                             onProfile();
                         }}>
-                            <Text style={styles.menuItemIcon}>👤</Text>
+                            <Text style={styles. menuItemIcon}>👤</Text>
                             <Text style={styles.menuItemText}>个人中心</Text>
                         </TouchableOpacity>
 
@@ -369,11 +404,11 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             setMenuVisible(false);
                             onHistory();
                         }}>
-                            <Text style={styles.menuItemIcon}>📊</Text>
+                            <Text style={styles. menuItemIcon}>📊</Text>
                             <Text style={styles.menuItemText}>识别记录</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                        <TouchableOpacity style={styles. menuItem} onPress={() => {
                             setMenuVisible(false);
                             onFeedback();
                         }}>
@@ -383,7 +418,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
 
                         <View style={styles.menuDivider}></View>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={() => {
+                        <TouchableOpacity style={styles. menuItem} onPress={() => {
                             setMenuVisible(false);
                             Alert.alert("提示", "已退出登录");
                             onLogout();
@@ -397,7 +432,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
 
             {/* **FIX 2: Pass the scrollEnabled state to the ScrollView** */}
             <ScrollView
-                style={styles.content}
+                style={styles. content}
                 scrollEnabled={scrollEnabled}
                 showsVerticalScrollIndicator={false}
             >
@@ -405,7 +440,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                     style={[
                         styles.mainContent,
                         {
-                            opacity: fadeAnim.interpolate({
+                            opacity: fadeAnim. interpolate({
                                 inputRange: [0, 0.6, 1],
                                 outputRange: [0, 0, 1]
                             }),
@@ -431,7 +466,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.modeButton, mode === 'multi' && styles.modeButtonActive]}
+                            style={[styles. modeButton, mode === 'multi' && styles.modeButtonActive]}
                             onPress={() => setMode('multi')}
                             activeOpacity={0.8}
                         >
@@ -459,7 +494,7 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                         style={styles.contentCard}
                         // When a touch starts *inside this View*...
                         onTouchStart={() => {
-                            // ...and we are in 'draw' mode, disable scrolling.
+                            // ... and we are in 'draw' mode, disable scrolling.
                             if (mode === 'draw' || mode === 'multi') {
                                 setScrollEnabled(false);
                             }
@@ -490,38 +525,48 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                             <ActivityIndicator size="large" color="#2563eb"/>
                             <Text style={styles.loadingText}>正在识别中...</Text>
                         </Animated.View>
-                    )}
+                        )}
 
                     {/* Recognition Result */}
-                    {result && !loading && (
+                    {result && ! loading && (
                         <Animated.View
-                            style={[
-                                styles.resultCard,
-                                {
-                                    transform: [{ scale: resultScale }],
-                                    opacity: resultScale
-                                }
-                            ]}
+                                   style={[
+                                       styles.resultCard,
+                                       // 当置信度低于阈值时，显示警告样式
+                                       mode === 'upload' && result.confidence < CONFIDENCE_THRESHOLD && styles.resultCardWarning,
+                                       {
+                                           transform: [{ scale: resultScale }],
+                                           opacity: resultScale
+                                       }
+                                   ]}
                         >
                             <Text style={styles.resultTitle}>识别结果</Text>
 
-                            {mode === 'multi' ? (
-                                <View style={styles.resultContent}>
+                            {/* 低置信度警告提示 */}
+                            {mode === 'upload' && result.confidence < CONFIDENCE_THRESHOLD && (
+                                <View style={styles.warningBanner}>
+                                    <Text style={styles.warningIcon}>⚠️</Text>
+                                    <Text style={styles.warningText}>置信度较低，建议重新拍摄或上传更清晰的图片</Text>
+                                </View>
+                            )}
+
+                            {mode === 'multi' ?  (
+                                <View style={styles. resultContent}>
                                     {/* 显示完整序列 */}
                                     <Text style={styles.resultSequence}>
-                                        {result.sequence || result.results?.map(r => r.digit).join('') || ''}
+                                        {result.sequence || result.results?. map(r => r.digit).join('') || ''}
                                     </Text>
                                     <Text style={styles.resultSubtext}>
                                         {result.count || 0} 个数字 | 平均置信度: {
                                         result.results
-                                            ? (result.results.reduce((sum, r) => sum + r.confidence, 0) / result.results.length * 100).toFixed(1)
+                                            ?  (result.results.reduce((sum, r) => sum + r. confidence, 0) / result.results. length * 100).toFixed(1)
                                             : '0'
                                     }%
                                     </Text>
 
                                     {/* 显示每个数字的详情 */}
-                                    <View style={styles.multiResultDetails}>
-                                        {result.results?.map((r, idx) => (
+                                    <View style={styles. multiResultDetails}>
+                                        {result. results?.map((r, idx) => (
                                             <View key={idx} style={styles.digitResultCard}>
                                                 <Text style={styles.digitResultNumber}>{r.digit}</Text>
                                                 <Text style={styles.digitResultConf}>
@@ -533,11 +578,20 @@ const MainScreen = ({user, onLogout, onLogin, onProfile, onHistory, onFeedback})
                                 </View>
                             ) : (
                                 <View style={styles.resultContent}>
-                                    <View style={styles.digitDisplay}>
-                                        <Text style={styles.resultDigit}>{result.predictedDigit}</Text>
+                                    <View style={[
+                                        styles. digitDisplay,
+                                        // 低置信度时显示警告颜色
+                                        mode === 'upload' && result. confidence < CONFIDENCE_THRESHOLD && styles. digitDisplayWarning
+                                    ]}>
+                                        <Text style={styles. resultDigit}>{result.predictedDigit}</Text>
                                     </View>
-                                    <Text style={styles.resultSubtext}>
+                                    <Text style={[
+                                        styles.resultSubtext,
+                                        // 低置信度时文字变为警告颜色
+                                        mode === 'upload' && result. confidence < CONFIDENCE_THRESHOLD && styles. resultSubtextWarning
+                                    ]}>
                                         置信度: {(result.confidence * 100).toFixed(1)}%
+                                        {mode === 'upload' && result.confidence < CONFIDENCE_THRESHOLD && ' (较低)'}
                                     </Text>
                                 </View>
                             )}
@@ -568,7 +622,7 @@ const styles = StyleSheet.create({
     particle: {
         position: 'absolute',
         borderRadius: 50,
-        backgroundColor: 'rgba(59, 130, 246, 0.3)',
+        backgroundColor: 'rgba(59, 130, 246, 0. 3)',
     },
     circleTop: {
         position: 'absolute',
@@ -623,7 +677,7 @@ const styles = StyleSheet.create({
         shadowRadius: 20,
         elevation: 8,
         borderWidth: 3,
-        borderColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: 'rgba(59, 130, 246, 0. 2)',
     },
     logoText: {
         fontSize: 40,
@@ -661,7 +715,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: 'rgba(255, 255, 255, 0.6)',
+        borderColor: 'rgba(255, 255, 255, 0. 6)',
         shadowColor: '#2563eb',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.25,
@@ -698,7 +752,7 @@ const styles = StyleSheet.create({
         elevation: 10,
         zIndex: 10000,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
+        borderColor: 'rgba(255, 255, 255, 0. 5)',
     },
     menuItem: {
         flexDirection: 'row',
@@ -723,7 +777,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         borderRadius: 18,
         borderWidth: 2,
-        borderColor: 'rgba(37, 99, 235, 0.3)',
+        borderColor: 'rgba(37, 99, 235, 0. 3)',
         shadowColor: '#2563eb',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.2,
@@ -746,7 +800,7 @@ const styles = StyleSheet.create({
         height: 36,
         borderRadius: 18,
         borderWidth: 2,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
+        borderColor: 'rgba(255, 255, 255, 0. 5)',
         shadowColor: '#2563eb',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.4,
@@ -759,7 +813,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: '700',
-        textShadowColor: 'rgba(0, 0, 0, 0.2)',
+        textShadowColor: 'rgba(0, 0, 0, 0. 2)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
     },
@@ -821,7 +875,7 @@ const styles = StyleSheet.create({
         shadowRadius: 30,
         elevation: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
+        borderColor: 'rgba(255, 255, 255, 0. 5)',
     },
     loadingContainer: {
         alignItems: 'center',
@@ -835,7 +889,7 @@ const styles = StyleSheet.create({
         shadowRadius: 30,
         elevation: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
+        borderColor: 'rgba(255, 255, 255, 0. 5)',
     },
     loadingText: {
         marginTop: 12,
@@ -855,6 +909,31 @@ const styles = StyleSheet.create({
         elevation: 8,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    resultCardWarning: {
+        borderColor: '#f59e0b',
+        borderWidth: 2,
+        shadowColor: '#f59e0b',
+    },
+    warningBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(245, 158, 11, 0. 3)',
+    },
+    warningIcon: {
+        fontSize: 20,
+        marginRight: 8,
+    },
+    warningText: {
+        flex: 1,
+        fontSize: 14,
+        color: '#b45309',
+        fontWeight: '500',
     },
     resultTitle: {
         fontSize: 22,
@@ -880,6 +959,10 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
         elevation: 8,
     },
+    digitDisplayWarning: {
+        backgroundColor: '#f59e0b',
+        shadowColor: '#f59e0b',
+    },
     resultDigit: {
         fontSize: 72,
         fontWeight: 'bold',
@@ -894,7 +977,7 @@ const styles = StyleSheet.create({
         color: '#2563eb',
         letterSpacing: 6,
         marginBottom: 15,
-        textShadowColor: 'rgba(37, 99, 235, 0.2)',
+        textShadowColor: 'rgba(37, 99, 235, 0. 2)',
         textShadowOffset: { width: 0, height: 2 },
         textShadowRadius: 4,
     },
@@ -906,7 +989,7 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     digitResultCard: {
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        backgroundColor: 'rgba(37, 99, 235, 0. 1)',
         borderRadius: 16,
         padding: 16,
         minWidth: 70,
@@ -931,6 +1014,10 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: '500',
     },
+    resultSubtextWarning: {
+        color: '#b45309',
+        fontWeight: '600',
+    },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -938,7 +1025,13 @@ const styles = StyleSheet.create({
     textColumn: {
         marginTop: 13,
         marginLeft: 12,
-    }
+    },
+    menuDivider: {
+        height: 1,
+        backgroundColor: '#e2e8f0',
+        marginVertical: 8,
+        marginHorizontal: 14,
+    },
 });
 
 export default MainScreen;
