@@ -317,7 +317,7 @@ export default {
 
     // 加载预训练模型
     async loadModel() {
-        console.log('AI模型加载完成');
+      console.log('AI模型加载完成');
     },
 
     // 绘制功能
@@ -539,7 +539,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .handwriting-recognition {
   max-width: 1400px;
   margin: 0 auto;
@@ -552,13 +552,14 @@ export default {
 }
 
 .header h1 {
-  color: #2d3748;
+  color: #1e293b;
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header p {
-  color: #718096;
+  color: #475569;
   font-size: 1.2rem;
 }
 
@@ -1037,6 +1038,18 @@ export default {
   .drawing-canvas {
     width: 250px;
     height: 250px;
+  }
+}
+</style>
+
+<style lang="scss">
+// 深色模式：标题变为白色
+html.dark {
+  .handwriting-recognition {
+    .header h1 {
+      color: #ffffff !important;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 255, 255, 0.3) !important;
+    }
   }
 }
 </style>

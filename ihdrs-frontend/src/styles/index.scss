@@ -247,6 +247,7 @@ a {
   }
 }
 
+
 .el-pagination {
   .el-pager li {
     &.is-active {
@@ -386,6 +387,99 @@ a {
   .empty-description {
     font-size: $font-size-medium;
     color: $text-color-secondary;
+  }
+}
+
+// 侧边栏折叠菜单居中样式
+.sidebar-container .el-menu--collapse {
+  width: 64px !important;
+
+  .el-menu-item,
+  .el-sub-menu__title {
+    padding: 0 !important;
+    margin: 4px 8px !important;
+    width: calc(100% - 16px) !important;
+    min-width: auto !important;
+    height: 56px !important;
+    line-height: 56px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    position: relative !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+
+    & > * {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .el-icon {
+      position: absolute !important;
+      left: 50% !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      margin: 0 !important;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: none !important;
+      visibility: hidden !important;
+      width: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+    }
+  }
+
+  .el-sub-menu {
+    .el-sub-menu__title {
+      padding: 0 !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      position: relative !important;
+      text-align: center !important;
+
+      .el-icon {
+        position: absolute !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        margin: 0 !important;
+      }
+
+      span {
+        display: none !important;
+        visibility: hidden !important;
+      }
+    }
+
+    .el-menu {
+      .el-menu-item {
+        padding: 0 !important;
+        margin: 4px 8px !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        position: relative !important;
+        text-align: center !important;
+
+        .el-icon {
+          position: absolute !important;
+          left: 50% !important;
+          top: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          margin: 0 !important;
+        }
+
+        span {
+          display: none !important;
+          visibility: hidden !important;
+        }
+      }
+    }
   }
 }
 
