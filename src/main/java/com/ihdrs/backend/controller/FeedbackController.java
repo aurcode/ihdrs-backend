@@ -8,6 +8,7 @@ import com.ihdrs.backend.dto.request.FeedbackRequest;
 import com.ihdrs.backend.dto.request.PageRequest;
 import com.ihdrs.backend.dto.response.FeedbackResponse;
 import com.ihdrs.backend.entity.FeedbackData;
+import com.ihdrs.backend.service.ExportService;
 import com.ihdrs.backend.service.FeedbackService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +29,7 @@ import java.io.IOException;
 public class FeedbackController {
 
     private final FeedbackService feedbackService;
+    private final ExportService exportService;
 
     @Operation(summary = "提交反馈", description = "用户提交识别错误反馈")
     @PostMapping
@@ -117,4 +119,34 @@ public class FeedbackController {
         return feedbackService.deleteFeedback(feedbackId, userId);
     }
 
+    @Operation(summary = "导出反馈数据", description = "导出反馈数据报表，支持Excel、CSV、PDF格式")
+    @GetMapping("/export")
+    public void exportFeedback(
+            HttpServletResponse response,
+            @RequestParam(defaultValue = "excel") String format,
+            @RequestParam(defaultValue = "filtered") String scope,
+            @RequestParam(required = false) String fields,
+            @RequestParam(required = false) Integer current,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String feedbackType) throws IOException {
+
+        FeedbackData.FeedbackStatus feedbackStatus = null;
+        FeedbackData.FeedbackType type = null;
+
+        try {
+            if (StringUtils.hasText(status)) {
+                feedbackStatus = FeedbackData.FeedbackStatus.valueOf(status.trim());
+            }
+            if (StringUtils.hasText(feedbackType)) {
+                type = FeedbackData.FeedbackType.valueOf(feedbackType.trim());
+            }
+        } catch (IllegalArgumentException e) {
+            response.setStatus(400);
+            response.getWriter().write("无效的状态或反馈类型参数");
+            return;
+        }
+
+        exportService.exportFeedback(response, format, scope, fields, current, size, feedbackStatus, type);
+    }
 }

@@ -521,8 +521,8 @@ const HistoryScreen = ({ user, token, onCancel }) => {
             {/* Feedback Modal */}
             <Modal
                 visible={showFeedbackModal}
-                transparent={true}
-                animationType="slide"
+                transparent={false}
+                animationType="fade"
                 onRequestClose={() => setShowFeedbackModal(false)}
             >
                 <View style={styles.modalOverlay}>

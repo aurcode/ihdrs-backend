@@ -48,12 +48,17 @@ export function batchReviewFeedback(feedbackIds, status, reviewNote) {
 
 /**
  * 导出反馈数据
+ * @param {Object} params - 筛选参数
+ * @param {string} format - 导出格式: 'excel', 'csv', 'pdf'
  */
-export function exportFeedback(params) {
+export function exportFeedback(params, format = 'excel') {
     return request({
         url: '/feedback/export',
         method: 'get',
-        params,
+        params: {
+            ...params,
+            format
+        },
         responseType: 'blob'
     })
 }

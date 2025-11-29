@@ -21,7 +21,7 @@
         <div class="logo-container">
           <div class="logo-circle">
             <el-icon size="50" color="#2563eb">
-              <DataAnalysis />
+              <DataAnalysis/>
             </el-icon>
           </div>
         </div>
@@ -34,7 +34,7 @@
         <el-form :model="searchForm" inline>
           <el-form-item label="识别结果">
             <el-select v-model="searchForm.result" placeholder="请选择" clearable style="width: 150px">
-              <el-option v-for="i in 10" :key="i-1" :label="i-1" :value="i-1" />
+              <el-option v-for="i in 10" :key="i-1" :label="i-1" :value="i-1"/>
             </el-select>
           </el-form-item>
 
@@ -51,7 +51,7 @@
           </el-form-item>
 
           <el-form-item label="用户ID">
-            <el-input v-model="searchForm.userId" placeholder="请输入用户ID" clearable style="width: 200px" />
+            <el-input v-model="searchForm.userId" placeholder="请输入用户ID" clearable style="width: 200px"/>
           </el-form-item>
 
           <el-form-item>
@@ -130,6 +130,37 @@
           <div class="card-header">
             <span class="title">识别历史记录</span>
             <div class="actions">
+              <!-- 导出按钮组 -->
+              <el-dropdown @command="handleExport" trigger="click">
+                <el-button type="success" :icon="Download" :loading="exportLoading">
+                  导出报表
+                  <el-icon class="el-icon--right">
+                    <ArrowDown/>
+                  </el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="excel">
+                      <el-icon>
+                        <Document/>
+                      </el-icon>
+                      导出为 Excel
+                    </el-dropdown-item>
+                    <el-dropdown-item command="csv">
+                      <el-icon>
+                        <Tickets/>
+                      </el-icon>
+                      导出为 CSV
+                    </el-dropdown-item>
+                    <el-dropdown-item command="pdf">
+                      <el-icon>
+                        <Reading/>
+                      </el-icon>
+                      导出为 PDF
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
               <el-button
                   type="danger"
                   :icon="Delete"
@@ -149,15 +180,15 @@
             @selection-change="handleSelectionChange"
             :row-class-name="tableRowClassName"
         >
-          <el-table-column type="selection" width="55" />
+          <el-table-column type="selection" width="55"/>
 
-          <el-table-column prop="recordId" label="记录ID" width="100" />
+          <el-table-column prop="recordId" label="记录ID" width="100"/>
 
           <el-table-column label="用户信息" width="150">
             <template #default="{ row }">
               <div class="user-info">
                 <el-avatar :size="32">{{ row.userId }}</el-avatar>
-                <span class="user-id">ID: {{ row.userId ?? '匿名'}}</span>
+                <span class="user-id">ID: {{ row.userId ?? '匿名' }}</span>
               </div>
             </template>
           </el-table-column>
@@ -172,7 +203,9 @@
               >
                 <template #error>
                   <div class="image-placeholder">
-                    <el-icon><Picture /></el-icon>
+                    <el-icon>
+                      <Picture/>
+                    </el-icon>
                   </div>
                 </template>
               </el-image>
@@ -191,7 +224,7 @@
           <el-table-column label="置信度" width="120" align="center">
             <template #default="{ row }">
               <el-progress
-                  :percentage="(row.confidence * 100).toFixed(1)"
+                  :percentage="Number((row.confidence * 100).toFixed(1))"
                   :color="getConfidenceColor(row.confidence)"
               />
             </template>
@@ -217,15 +250,19 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="processingTime" label="处理时间(ms)" width="120" align="center" />
+          <el-table-column prop="processingTime" label="处理时间(ms)" width="120" align="center"/>
 
           <el-table-column label="正确性" width="100" align="center">
             <template #default="{ row }">
               <el-tag v-if="row.isCorrect === true" type="success">
-                <el-icon><Select /></el-icon> 正确
+                <el-icon><Select/></el-icon>
+                正确
               </el-tag>
               <el-tag v-else-if="row.isCorrect === false" type="danger">
-                <el-icon><Close /></el-icon> 错误
+                <el-icon>
+                  <Close/>
+                </el-icon>
+                错误
               </el-tag>
               <el-tag v-else type="info">未确认</el-tag>
             </template>
@@ -314,16 +351,51 @@
           <el-button @click="detailVisible = false">关闭</el-button>
         </template>
       </el-dialog>
+
+      <!-- 导出设置对话框 -->
+      <el-dialog
+          v-model="exportDialogVisible"
+          title="导出设置"
+          width="500px"
+          :close-on-click-modal="false"
+      >
+        <el-form :model="exportSettings" label-width="100px">
+          <el-form-item label="导出范围">
+            <el-radio-group v-model="exportSettings.scope">
+              <el-radio value="current">当前页数据</el-radio>
+              <el-radio value="all">全部数据</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="导出字段">
+            <el-checkbox-group v-model="exportSettings.fields">
+              <el-checkbox value="recordId">记录ID</el-checkbox>
+              <el-checkbox value="userId">用户ID</el-checkbox>
+              <el-checkbox value="recognitionResult">识别结果</el-checkbox>
+              <el-checkbox value="confidence">置信度</el-checkbox>
+              <el-checkbox value="modelName">模型名称</el-checkbox>
+              <el-checkbox value="modelVersion">模型版本</el-checkbox>
+              <el-checkbox value="inputType">输入方式</el-checkbox>
+              <el-checkbox value="processingTime">处理时间</el-checkbox>
+              <el-checkbox value="isCorrect">正确性</el-checkbox>
+              <el-checkbox value="createTime">识别时间</el-checkbox>
+            </el-checkbox-group>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="exportDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmExport" :loading="exportLoading">确定导出</el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {ref, reactive, onMounted} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   Search, Refresh, Download, Delete, View, Picture,
-  DataAnalysis, Select, Timer, Clock, Close
+  DataAnalysis, Select, Timer, Clock, Close, ArrowDown, Document, Tickets, Reading
 } from '@element-plus/icons-vue'
 
 // 粒子效果样式
@@ -344,7 +416,12 @@ const getParticleStyle = (index) => {
     opacity: Math.random() * 0.3 + 0.1
   }
 }
-import { getRecognitionHistory, deleteRecognitionRecord, batchDeleteRecords, exportRecognitionHistory } from '@/api/recognition'
+import {
+  getRecognitionHistory,
+  deleteRecognitionRecord,
+  batchDeleteRecords,
+  exportRecognitionHistory
+} from '@/api/recognition'
 import dayjs from 'dayjs'
 
 // 搜索表单
@@ -378,6 +455,15 @@ const selectedRows = ref([])
 const detailVisible = ref(false)
 const currentRecord = ref(null)
 
+// 导出相关
+const exportLoading = ref(false)
+const exportDialogVisible = ref(false)
+const exportFormat = ref('excel')
+const exportSettings = reactive({
+  scope: 'all',
+  fields: ['recordId', 'userId', 'recognitionResult', 'confidence', 'modelName', 'modelVersion', 'inputType', 'processingTime', 'isCorrect', 'createTime']
+})
+
 // 获取列表数据
 const fetchData = async () => {
   loading.value = true
@@ -393,7 +479,7 @@ const fetchData = async () => {
 
     const response = await getRecognitionHistory(params)
     if (response.code === 200) {
-      const { records, total } = response.data
+      const {records, total} = response.data
       console.log('response data:', response.data)
       tableData.value = records || []
       pagination.total = total || 0
@@ -451,7 +537,7 @@ const handleViewDetail = (row) => {
   detailVisible.value = true
 }
 
-const tableRowClassName = ({ row }) => {
+const tableRowClassName = ({row}) => {
   if (row.recordId === highlightRecordId.value) {
     return 'highlight-row'
   }
@@ -461,7 +547,7 @@ const tableRowClassName = ({ row }) => {
 // 删除
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除这条记录吗?', '提示', {
+    await ElMessageBox.confirm('确定要删除这条记录吗? ', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -503,6 +589,70 @@ const handleBatchDelete = async () => {
   }
 }
 
+// 导出处理
+const handleExport = (format) => {
+  exportFormat.value = format
+  exportDialogVisible.value = true
+}
+
+// 确认导出
+const confirmExport = async () => {
+  exportLoading.value = true
+  try {
+    const params = {
+      result: searchForm.result,
+      userId: searchForm.userId || null,
+      startTime: searchForm.dateRange?.[0],
+      endTime: searchForm.dateRange?.[1],
+      scope: exportSettings.scope,
+      fields: exportSettings.fields.join(',')
+    }
+
+    // 如果是当前页，添加分页参数
+    if (exportSettings.scope === 'current') {
+      params.page = pagination.current - 1
+      params.size = pagination.size
+    }
+
+    const response = await exportRecognitionHistory(params, exportFormat.value)
+
+    // 处理文件下载
+    downloadFile(response, `识别历史报表_${dayjs().format('YYYYMMDDHHmmss')}`, exportFormat.value)
+
+    ElMessage.success('导出成功')
+    exportDialogVisible.value = false
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请稍后重试')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
+// 文件下载工具函数
+const downloadFile = (data, filename, format) => {
+  const mimeTypes = {
+    excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    csv: 'text/csv;charset=utf-8',
+    pdf: 'application/pdf'
+  }
+  const extensions = {
+    excel: '.xlsx',
+    csv: '.csv',
+    pdf: '.pdf'
+  }
+
+  const blob = new Blob([data], {type: mimeTypes[format]})
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename + extensions[format]
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
 // 表格选择变化
 const handleSelectionChange = (selection) => {
   selectedRows.value = selection
@@ -541,7 +691,7 @@ const getInputTypeTag = (inputType) => {
 const getInputTypeText = (inputType) => {
   const typeMap = {
     'CANVAS': '手写板',
-    'MULTI' : '手写板',
+    'MULTI': '手写板',
     'UPLOAD': '图片上传',
     'CAMERA': '相机拍摄'
   }
@@ -553,7 +703,8 @@ const formatTime = (time) => {
   return dayjs(time).format('YYYY-MM-DD HH:mm:ss')
 }
 
-import { useRoute } from 'vue-router'
+import {useRoute} from 'vue-router'
+
 const route = useRoute()
 
 const highlightRecordId = ref(null)
@@ -759,7 +910,7 @@ onMounted(() => {
   }
 
   .highlight-row {
-    background-color: #ffe58f !important; /* 浅黄色高亮 */
+    background-color: #ffe58f ! important; /* 浅黄色高亮 */
   }
 
   .stats-row {
@@ -863,6 +1014,11 @@ onMounted(() => {
         font-size: 16px;
         font-weight: bold;
         color: #303133;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
       }
     }
 

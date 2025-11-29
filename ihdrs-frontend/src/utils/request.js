@@ -51,6 +51,10 @@ service.interceptors.response.use(
     (response) => {
         NProgress.done()
 
+        if (response.request.responseType === 'blob') {
+            return response.data;
+        }
+
         const { data } = response
 
         console.log(`${response.config.method?.toUpperCase()} ${response.config.url}`, data)

@@ -62,9 +62,7 @@
             <div class="stat-background"></div>
             <div class="stat-content">
               <div class="stat-icon">
-                <el-icon>
-                  <ChatLineRound/>
-                </el-icon>
+                <el-icon><ChatLineRound/></el-icon>
               </div>
               <div class="stat-label">总反馈数</div>
               <div class="stat-value">{{ statistics.total || 0 }}</div>
@@ -77,9 +75,7 @@
             <div class="stat-background"></div>
             <div class="stat-content">
               <div class="stat-icon">
-                <el-icon>
-                  <Clock/>
-                </el-icon>
+                <el-icon><Clock/></el-icon>
               </div>
               <div class="stat-label">待审核</div>
               <div class="stat-value">{{ statistics.pending || 0 }}</div>
@@ -92,9 +88,7 @@
             <div class="stat-background"></div>
             <div class="stat-content">
               <div class="stat-icon">
-                <el-icon>
-                  <Select/>
-                </el-icon>
+                <el-icon><Select/></el-icon>
               </div>
               <div class="stat-label">已接受</div>
               <div class="stat-value">{{ statistics.accepted || 0 }}</div>
@@ -107,9 +101,7 @@
             <div class="stat-background"></div>
             <div class="stat-content">
               <div class="stat-icon">
-                <el-icon>
-                  <Close/>
-                </el-icon>
+                <el-icon><Close/></el-icon>
               </div>
               <div class="stat-label">已拒绝</div>
               <div class="stat-value">{{ statistics.rejected || 0 }}</div>
@@ -124,10 +116,29 @@
           <div class="card-header">
             <span class="title">用户反馈列表</span>
             <div class="actions">
+              <!-- 导出按钮组 -->
+              <el-dropdown @command="handleExport" trigger="click">
+                <el-button type="success" :icon="Download" :loading="exportLoading">
+                  导出报表 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="excel">
+                      <el-icon><Document /></el-icon> 导出为 Excel
+                    </el-dropdown-item>
+                    <el-dropdown-item command="csv">
+                      <el-icon><Tickets /></el-icon> 导出为 CSV
+                    </el-dropdown-item>
+                    <el-dropdown-item command="pdf">
+                      <el-icon><Reading /></el-icon> 导出为 PDF
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
               <el-button
                   type="success"
                   :icon="Select"
-                  :disabled="selectedRows.value?.length === 0"
+                  :disabled="selectedRows.length === 0"
                   @click="handleBatchReview('ACCEPTED')"
               >
                 批量接受
@@ -135,7 +146,7 @@
               <el-button
                   type="danger"
                   :icon="Close"
-                  :disabled="selectedRows.value?.length === 0"
+                  :disabled="selectedRows.length === 0"
                   @click="handleBatchReview('REJECTED')"
               >
                 批量拒绝
@@ -151,7 +162,6 @@
             @selection-change="handleSelectionChange"
         >
           <el-table-column type="selection" width="55" />
-
           <el-table-column prop="feedbackId" label="反馈ID" width="100" />
 
           <el-table-column label="用户信息" width="120">
@@ -189,7 +199,6 @@
             </template>
           </el-table-column>
 
-
           <el-table-column label="原始结果 → 正确结果" width="160" align="center">
             <template #default="{ row }">
               <div class="result-compare">
@@ -224,12 +233,7 @@
 
           <el-table-column label="质量评分" width="120" align="center">
             <template #default="{ row }">
-              <el-rate
-                  v-model="row.qualityScore"
-                  disabled
-                  show-score
-                  text-color="#ff9900"
-              />
+              <el-rate v-model="row.qualityScore" disabled show-score text-color="#ff9900" />
             </template>
           </el-table-column>
 
@@ -249,32 +253,9 @@
 
           <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
-              <el-button
-                  type="primary"
-                  link
-                  :icon="View"
-                  @click="handleViewDetail(row)"
-              >
-                查看
-              </el-button>
-              <el-button
-                  v-if="row.status === 'PENDING'"
-                  type="success"
-                  link
-                  :icon="Select"
-                  @click="handleReview(row, 'ACCEPTED')"
-              >
-                接受
-              </el-button>
-              <el-button
-                  v-if="row.status === 'PENDING'"
-                  type="danger"
-                  link
-                  :icon="Close"
-                  @click="handleReview(row, 'REJECTED')"
-              >
-                拒绝
-              </el-button>
+              <el-button type="primary" link :icon="View" @click="handleViewDetail(row)">查看</el-button>
+              <el-button v-if="row.status === 'PENDING'" type="success" link :icon="Select" @click="handleReview(row, 'ACCEPTED')">接受</el-button>
+              <el-button v-if="row.status === 'PENDING'" type="danger" link :icon="Close" @click="handleReview(row, 'REJECTED')">拒绝</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -294,23 +275,12 @@
     </div>
 
     <!-- 详情对话框 -->
-    <el-dialog
-        v-model="detailVisible"
-        title="反馈详情"
-        width="800px"
-        :close-on-click-modal="false"
-    >
+    <el-dialog v-model="detailVisible" title="反馈详情" width="800px" :close-on-click-modal="false">
       <el-descriptions :column="2" border v-if="currentFeedback">
-        <el-descriptions-item label="反馈ID">
-          {{ currentFeedback.feedbackId }}
-        </el-descriptions-item>
-        <el-descriptions-item label="用户ID">
-          {{ currentFeedback.userId }}
-        </el-descriptions-item>
+        <el-descriptions-item label="反馈ID">{{ currentFeedback.feedbackId }}</el-descriptions-item>
+        <el-descriptions-item label="用户ID">{{ currentFeedback.userId }}</el-descriptions-item>
         <el-descriptions-item label="识别记录ID">
-          <el-link type="primary" @click="handleViewRecord(currentFeedback.recordId)">
-            #{{ currentFeedback.recordId }}
-          </el-link>
+          <el-link type="primary" @click="handleViewRecord(currentFeedback.recordId)">#{{ currentFeedback.recordId }}</el-link>
         </el-descriptions-item>
         <el-descriptions-item label="识别图像" :span="2">
           <el-image
@@ -323,9 +293,7 @@
           <span v-else>无图像</span>
         </el-descriptions-item>
         <el-descriptions-item label="反馈类型">
-          <el-tag :type="getFeedbackTypeTag(currentFeedback.feedbackType)">
-            {{ getFeedbackTypeText(currentFeedback.feedbackType) }}
-          </el-tag>
+          <el-tag :type="getFeedbackTypeTag(currentFeedback.feedbackType)">{{ getFeedbackTypeText(currentFeedback.feedbackType) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="原始结果">
           <el-tag type="danger" size="large">{{ currentFeedback.originalResult }}</el-tag>
@@ -337,75 +305,66 @@
           <el-rate v-model="currentFeedback.qualityScore" disabled show-score />
         </el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="getStatusTag(currentFeedback.status)">
-            {{ getStatusText(currentFeedback.status) }}
-          </el-tag>
+          <el-tag :type="getStatusTag(currentFeedback.status)">{{ getStatusText(currentFeedback.status) }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="模型名称">
-          {{ currentFeedback.modelName || currentFeedback.recordInfo?.modelName || '未知' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="模型版本">
-          {{ currentFeedback.modelVersion || currentFeedback.recordInfo?.modelVersion || '未知' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="反馈原因" :span="2">
-          {{ currentFeedback.feedbackReason || '无' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="审核备注" :span="2" v-if="currentFeedback.reviewNote">
-          {{ currentFeedback.reviewNote }}
-        </el-descriptions-item>
-        <el-descriptions-item label="审核人" v-if="currentFeedback.reviewerId">
-          {{ currentFeedback.reviewerId }}
-        </el-descriptions-item>
-        <el-descriptions-item label="审核时间" v-if="currentFeedback.reviewTime">
-          {{ formatTime(currentFeedback.reviewTime) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="提交时间">
-          {{ formatTime(currentFeedback.createTime) }}
-        </el-descriptions-item>
+        <el-descriptions-item label="模型名称">{{ currentFeedback.modelName || currentFeedback.recordInfo?.modelName || '未知' }}</el-descriptions-item>
+        <el-descriptions-item label="模型版本">{{ currentFeedback.modelVersion || currentFeedback.recordInfo?.modelVersion || '未知' }}</el-descriptions-item>
+        <el-descriptions-item label="反馈原因" :span="2">{{ currentFeedback.feedbackReason || '无' }}</el-descriptions-item>
+        <el-descriptions-item label="审核备注" :span="2" v-if="currentFeedback.reviewNote">{{ currentFeedback.reviewNote }}</el-descriptions-item>
+        <el-descriptions-item label="审核人" v-if="currentFeedback.reviewerId">{{ currentFeedback.reviewerId }}</el-descriptions-item>
+        <el-descriptions-item label="审核时间" v-if="currentFeedback.reviewTime">{{ formatTime(currentFeedback.reviewTime) }}</el-descriptions-item>
+        <el-descriptions-item label="提交时间">{{ formatTime(currentFeedback.createTime) }}</el-descriptions-item>
       </el-descriptions>
 
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
-        <el-button
-            v-if="currentFeedback && currentFeedback.status === 'PENDING'"
-            type="success"
-            @click="handleReview(currentFeedback, 'ACCEPTED')"
-        >
-          接受
-        </el-button>
-        <el-button
-            v-if="currentFeedback && currentFeedback.status === 'PENDING'"
-            type="danger"
-            @click="handleReview(currentFeedback, 'REJECTED')"
-        >
-          拒绝
-        </el-button>
+        <el-button v-if="currentFeedback && currentFeedback.status === 'PENDING'" type="success" @click="handleReview(currentFeedback, 'ACCEPTED')">接受</el-button>
+        <el-button v-if="currentFeedback && currentFeedback.status === 'PENDING'" type="danger" @click="handleReview(currentFeedback, 'REJECTED')">拒绝</el-button>
       </template>
     </el-dialog>
 
     <!-- 审核对话框 -->
-    <el-dialog
-        v-model="reviewVisible"
-        :title="reviewAction === 'ACCEPTED' ? '接受反馈' : '拒绝反馈'"
-        width="500px"
-        :close-on-click-modal="false"
-    >
+    <el-dialog v-model="reviewVisible" :title="reviewAction === 'ACCEPTED' ? '接受反馈' : '拒绝反馈'" width="500px" :close-on-click-modal="false">
       <el-form :model="reviewForm" label-width="100px">
         <el-form-item label="审核备注">
-          <el-input
-              v-model="reviewForm.reviewNote"
-              type="textarea"
-              :rows="4"
-              placeholder="请输入审核备注（选填）"
-              maxlength="500"
-              show-word-limit
-          />
+          <el-input v-model="reviewForm.reviewNote" type="textarea" :rows="4" placeholder="请输入审核备注（选填）" maxlength="500" show-word-limit />
         </el-form-item>
       </el-form>
-
       <template #footer>
         <el-button @click="reviewVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmReview">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 导出设置对话框 -->
+    <el-dialog v-model="exportDialogVisible" title="导出设置" width="500px" :close-on-click-modal="false">
+      <el-form :model="exportSettings" label-width="100px">
+        <el-form-item label="导出范围">
+          <el-radio-group v-model="exportSettings.scope">
+            <el-radio value="current">当前页数据</el-radio>
+            <el-radio value="all">全部数据</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="导出字段">
+          <el-checkbox-group v-model="exportSettings.fields">
+            <el-checkbox value="feedbackId">反馈ID</el-checkbox>
+            <el-checkbox value="userId">用户ID</el-checkbox>
+            <el-checkbox value="recordId">记录ID</el-checkbox>
+            <el-checkbox value="originalResult">原始结果</el-checkbox>
+            <el-checkbox value="correctResult">正确结果</el-checkbox>
+            <el-checkbox value="feedbackType">反馈类型</el-checkbox>
+            <el-checkbox value="feedbackReason">反馈原因</el-checkbox>
+            <el-checkbox value="qualityScore">质量评分</el-checkbox>
+            <el-checkbox value="status">状态</el-checkbox>
+            <el-checkbox value="modelName">模型名称</el-checkbox>
+            <el-checkbox value="modelVersion">模型版本</el-checkbox>
+            <el-checkbox value="createTime">提交时间</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="exportDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmExport" :loading="exportLoading">确定导出</el-button>
       </template>
     </el-dialog>
   </div>
@@ -416,11 +375,11 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search, Refresh, Download, View, Select, Close, Clock,
-  ChatLineRound, Right
+  ChatLineRound, Right, Picture, ArrowDown, Document, Tickets, Reading
 } from '@element-plus/icons-vue'
 import { getFeedbackList, reviewFeedback, batchReviewFeedback, exportFeedback } from '@/api/feedback'
 import dayjs from 'dayjs'
-import router from "@/router/index.js";
+import router from "@/router/index.js"
 
 // 搜索表单
 const searchForm = reactive({
@@ -460,6 +419,15 @@ const reviewForm = reactive({
 })
 const reviewingFeedback = ref(null)
 
+// 导出相关
+const exportLoading = ref(false)
+const exportDialogVisible = ref(false)
+const exportFormat = ref('excel')
+const exportSettings = reactive({
+  scope: 'all',
+  fields: ['feedbackId', 'userId', 'recordId', 'originalResult', 'correctResult', 'feedbackType', 'feedbackReason', 'qualityScore', 'status', 'modelName', 'modelVersion', 'createTime']
+})
+
 // 获取列表数据
 const fetchData = async () => {
   loading.value = true
@@ -476,8 +444,6 @@ const fetchData = async () => {
       const { records, total } = response.data
       tableData.value = records || []
       pagination.total = total || 0
-
-      // 更新统计数据
       updateStatistics()
     }
   } catch (error) {
@@ -556,7 +522,7 @@ const confirmReview = async () => {
 const handleBatchReview = async (action) => {
   try {
     await ElMessageBox.confirm(
-        `确定要${action === 'ACCEPTED' ? '接受' : '拒绝'}选中的 ${selectedRows.value.length} 条反馈吗?`,
+        `确定要${action === 'ACCEPTED' ? '接受' : '拒绝'}选中的 ${selectedRows.value.length} 条反馈吗? `,
         '提示',
         {
           confirmButtonText: '确定',
@@ -578,6 +544,68 @@ const handleBatchReview = async (action) => {
       ElMessage.error('批量审核失败')
     }
   }
+}
+
+// 导出处理
+const handleExport = (format) => {
+  exportFormat.value = format
+  exportDialogVisible.value = true
+}
+
+// 确认导出
+const confirmExport = async () => {
+  exportLoading.value = true
+  try {
+    const params = {
+      status: searchForm.status,
+      feedbackType: searchForm.feedbackType,
+      scope: exportSettings.scope,
+      fields: exportSettings.fields.join(',')
+    }
+
+    // 如果是当前页，添加分页参数
+    if (exportSettings.scope === 'current') {
+      params.current = pagination.current
+      params.size = pagination.size
+    }
+
+    const response = await exportFeedback(params, exportFormat.value)
+
+    // 处理文件下载
+    downloadFile(response, `反馈数据报表_${dayjs().format('YYYYMMDDHHmmss')}`, exportFormat.value)
+
+    ElMessage.success('导出成功')
+    exportDialogVisible.value = false
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请稍后重试')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
+// 文件下载工具函数
+const downloadFile = (data, filename, format) => {
+  const mimeTypes = {
+    excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    csv: 'text/csv;charset=utf-8',
+    pdf: 'application/pdf'
+  }
+  const extensions = {
+    excel: '.xlsx',
+    csv: '.csv',
+    pdf: '.pdf'
+  }
+
+  const blob = new Blob([data], { type: mimeTypes[format] })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename + extensions[format]
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
 }
 
 // 表格选择变化
@@ -675,7 +703,6 @@ onMounted(() => {
   width: 100%;
   box-sizing: border-box;
 
-  // 背景粒子效果
   .background-particles {
     position: fixed;
     top: 0;
@@ -693,7 +720,6 @@ onMounted(() => {
     }
   }
 
-  // 背景装饰圆形
   .background-circles {
     position: fixed;
     top: 0;
@@ -739,13 +765,11 @@ onMounted(() => {
     }
   }
 
-  // 内容区域
   .content-wrapper {
     position: relative;
     z-index: 1;
   }
 
-  // 头部Logo区域
   .header-section {
     text-align: center;
     margin-bottom: 30px;
@@ -797,7 +821,6 @@ onMounted(() => {
     }
   }
 
-  // 深色模式适配
   html.dark & {
     .header-title {
       color: #ffffff;
@@ -810,7 +833,6 @@ onMounted(() => {
     }
   }
 
-  // 通用卡片样式
   .modern-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
@@ -923,13 +945,11 @@ onMounted(() => {
         }
       }
 
-      // 第2个和第4个卡片的图标更亮
       &.warning .stat-content .stat-icon,
       &.danger .stat-content .stat-icon {
         filter: brightness(2.2);
       }
 
-      // 不同主题色
       &.primary .stat-background {
         background: linear-gradient(135deg, #409EFF 0%, #66b1ff 100%);
       }
@@ -986,6 +1006,18 @@ onMounted(() => {
       }
     }
 
+    .image-placeholder {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f7fa;
+      border-radius: 6px;
+      color: #c0c4cc;
+      font-size: 20px;
+    }
+
     .pagination {
       margin-top: 20px;
       display: flex;
@@ -994,7 +1026,6 @@ onMounted(() => {
   }
 }
 
-// 动画效果
 @keyframes float-particle {
   0%, 100% {
     transform: translate(0, 0);

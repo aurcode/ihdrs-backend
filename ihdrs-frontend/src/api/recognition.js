@@ -42,12 +42,17 @@ export function batchDeleteRecords(recordIds) {
 
 /**
  * 导出识别历史
+ * @param {Object} params - 筛选参数
+ * @param {string} format - 导出格式: 'excel', 'csv', 'pdf'
  */
-export function exportRecognitionHistory(params) {
+export function exportRecognitionHistory(params, format = 'excel') {
     return request({
         url: '/recognition/history/export',
         method: 'get',
-        params,
+        params: {
+            ...params,
+            format
+        },
         responseType: 'blob'
     })
 }

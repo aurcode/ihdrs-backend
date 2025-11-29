@@ -5,6 +5,7 @@ import com.ihdrs.backend.common.Result;
 import com.ihdrs.backend.dto.request.RecognitionRequest;
 import com.ihdrs.backend.dto.response.RecognitionMultiResponse;
 import com.ihdrs.backend.dto.response.RecognitionResponse;
+import com.ihdrs.backend.service.ExportService;
 import com.ihdrs.backend.service.RecognitionService;
 import com.ihdrs.backend.common.utils.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ import java.util.List;
 public class RecognitionController {
 
     private final RecognitionService recognitionService;
+    private final ExportService exportService;
     private final JwtUtil jwtUtil;
 
     @Operation(summary = "数字识别", description = "识别手写数字图片（可匿名识别）")
@@ -174,5 +176,38 @@ public class RecognitionController {
             return Result.error(401, "未登录");
         }
         return recognitionService.batchDeleteRecords(recordIds, userId);
+    }
+
+    @Operation(summary = "导出识别历史", description = "导出识别历史数据报表，支持Excel、CSV、PDF格式")
+    @GetMapping("/history/export")
+    public void exportRecognitionHistory(
+            HttpServletResponse response,
+            @RequestParam(defaultValue = "excel") String format,
+            @RequestParam(defaultValue = "filtered") String scope,
+            @RequestParam(required = false) String fields,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) Integer result,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime) throws IOException {
+
+        LocalDateTime start = null, end = null;
+
+        try {
+            if (startTime != null && !startTime.isBlank()) {
+                start = LocalDateTime.parse(startTime);
+            }
+            if (endTime != null && !endTime.isBlank()) {
+                end = LocalDateTime.parse(endTime);
+            }
+        } catch (Exception ex) {
+            response.setStatus(400);
+            response.getWriter().write("时间格式错误");
+            return;
+        }
+
+        exportService.exportRecognitionHistory(response, format, scope, fields, page, size,
+                result, userId, start, end);
     }
 }
