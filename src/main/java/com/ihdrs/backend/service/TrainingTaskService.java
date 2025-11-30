@@ -45,6 +45,39 @@ public class TrainingTaskService {
     private final DatasetRepository datasetRepository;
     private final ConcurrentHashMap<Long, Map<String, Object>> batchProgressCache = new ConcurrentHashMap<>();
 
+    public Result<Map<String, Object>> getStatistics() {
+        Map<String, Object> statistics = new HashMap<>();
+
+        // 总任务数
+        long totalTasks = taskRepository.count();
+        statistics.put("totalTasks", totalTasks);
+
+        // 各状态任务数量
+        List<Object[]> statusCounts = taskRepository.countTasksByStatus();
+        long completedTasks = 0;
+        long runningTasks = 0;
+
+        for (Object[] row : statusCounts) {
+            TrainingTask.TaskStatus status = (TrainingTask.TaskStatus) row[0];
+            Long count = (Long) row[1];
+
+            if (status == TrainingTask.TaskStatus.COMPLETED) {
+                completedTasks = count;
+            } else if (status == TrainingTask.TaskStatus.RUNNING) {
+                runningTasks = count;
+            }
+        }
+
+        statistics.put("completedTasks", completedTasks);
+        statistics.put("runningTasks", runningTasks);
+
+        // 平均准确率
+        Double avgAccuracy = taskRepository.getAverageAccuracy();
+        statistics.put("avgAccuracy", avgAccuracy != null ? avgAccuracy : 0.0);
+
+        return Result.success(statistics);
+    }
+
     /**
      * 更新 batch 级别进度（存到内存缓存）
      */
@@ -165,7 +198,7 @@ public class TrainingTaskService {
         }
     }
 
-    public Result<PageResult<TrainingTaskResponse>> getTaskList(PageRequest pageRequest, Long creatorId, String status) {
+    public Result<PageResult<TrainingTaskResponse>> getTaskList(PageRequest pageRequest, Long creatorId, String status, String keyword) {
         org.springframework.data.domain.PageRequest springPageRequest =
                 org.springframework.data.domain.PageRequest.of(
                         pageRequest.getCurrent().intValue() - 1,
@@ -174,16 +207,34 @@ public class TrainingTaskService {
                 );
 
         Page<TrainingTask> taskPage;
-        if (creatorId != null && status != null) {
-            TrainingTask.TaskStatus taskStatus = TrainingTask.TaskStatus.valueOf(status);
-            taskPage = taskRepository.findByCreatorIdAndStatus(creatorId, taskStatus, springPageRequest);
-        } else if (creatorId != null) {
-            taskPage = taskRepository.findByCreatorIdOrderByCreateTimeDesc(creatorId, springPageRequest);
-        } else if (status != null) {
-            TrainingTask.TaskStatus taskStatus = TrainingTask.TaskStatus.valueOf(status);
-            taskPage = taskRepository.findByStatusOrderByCreateTimeDesc(taskStatus, springPageRequest);
+
+        // 将 status 转换为枚举
+        TrainingTask.TaskStatus taskStatus = null;
+        if (status != null && !status.isEmpty()) {
+            taskStatus = TrainingTask.TaskStatus.valueOf(status);
+        }
+
+        // 使用动态查询支持所有条件组合
+        if (keyword != null && !keyword.isEmpty()) {
+            if (creatorId != null && taskStatus != null) {
+                taskPage = taskRepository.findByCreatorIdAndStatusAndTaskNameContaining(creatorId, taskStatus, keyword, springPageRequest);
+            } else if (creatorId != null) {
+                taskPage = taskRepository.findByCreatorIdAndTaskNameContaining(creatorId, keyword, springPageRequest);
+            } else if (taskStatus != null) {
+                taskPage = taskRepository.findByStatusAndTaskNameContaining(taskStatus, keyword, springPageRequest);
+            } else {
+                taskPage = taskRepository.findByTaskNameContaining(keyword, springPageRequest);
+            }
         } else {
-            taskPage = taskRepository.findAll(springPageRequest);
+            if (creatorId != null && taskStatus != null) {
+                taskPage = taskRepository.findByCreatorIdAndStatus(creatorId, taskStatus, springPageRequest);
+            } else if (creatorId != null) {
+                taskPage = taskRepository.findByCreatorIdOrderByCreateTimeDesc(creatorId, springPageRequest);
+            } else if (taskStatus != null) {
+                taskPage = taskRepository.findByStatusOrderByCreateTimeDesc(taskStatus, springPageRequest);
+            } else {
+                taskPage = taskRepository.findAll(springPageRequest);
+            }
         }
 
         List<TrainingTaskResponse> taskList = taskPage.getContent().stream()

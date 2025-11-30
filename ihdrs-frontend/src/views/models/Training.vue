@@ -880,7 +880,8 @@ import {
   createTrainingTask,
   getTrainingTaskDetail,
   getTrainingLogs,
-  cancelTrainingTask
+  cancelTrainingTask,
+  getTrainingStatistics
 } from '@/api/training'
 import {
   DataAnalysis,
@@ -1022,6 +1023,17 @@ const loadDatasets = async () => {
   } catch (err) {
     console.error('加载数据集失败', err)
     ElMessage.error('加载数据集失败')
+  }
+}
+
+const loadStatistics = async () => {
+  try {
+    const res = await getTrainingStatistics()
+    if (res.code === 200) {
+      statistics.value = res. data
+    }
+  } catch (error) {
+    console.error('加载统计信息失败', error)
   }
 }
 
@@ -1598,7 +1610,8 @@ const loadTaskList = async () => {
     const params = {
       current: pagination.current,
       size: pagination.size,
-      status: filterForm.status || undefined
+      status: filterForm.status || undefined,
+      keyword: filterForm.keyword || undefined
     }
 
     const res = await getTrainingTaskList(params)
@@ -1607,6 +1620,7 @@ const loadTaskList = async () => {
       taskList.value = res.data.records
       pagination.total = res.data.total
     }
+    loadStatistics()
   } catch (error) {
     console.error('加载任务列表失败', error)
     ElMessage.error('加载任务列表失败')
@@ -1741,6 +1755,7 @@ const tableRowClassName = ({row}) => {
 onMounted(() => {
   loadDatasets()
   loadTaskList()
+  loadStatistics()
 
   // 定时刷新正在运行的任务
   const interval = setInterval(() => {

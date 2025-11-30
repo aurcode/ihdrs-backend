@@ -1,6 +1,14 @@
 // api/training.js
 import request from '@/utils/request'
 
+// 获取训练统计信息
+export function getTrainingStatistics() {
+    return request({
+        url: '/training/statistics',
+        method: 'get'
+    })
+}
+
 // 获取实时 batch 进度
 export function getBatchProgress(taskId) {
     return request({

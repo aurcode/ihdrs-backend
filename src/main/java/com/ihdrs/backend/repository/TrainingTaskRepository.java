@@ -99,4 +99,24 @@ public interface TrainingTaskRepository extends JpaRepository<TrainingTask, Long
     @Query("SELECT AVG(t.finalAccuracy) FROM TrainingTask t WHERE t.finalAccuracy IS NOT NULL AND t.status = 'COMPLETED'")
     Double getAverageAccuracy();
 
+    /**
+     * 根据任务名称模糊查询（分页）
+     */
+    Page<TrainingTask> findByTaskNameContaining(String keyword, Pageable pageable);
+
+    /**
+     * 根据状态和任务名称模糊查询（分页）
+     */
+    Page<TrainingTask> findByStatusAndTaskNameContaining(TrainingTask.TaskStatus status, String keyword, Pageable pageable);
+
+    /**
+     * 根据创建者和任务名称模糊查询（分页）
+     */
+    Page<TrainingTask> findByCreatorIdAndTaskNameContaining(Long creatorId, String keyword, Pageable pageable);
+
+    /**
+     * 根据创建者、状态和任务名称模糊查询（分页）
+     */
+    Page<TrainingTask> findByCreatorIdAndStatusAndTaskNameContaining(Long creatorId, TrainingTask.TaskStatus status, String keyword, Pageable pageable);
+
 }

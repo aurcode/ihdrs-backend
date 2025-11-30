@@ -55,9 +55,10 @@ public class TrainingTaskController {
     public Result<PageResult<TrainingTaskResponse>> getTaskList(
             @Valid PageRequest pageRequest,
             @RequestParam(required = false) Long creatorId,
-            @RequestParam(required = false) String status
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword  // 添加关键词参数
     ) {
-        return trainingTaskService.getTaskList(pageRequest, creatorId, status);
+        return trainingTaskService.getTaskList(pageRequest, creatorId, status, keyword);
     }
 
     @Operation(summary = "获取任务详情", description = "根据ID获取训练任务详情")
@@ -104,6 +105,12 @@ public class TrainingTaskController {
     ) {
         String errorMessage = (String) data.get("errorMessage");
         return trainingTaskService.failTask(taskId, errorMessage);
+    }
+
+    @Operation(summary = "获取训练统计信息", description = "获取训练任务的统计数据")
+    @GetMapping("/statistics")
+    public Result<Map<String, Object>> getStatistics() {
+        return trainingTaskService.getStatistics();
     }
 
 }
