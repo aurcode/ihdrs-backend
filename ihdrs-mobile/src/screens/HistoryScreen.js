@@ -49,7 +49,7 @@ const HistoryScreen = ({ user, token, onCancel }) => {
     const [slideAnim] = useState(new Animated.Value(50));
 
     useEffect(() => {
-        loadHistory();
+        loadHistory(true);
 
         Animated.parallel([
             Animated.timing(fadeAnim, {
@@ -65,11 +65,13 @@ const HistoryScreen = ({ user, token, onCancel }) => {
         ]).start();
     }, [currentPage, filterResult]);
 
-    const loadHistory = async () => {
+    const loadHistory = async (showLoading = true) => {
         try {
-            setLoading(true);
-            const filters = {};
+            if (showLoading) {
+                setLoading(true);
+            }
 
+            const filters = {};
             if (filterResult !== null) {
                 filters.result = filterResult;
             }
@@ -94,7 +96,7 @@ const HistoryScreen = ({ user, token, onCancel }) => {
     const handleRefresh = () => {
         setRefreshing(true);
         setCurrentPage(0);
-        loadHistory();
+        loadHistory(false);
     };
 
     const BASE_URL = "http://10.0.2.2:8080";
@@ -191,7 +193,7 @@ const HistoryScreen = ({ user, token, onCancel }) => {
         if (response.success) {
             Alert.alert('成功', '反馈提交成功，感谢您的反馈！');
             setShowFeedbackModal(false);
-            loadHistory();
+            loadHistory(false);
         } else {
             Alert.alert('提交失败', response.error);
         }
