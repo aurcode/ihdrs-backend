@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS `models` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模型表';
 
 INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
-    ('DefaultCNN', 'v1.0.0', 'models/default_cnn_v1.0.0.h5', 'CNN', 0.9200, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1, 0.03, 1000000)
+    ('DefaultCNN', 'v1.0.0', 'models/default_cnn_v2.0.0.h5', 'CNN', 0.9200, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1, 0.03, 1000000)
 ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
 
 INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
