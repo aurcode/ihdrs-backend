@@ -1,7 +1,6 @@
-# api/recognition.py - 识别API
+# api/recognition.py
 from flask import Blueprint, request, jsonify, current_app
 import base64
-import numpy as np
 import time
 from services.image_processor import ImageProcessor
 from utils.validators import validate_recognition_request
@@ -20,15 +19,13 @@ def recognize():
                 'message': '请求Content-Type必须为application/json'
             }), 400
 
-        # 获取请求数据
-        data = request.get_json(silent=True)  # 使用silent=True避免抛出异常
+        data = request.get_json(silent=True)
         if not data:
             return jsonify({
                 'status': 'error',
                 'message': '请求数据不能为空'
             }), 400
 
-        # 验证请求参数
         validation_error = validate_recognition_request(data)
         if validation_error:
             return jsonify({
@@ -37,7 +34,8 @@ def recognize():
             }), 400
 
         image_data = data.get('image')
-        model_id = data.get('model_id', 1)
+        model_id = data.get('model_id')
+        model_path = data.get('model_path')
 
         # 解码Base64图像
         try:
@@ -59,29 +57,30 @@ def recognize():
                 'message': '图像处理失败'
             }), 400
 
-        # 执行识别
+        # 执行识别 - 传递 model_path 用于动态加载
         model_service = current_app.model_service
-        prediction_result = model_service.predict(processed_image, model_id)
+        prediction_result = model_service.predict(processed_image, model_id, model_path)
 
         if prediction_result is None:
             return jsonify({
                 'status': 'error',
-                'message': '模型预测失败'
+                'message': '模型预测失败，请检查模型是否正确加载'
             }), 500
 
         processing_time = int((time.time() - start_time) * 1000)
 
-        # 构建响应
         response_data = {
             'result': int(prediction_result['digit']),
             'confidence': float(prediction_result['confidence']),
             'processing_time': processing_time,
-            'all_probabilities': prediction_result.get('all_probabilities', [])
+            'all_probabilities': prediction_result.get('all_probabilities', []),
+            'model_id': prediction_result.get('model_id')
         }
 
         current_app.logger.info(f"识别完成 - 结果: {response_data['result']}, "
-                                f"置信度: {response_data['confidence']:.4f}, "
-                                f"耗时: {processing_time}ms")
+                                 f"置信度: {response_data['confidence']:.4f}, "
+                                 f"模型ID: {response_data['model_id']}, "
+                                 f"耗时: {processing_time}ms")
 
         return jsonify({
             'status': 'success',
@@ -95,41 +94,3 @@ def recognize():
             'message': '识别服务异常',
             'error': str(e)
         }), 500
-
-@recognition_bp.route('/recognize_multi', methods=['POST'])
-def recognize_multi():
-    start = time.time()
-
-    data = request.get_json()
-    image_base64 = data.get("image")
-    model_id = data.get("model_id", 1)
-
-    # 1. 解码
-    image_bytes = base64.b64decode(image_base64)
-
-    # 2. 分割多个数字
-    processor = ImageProcessor()
-    digits = processor.segment_digits(image_bytes)
-    current_app.logger.info(f"分割数量: {len(digits)}")
-    if not digits:
-        return jsonify({"status": "error", "message": "无法分割数字"}), 400
-
-    model_service = current_app.model_service
-
-    results = []
-    for digit_img in digits:
-        pred = model_service.predict(digit_img, model_id)
-        results.append({
-            "digit": int(pred['digit']),
-            "confidence": float(pred['confidence']),
-            "all_probabilities": pred.get('all_probabilities', [])
-        })
-
-    return jsonify({
-        "status": "success",
-        "data": {
-            "count": len(results),
-            "results": results,
-            "processing_time": int((time.time() - start) * 1000)
-        }
-    })

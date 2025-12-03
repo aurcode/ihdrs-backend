@@ -1,4 +1,4 @@
-# services/model_service.py - 模型服务
+# services/model_service.py
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -14,6 +14,7 @@ class ModelService:
         self.active_model_id = None
         self.model_metadata = {}
         self.model_input_type = {}
+        self.model_paths = {}
 
     def load_default_model(self):
         """加载默认模型并预热"""
@@ -25,6 +26,7 @@ class ModelService:
                 model = keras.models.load_model(default_path)
                 self.models[1] = model
                 self.active_model_id = 1
+                self.model_paths[1] = str(default_path)
 
                 # 检测模型输入类型
                 input_shape = model.input_shape
@@ -60,12 +62,48 @@ class ModelService:
             logger.error(f"加载默认模型失败: {e}")
             return False
 
+    def _load_model_by_id(self, model_id, model_path):
+        """按需加载指定模型"""
+        try:
+            if not os.path.exists(model_path):
+                logger.error(f"模型文件不存在: {model_path}")
+                return False
+
+            logger.info(f"动态加载模型: id={model_id}, path={model_path}")
+            model = keras.models.load_model(model_path)
+            self.models[model_id] = model
+            self.model_paths[model_id] = model_path
+
+            # 检测输入类型
+            input_shape = model.input_shape
+            if len(input_shape) == 2 and input_shape[1] == 784:
+                self.model_input_type[model_id] = 'flatten'
+            elif len(input_shape) == 4:
+                self.model_input_type[model_id] = 'cnn'
+            else:
+                self.model_input_type[model_id] = 'unknown'
+
+            self.model_metadata[model_id] = {
+                'path': model_path,
+                'input_type': self.model_input_type[model_id],
+                'input_shape': input_shape
+            }
+
+            # 预热模型
+            self._warmup_model(model, self.model_input_type[model_id])
+
+            logger.info(f"模型加载成功: id={model_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"加载模型失败: {e}")
+            return False
+
     def _warmup_model(self, model, input_type):
         """模型预热"""
         try:
             logger.info("开始模型预热...")
 
-            # 根据输入类型准备dummy数据
             if input_type == 'flatten':
                 dummy_input = np.zeros((1, 784), dtype=np.float32)
             elif input_type == 'cnn':
@@ -73,7 +111,6 @@ class ModelService:
             else:
                 dummy_input = np.zeros((1, 28, 28, 1), dtype=np.float32)
 
-            # 执行3次预测进行预热
             for i in range(3):
                 _ = model.predict(dummy_input, verbose=0)
 
@@ -81,14 +118,30 @@ class ModelService:
         except Exception as e:
             logger.warning(f"模型预热失败: {e}")
 
-    def predict(self, image, model_id=None):
-        """执行预测 - 自动适配输入格式"""
+    def predict(self, image, model_id=None, model_path=None):
+        """执行预测 - 自动适配输入格式，支持动态加载模型"""
         try:
             target_model_id = model_id if model_id is not None else self.active_model_id
 
-            if target_model_id is None or target_model_id not in self.models:
-                logger.error(f"模型不可用: {target_model_id}")
+            if target_model_id is None:
+                logger.error("没有可用的模型ID")
                 return None
+
+            # 关键修复：如果模型未加载，尝试动态加载
+            if target_model_id not in self.models:
+                if model_path:
+                    # 使用传入的路径加载
+                    if not self._load_model_by_id(target_model_id, model_path):
+                        logger.error(f"动态加载模型失败: {target_model_id}")
+                        return None
+                elif target_model_id in self.model_paths:
+                    # 使用已知路径加载
+                    if not self._load_model_by_id(target_model_id, self.model_paths[target_model_id]):
+                        logger.error(f"从已知路径加载模型失败: {target_model_id}")
+                        return None
+                else:
+                    logger.error(f"模型不可用且无路径信息: {target_model_id}")
+                    return None
 
             model = self.models[target_model_id]
             input_type = self.model_input_type.get(target_model_id, 'unknown')
@@ -125,7 +178,6 @@ class ModelService:
             # 执行预测
             predictions = model.predict(processed_input, verbose=0)
 
-            # 处理预测结果
             if len(predictions.shape) > 1:
                 confidence_scores = predictions[0]
             else:
@@ -175,16 +227,13 @@ class ModelService:
             from config import Config
             model_path = Config.MODEL_PATH / f"{model_name}.h5"
 
-            # 保存模型文件
             model.save(model_path)
 
-            # 生成模型ID（简单自增）
             model_id = max(self.models.keys()) + 1 if self.models else 2
 
-            # 加载到内存
             self.models[model_id] = model
+            self.model_paths[model_id] = str(model_path)
 
-            # 检测输入类型
             input_shape = model.input_shape
             if len(input_shape) == 2 and input_shape[1] == 784:
                 self.model_input_type[model_id] = 'flatten'
@@ -193,7 +242,6 @@ class ModelService:
             else:
                 self.model_input_type[model_id] = 'unknown'
 
-            # 保存元数据
             self.model_metadata[model_id] = {
                 'name': model_name,
                 'path': str(model_path),

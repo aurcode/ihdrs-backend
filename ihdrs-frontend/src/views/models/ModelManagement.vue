@@ -21,7 +21,7 @@
         <div class="logo-container">
           <div class="logo-circle">
             <el-icon size="50" color="#2563eb">
-              <DataAnalysis />
+              <DataAnalysis/>
             </el-icon>
           </div>
         </div>
@@ -41,7 +41,9 @@
                 @keyup.enter="handleSearch"
             >
               <template #prefix>
-                <el-icon><Search /></el-icon>
+                <el-icon>
+                  <Search/>
+                </el-icon>
               </template>
             </el-input>
           </el-form-item>
@@ -52,10 +54,10 @@
                 clearable
                 style="width: 150px"
             >
-              <el-option label="训练中" value="TRAINING" />
-              <el-option label="已完成" value="COMPLETED" />
-              <el-option label="活跃中" value="ACTIVE" />
-              <el-option label="已停用" value="DISABLED" />
+              <el-option label="训练中" value="TRAINING"/>
+              <el-option label="已完成" value="COMPLETED"/>
+              <el-option label="活跃中" value="ACTIVE"/>
+              <el-option label="已停用" value="DISABLED"/>
             </el-select>
           </el-form-item>
           <el-form-item label="模型类型">
@@ -65,9 +67,9 @@
                 clearable
                 style="width: 150px"
             >
-              <el-option label="CNN" value="CNN" />
-              <el-option label="ResNet" value="ResNet" />
-              <el-option label="LeNet" value="LeNet" />
+              <el-option label="CNN" value="CNN"/>
+              <el-option label="ResNet" value="ResNet"/>
+              <el-option label="LeNet" value="LeNet"/>
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -168,22 +170,37 @@
             style="width: 100%"
             @selection-change="handleSelectionChange"
         >
-          <el-table-column type="selection" width="55" />
+          <el-table-column type="selection" width="55"/>
 
-          <el-table-column prop="modelName" label="模型名称" min-width="150">
+          <el-table-column prop="modelName" label="模型名称" min-width="180">
             <template #default="{ row }">
-              <div class="model-name">
-                <el-tag v-if="row.isActive" type="success" size="small">
-                  活跃
-                </el-tag>
-                <span class="name-text">{{ row.modelName }}</span>
+              <div class="model-name-cell">
+                <!-- 活跃状态指示器 -->
+                <span v-if="row.isActive" class="active-indicator">
+        <span class="pulse-dot"></span>
+      </span>
+
+                <!-- 模型名称 -->
+                <div class="model-info">
+                  <div class="name-row">
+          <span class="name-text" :class="{ 'active-name': row.isActive }">
+            {{ row.modelName }}
+          </span>
+                    <el-tag v-if="row.isActive" type="success" size="small" effect="dark" class="active-tag">
+                      <el-icon class="tag-icon">
+                        <CircleCheck/>
+                      </el-icon>
+                      活跃
+                    </el-tag>
+                  </div>
+                </div>
               </div>
             </template>
           </el-table-column>
 
-          <el-table-column prop="modelVersion" label="版本" width="120" />
+          <el-table-column prop="modelVersion" label="版本" width="120"/>
 
-          <el-table-column prop="modelType" label="类型" width="100" />
+          <el-table-column prop="modelType" label="类型" width="100"/>
 
           <el-table-column prop="accuracy" label="准确率" width="120">
             <template #default="{ row }">
@@ -220,7 +237,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="creatorName" label="创建者" width="120" />
+          <el-table-column prop="creatorName" label="创建者" width="120"/>
 
           <el-table-column prop="createTime" label="创建时间" width="180">
             <template #default="{ row }">
@@ -372,7 +389,7 @@
           :close-on-click-modal="false"
       >
         <el-table :data="versionDialog.versions" stripe>
-          <el-table-column prop="modelVersion" label="版本" width="100" />
+          <el-table-column prop="modelVersion" label="版本" width="100"/>
           <el-table-column prop="accuracy" label="准确率" width="120">
             <template #default="{ row }">
               {{ (row.accuracy * 100).toFixed(2) }}%
@@ -462,7 +479,9 @@
               </el-descriptions>
             </el-col>
             <el-col :span="2" class="comparison-arrow">
-              <el-icon :size="30"><Right /></el-icon>
+              <el-icon :size="30">
+                <Right/>
+              </el-icon>
             </el-col>
             <el-col :span="11">
               <h3>模型 2</h3>
@@ -489,7 +508,7 @@
             </el-col>
           </el-row>
 
-          <el-divider />
+          <el-divider/>
 
           <h3>对比结果</h3>
           <el-alert
@@ -530,8 +549,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {ref, reactive, onMounted} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   DataAnalysis,
   CircleCheck,
@@ -617,6 +636,34 @@ const compareDialog = reactive({
   visible: false,
   comparison: null
 })
+
+const tableRowClassName = ({row}) => {
+  if (row.isActive) {
+    return 'active-model-row'
+  }
+  switch (row.status) {
+    case 'TRAINING':
+      return 'training-row'
+    case 'COMPLETED':
+      return 'completed-row'
+    case 'ACTIVE':
+      return 'active-row'
+    case 'DISABLED':
+      return 'disabled-row'
+    default:
+      return ''
+  }
+}
+
+const getStatusDotClass = (status) => {
+  const classes = {
+    TRAINING: 'dot-training',
+    COMPLETED: 'dot-completed',
+    ACTIVE: 'dot-active',
+    DISABLED: 'dot-disabled'
+  }
+  return classes[status] || ''
+}
 
 // 加载模型列表
 const loadModelList = async () => {
@@ -1238,5 +1285,265 @@ onMounted(() => {
   50% {
     transform: translate(30px, -30px) scale(1.1);
   }
+}
+
+// ==================== 模型列表行样式 ====================
+
+// 活跃模型行 - 绿色高亮
+:deep(.el-table .active-model-row) {
+  background: linear-gradient(90deg, rgba(103, 194, 58, 0.12) 0%, rgba(103, 194, 58, 0.04) 100%) !important;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #67c23a 0%, #85ce61 100%);
+    box-shadow: 0 0 8px rgba(103, 194, 58, 0.6);
+  }
+
+  td {
+    font-weight: 500;
+  }
+}
+
+:deep(.el-table .active-model-row:hover > td) {
+  background: rgba(103, 194, 58, 0.18) !important;
+}
+
+// 训练中行 - 蓝色动画
+:deep(.el-table .training-row) {
+  background: linear-gradient(90deg, rgba(64, 158, 255, 0.08) 0%, transparent 100%);
+  animation: pulse-blue 2s infinite;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #409eff;
+  }
+}
+
+@keyframes pulse-blue {
+  0%, 100% {
+    background-color: rgba(64, 158, 255, 0.08);
+  }
+  50% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+}
+
+// 已完成行 - 淡色
+:deep(.el-table .completed-row) {
+  background: rgba(144, 147, 153, 0.04);
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #909399;
+  }
+}
+
+// 已停用行 - 灰色弱化
+:deep(.el-table .disabled-row) {
+  background: rgba(144, 147, 153, 0.06);
+  opacity: 0.65;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #c0c4cc;
+  }
+
+  td {
+    color: #909399;
+  }
+}
+
+:deep(.el-table .disabled-row:hover > td) {
+  opacity: 1;
+}
+
+.model-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.active-indicator {
+  position: relative;
+  width: 12px;
+  height: 12px;
+
+  .pulse-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #67c23a;
+    border-radius: 50%;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #67c23a;
+      border-radius: 50%;
+      animation: pulse-ring 1.5s infinite;
+    }
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .name-text {
+    font-size: 14px;
+    color: #303133;
+    transition: all 0.3s;
+
+    &.active-name {
+      font-weight: 600;
+      color: #67c23a;
+    }
+  }
+
+  .model-version {
+    font-size: 12px;
+    color: #909399;
+  }
+}
+
+.active-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: tag-glow 2s infinite;
+
+  .tag-icon {
+    font-size: 12px;
+  }
+}
+
+@keyframes tag-glow {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(103, 194, 58, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(103, 194, 58, 0.8);
+  }
+}
+
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.dot-training {
+    background: #409eff;
+    animation: blink 1s infinite;
+  }
+
+  &.dot-completed {
+    background: #909399;
+  }
+
+  &.dot-active {
+    background: #67c23a;
+    animation: blink 1.5s infinite;
+  }
+
+  &.dot-disabled {
+    background: #c0c4cc;
+  }
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+:deep(.el-progress) {
+  .el-progress-bar__outer {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .el-progress-bar__inner {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+}
+
+// 高准确率闪光效果
+:deep(.active-model-row .el-progress-bar__inner) {
+  background: linear-gradient(90deg, #67c23a 0%, #85ce61 50%, #67c23a 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.text-success {
+  color: #67c23a;
+  font-weight: 500;
+}
+
+.text-danger {
+  color: #f56c6c;
+  font-weight: 500;
 }
 </style>

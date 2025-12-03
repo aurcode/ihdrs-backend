@@ -269,7 +269,6 @@
                 >
                 </div>
               </div>
-              <span class="progress-bar-text">{{ batchProgressBar }}</span>
             </div>
           </div>
         </div>

@@ -1,20 +1,28 @@
 // ModelService.java - 模型服务
 package com.ihdrs.backend.service;
 
-import com.ihdrs.backend.common.PageResult;
-import com.ihdrs.backend.common.Result;
-import com.ihdrs.backend.dto.request.PageRequest;
-import com.ihdrs.backend.dto.response.ModelResponse;
-import com.ihdrs.backend.entity.Model;
-import com.ihdrs.backend.repository.ModelRepository;
+import com.ihdrs.backend. common.PageResult;
+import com. ihdrs.backend.common.Result;
+import com.ihdrs.backend. config.ModelServiceConfig;
+import com.ihdrs.backend. dto.request.PageRequest;
+import com.ihdrs. backend.dto.response.ModelResponse;
+import com.ihdrs. backend.entity.Model;
+import com. ihdrs.backend.repository.ModelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import org. springframework.http.HttpEntity;
+import org. springframework.http.HttpHeaders;
+import org. springframework.http.HttpMethod;
+import org.springframework.http. MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework. web.client.RestTemplate;
 
-import java.util.List;
+import java.util.HashMap;
+import java. util.List;
+import java.util. Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -23,21 +31,23 @@ import java.util.stream.Collectors;
 public class ModelService {
 
     private final ModelRepository modelRepository;
+    private final ModelServiceConfig modelServiceConfig;
+    private final RestTemplate restTemplate;
 
     /**
      * 分页查询模型列表
      */
     public Result<PageResult<ModelResponse>> getModelList(PageRequest pageRequest) {
-        org.springframework.data.domain.PageRequest springPageRequest = org.springframework.data.domain.PageRequest.of(
-                pageRequest.getCurrent().intValue() - 1,
-                pageRequest.getSize().intValue(),
+        org.springframework.data. domain.PageRequest springPageRequest = org.springframework.data. domain.PageRequest. of(
+                pageRequest.getCurrent(). intValue() - 1,
+                pageRequest. getSize(). intValue(),
                 Sort.by(Sort.Direction.DESC, "createTime")
         );
 
-        Page<Model> modelPage = modelRepository.findAll(springPageRequest);
+        Page<Model> modelPage = modelRepository. findAll(springPageRequest);
 
         // 获取当前活跃模型ID
-        Model activeModel = modelRepository.findByStatus(Model.ModelStatus.ACTIVE)
+        Model activeModel = modelRepository.findByStatus(Model.ModelStatus. ACTIVE)
                 .orElse(null);
         Long activeModelId = activeModel != null ? activeModel.getModelId() : null;
 
@@ -52,15 +62,15 @@ public class ModelService {
                 pageRequest.getCurrent()
         );
 
-        return Result.success(result);
+        return Result. success(result);
     }
 
     /**
      * 获取当前活跃模型
      */
     public Result<ModelResponse> getActiveModel() {
-        Model model = modelRepository.findByStatus(Model.ModelStatus.ACTIVE)
-                .orElse(null);
+        Model model = modelRepository. findByStatus(Model.ModelStatus. ACTIVE)
+                . orElse(null);
 
         if (model == null) {
             return Result.error(404, "没有活跃的模型");
@@ -92,6 +102,28 @@ public class ModelService {
         model.setStatus(Model.ModelStatus.ACTIVE);
         modelRepository.save(model);
 
+        // 同步通知 Flask 模型服务切换模型
+        try {
+            String url = modelServiceConfig. getBaseUrl() + "/api/models/activate";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("model_id", modelId);
+            body.put("model_path", model.getModelPath());
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+            restTemplate.exchange(url, HttpMethod.POST, entity, Void. class);
+
+            log.info("Flask 模型切换成功: modelId={}, path={}", modelId, model.getModelPath());
+
+        } catch (Exception e) {
+            log.error("通知Flask切换模型失败: {}", e.getMessage());
+            return Result. error(500, "数据库更新成功，但模型服务未同步，请检查模型服务是否在线");
+        }
+
         log.info("切换活跃模型: modelId={}, modelName={}", modelId, model.getModelName());
         return Result.success("模型切换成功", null);
     }
@@ -101,10 +133,10 @@ public class ModelService {
      */
     public Result<ModelResponse> getModelById(Long modelId) {
         Model model = modelRepository.findById(modelId)
-                .orElse(null);
+                . orElse(null);
 
         if (model == null) {
-            return Result.error(404, "模型不存在");
+            return Result. error(404, "模型不存在");
         }
 
         Model activeModel = modelRepository.findByStatus(Model.ModelStatus.ACTIVE)
@@ -120,14 +152,14 @@ public class ModelService {
     private ModelResponse convertToModelResponse(Model model, Long activeModelId) {
         return ModelResponse.builder()
                 .modelId(model.getModelId())
-                .modelName(model.getModelName())
+                . modelName(model. getModelName())
                 .modelVersion(model.getModelVersion())
                 .modelType(model.getModelType())
-                .accuracy(model.getAccuracy())
+                .accuracy(model. getAccuracy())
                 .loss(model.getLoss())
                 .trainingSamples(model.getTrainingSamples())
                 .testSamples(model.getTestSamples())
-                .modelSize(model.getModelSize())
+                . modelSize(model. getModelSize())
                 .status(model.getStatus().name())
                 .description(model.getDescription())
                 .createTime(model.getCreateTime())

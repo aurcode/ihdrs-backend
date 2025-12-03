@@ -160,7 +160,7 @@ class TrainingService:
             )
 
             if self.is_cancelled:
-                self.report_failure("任务已取消")
+                logger.info(f"任务 {self.task_id} 已被用户取消，跳过后续处理")
                 return
 
             # 保存模型
@@ -200,6 +200,9 @@ class TrainingService:
             })
 
         except Exception as e:
+            if self.is_cancelled:
+                logger.info(f"任务 {self.task_id} 已被用户取消（异常退出）")
+                return
             logger.error(f"训练失败: {e}", exc_info=True)
             self.report_failure(str(e))
 

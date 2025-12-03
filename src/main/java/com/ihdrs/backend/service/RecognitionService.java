@@ -246,25 +246,24 @@ public class RecognitionService {
         try {
             String url = modelServiceConfig.getBaseUrl() + "/api/recognize";
 
-            // 构建请求
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers. setContentType(MediaType.APPLICATION_JSON);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("image", Base64.getEncoder().encodeToString(imageData));
+            requestBody.put("image", Base64.getEncoder(). encodeToString(imageData));
             requestBody.put("model_id", model.getModelId());
+            requestBody. put("model_path", model.getModelPath());  // 新增：传递模型路径
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-            // 发送请求
-            ResponseEntity<Map> response = restTemplate.exchange(
+            ResponseEntity<Map> response = restTemplate. exchange(
                     url,
-                    HttpMethod.POST,
+                    HttpMethod. POST,
                     entity,
-                    Map.class
+                    Map. class
             );
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            if (response. getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 Map<String, Object> body = response.getBody();
                 if ("success".equals(body.get("status"))) {
                     return (Map<String, Object>) body.get("data");
