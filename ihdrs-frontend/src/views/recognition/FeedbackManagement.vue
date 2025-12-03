@@ -139,6 +139,7 @@
                   type="warning"
                   :icon="FolderOpened"
                   @click="openTrainingDatasetDialog"
+                  style="margin-left: 8px"
               >
                 生成训练集
               </el-button>

@@ -94,3 +94,91 @@ def recognize():
             'message': '识别服务异常',
             'error': str(e)
         }), 500
+
+
+@recognition_bp.route('/recognize_multi', methods=['POST'])
+def recognize_multi():
+    """连续多数字识别接口"""
+    start_time = time.time()
+
+    try:
+        if not request.is_json:
+            return jsonify({
+                'status': 'error',
+                'message': '请求Content-Type必须为application/json'
+            }), 400
+
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': '请求数据不能为空'
+            }), 400
+
+        image_data = data.get('image')
+        model_id = data.get('model_id')
+        model_path = data.get('model_path')
+
+        if not image_data:
+            return jsonify({
+                'status': 'error',
+                'message': '图像数据不能为空'
+            }), 400
+
+        # 解码Base64图像
+        try:
+            image_bytes = base64.b64decode(image_data)
+        except Exception as e:
+            current_app.logger.error(f"Base64解码失败: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Base64图像数据格式错误'
+            }), 400
+
+        # 分割多个数字
+        image_processor = ImageProcessor()
+        digits = image_processor.segment_digits(image_bytes)
+
+        current_app.logger.info(f"分割出 {len(digits)} 个数字")
+
+        if not digits:
+            return jsonify({
+                'status': 'error',
+                'message': '无法分割数字，请确保图像中包含清晰的手写数字'
+            }), 400
+
+        model_service = current_app.model_service
+
+        # 对每个数字进行识别
+        results = []
+        for digit_img in digits:
+            pred = model_service.predict(digit_img, model_id, model_path)
+            if pred:
+                results.append({
+                    'digit': int(pred['digit']),
+                    'confidence': float(pred['confidence']),
+                    'all_probabilities': pred.get('all_probabilities', [])
+                })
+
+        processing_time = int((time.time() - start_time) * 1000)
+
+        response_data = {
+            'results': results,
+            'count': len(results),
+            'processing_time': processing_time
+        }
+
+        current_app.logger.info(f"多数字识别完成 - 数量: {len(results)}, 耗时: {processing_time}ms")
+
+        return jsonify({
+            'status': 'success',
+            'data': response_data
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"多数字识别过程发生错误: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': '识别服务异常',
+            'error': str(e)
+        }), 500

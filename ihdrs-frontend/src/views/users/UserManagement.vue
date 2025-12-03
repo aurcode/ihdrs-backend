@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, User, UserFilled, Avatar, Lock } from '@element-plus/icons-vue'
 import { getUserList, updateUserRole, updateUserStatus, getUserLogs } from '@/api/admin'
+import { getMe } from '@/api/user'
 
 // 搜索表单
 const searchForm = reactive({
@@ -66,13 +67,20 @@ const fetchUserList = async () => {
     // 更新统计数据
     updateStatistics(response.data.records)
 
-    // 获取当前用户ID（假设从localStorage获取）
-    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-    currentUserId.value = userInfo.userId
   } catch (error) {
     ElMessage.error('获取用户列表失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 获取当前登录用户信息
+const fetchCurrentUser = async () => {
+  try {
+    const response = await getMe()
+    currentUserId.value = response.data.userId || response.data.id
+  } catch (error) {
+    console.error('获取当前用户信息失败', error)
   }
 }
 
@@ -238,8 +246,9 @@ const getParticleStyle = (index) => {
 }
 
 // 初始化
-onMounted(() => {
-  fetchUserList()
+onMounted(async () => {
+  await fetchCurrentUser()
+  await fetchUserList()
 })
 </script>
 
