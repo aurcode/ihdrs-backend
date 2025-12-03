@@ -63,4 +63,31 @@ public interface FeedbackDataRepository extends JpaRepository<FeedbackData, Long
             Long userId, FeedbackData.FeedbackType type, FeedbackData.FeedbackStatus status,
             Pageable pageable);
 
+    /**
+     * 查询已接受的单数字反馈（用于生成训练集）
+     * 只查询 recognitionResult 为 0-9 的单数字记录
+     */
+    @Query("SELECT f FROM FeedbackData f " +
+            "WHERE f.status = 'ACCEPTED' " +
+            "AND f.correctResult BETWEEN 0 AND 9 " +
+            "AND (:startTime IS NULL OR f.createTime >= :startTime) " +
+            "AND (:endTime IS NULL OR f.createTime <= :endTime) " +
+            "AND (:minQualityScore IS NULL OR f.qualityScore >= :minQualityScore) " +
+            "ORDER BY f.correctResult ASC")
+    List<FeedbackData> findAcceptedSingleDigitFeedback(
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("minQualityScore") Integer minQualityScore
+    );
+
+    /**
+     * 统计已接受的单数字反馈数量（按数字分组）
+     */
+    @Query("SELECT f.correctResult as digit, COUNT(f) as count FROM FeedbackData f " +
+            "WHERE f.status = 'ACCEPTED' " +
+            "AND f.correctResult BETWEEN 0 AND 9 " +
+            "GROUP BY f.correctResult " +
+            "ORDER BY f.correctResult ASC")
+    List<Object[]> countAcceptedFeedbackByDigit();
+
 }

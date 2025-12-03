@@ -136,6 +136,13 @@
                 </template>
               </el-dropdown>
               <el-button
+                  type="warning"
+                  :icon="FolderOpened"
+                  @click="openTrainingDatasetDialog"
+              >
+                生成训练集
+              </el-button>
+              <el-button
                   type="success"
                   :icon="Select"
                   :disabled="selectedRows.length === 0"
@@ -367,6 +374,124 @@
         <el-button type="primary" @click="confirmExport" :loading="exportLoading">确定导出</el-button>
       </template>
     </el-dialog>
+    <el-dialog
+        v-model="trainingDatasetVisible"
+        title="生成训练集"
+        width="700px"
+        :close-on-click-modal="false"
+    >
+      <el-alert
+          title="功能说明"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 20px"
+      >
+        将已审核通过(ACCEPTED)的单数字用户反馈图片，按正确结果分类整理成训练集。
+        生成的训练集可用于模型增量训练或微调。
+      </el-alert>
+
+      <el-form :model="trainingDatasetForm" label-width="120px">
+        <el-form-item label="训练集名称">
+          <el-input
+              v-model="trainingDatasetForm.datasetName"
+              placeholder="留空则自动生成"
+              maxlength="50"
+          />
+        </el-form-item>
+
+        <el-form-item label="描述">
+          <el-input
+              v-model="trainingDatasetForm.description"
+              type="textarea"
+              :rows="2"
+              placeholder="训练集描述（选填）"
+              maxlength="200"
+          />
+        </el-form-item>
+
+        <el-form-item label="时间范围">
+          <el-date-picker
+              v-model="trainingDatasetForm.timeRange"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+              style="width: 100%"
+          />
+        </el-form-item>
+
+        <el-form-item label="最低质量评分">
+          <el-slider
+              v-model="trainingDatasetForm.minQualityScore"
+              :min="0"
+              :max="5"
+              :step="1"
+              show-stops
+              :marks="{0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5'}"
+          />
+        </el-form-item>
+
+        <el-form-item label="图片格式">
+          <el-radio-group v-model="trainingDatasetForm.resizeToMNIST">
+            <el-radio :value="true">调整为 28×28 MNIST格式</el-radio>
+            <el-radio :value="false">保持原始尺寸</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="导出格式">
+          <el-radio-group v-model="trainingDatasetForm.exportFormat">
+            <el-radio value="zip">ZIP压缩包</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+
+      <!-- 预览统计 -->
+      <el-card v-if="trainingPreviewData" class="preview-card" shadow="never">
+        <template #header>
+          <span>数据预览</span>
+        </template>
+        <el-descriptions :column="2" size="small">
+          <el-descriptions-item label="可用图片总数">
+            <el-tag type="primary">{{ trainingPreviewData.totalCount }}</el-tag>
+          </el-descriptions-item>
+        </el-descriptions>
+        <div class="distribution-chart" style="margin-top: 15px">
+          <div class="distribution-title">各数字分布：</div>
+          <div class="distribution-bars">
+            <div
+                v-for="digit in 10"
+                :key="digit - 1"
+                class="distribution-item"
+            >
+              <span class="digit-label">{{ digit - 1 }}</span>
+              <el-progress
+                  :percentage="getDistributionPercentage(digit - 1)"
+                  :format="() => trainingPreviewData.distribution[digit - 1] || 0"
+                  :stroke-width="18"
+              />
+            </div>
+          </div>
+        </div>
+      </el-card>
+
+      <template #footer>
+        <el-button @click="trainingDatasetVisible = false">取消</el-button>
+        <el-button type="info" @click="handlePreviewTrainingData" :loading="previewLoading">
+          预览数据
+        </el-button>
+        <el-button
+            type="primary"
+            @click="handleGenerateTrainingDataset"
+            :loading="generateLoading"
+            :disabled="!trainingPreviewData || trainingPreviewData.totalCount === 0"
+        >
+          生成训练集
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -377,7 +502,8 @@ import {
   Search, Refresh, Download, View, Select, Close, Clock,
   ChatLineRound, Right, Picture, ArrowDown, Document, Tickets, Reading
 } from '@element-plus/icons-vue'
-import { getFeedbackList, reviewFeedback, batchReviewFeedback, exportFeedback } from '@/api/feedback'
+import { FolderOpened } from '@element-plus/icons-vue'
+import { getFeedbackList, reviewFeedback, batchReviewFeedback, exportFeedback, previewTrainingData, generateTrainingDataset } from '@/api/feedback'
 import dayjs from 'dayjs'
 import router from "@/router/index.js"
 
@@ -496,6 +622,127 @@ const handleReview = (row, action) => {
   reviewAction.value = action
   reviewForm.reviewNote = ''
   reviewVisible.value = true
+}
+
+// 添加训练集相关状态
+const trainingDatasetVisible = ref(false)
+const previewLoading = ref(false)
+const generateLoading = ref(false)
+const trainingPreviewData = ref(null)
+
+const trainingDatasetForm = reactive({
+  datasetName: '',
+  description: '',
+  timeRange: null,
+  minQualityScore: 0,
+  resizeToMNIST: true,
+  exportFormat: 'zip'
+})
+
+// 打开训练集对话框
+const openTrainingDatasetDialog = () => {
+  trainingPreviewData.value = null
+  trainingDatasetForm.datasetName = ''
+  trainingDatasetForm.description = ''
+  trainingDatasetForm.timeRange = null
+  trainingDatasetForm.minQualityScore = 0
+  trainingDatasetForm.resizeToMNIST = true
+  trainingDatasetForm.exportFormat = 'zip'
+  trainingDatasetVisible.value = true
+}
+
+// 预览训练数据
+const handlePreviewTrainingData = async () => {
+  previewLoading.value = true
+  try {
+    const params = {
+      startTime: trainingDatasetForm.timeRange?.[0] || null,
+      endTime: trainingDatasetForm.timeRange?.[1] || null,
+      minQualityScore: trainingDatasetForm.minQualityScore || null
+    }
+
+    const response = await previewTrainingData(params)
+    if (response.code === 200) {
+      trainingPreviewData.value = response.data
+      if (response.data.totalCount === 0) {
+        ElMessage.warning('没有符合条件的反馈数据')
+      }
+    }
+  } catch (error) {
+    console.error('预览训练数据失败:', error)
+    ElMessage.error('预览训练数据失败')
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+// 生成训练集
+const handleGenerateTrainingDataset = async () => {
+  if (!trainingPreviewData.value || trainingPreviewData.value.totalCount === 0) {
+    ElMessage.warning('请先预览数据，确保有可用的反馈图片')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+        `确定要生成包含 ${trainingPreviewData.value.totalCount} 张图片的训练集吗？`,
+        '确认生成',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'info'
+        }
+    )
+
+    generateLoading.value = true
+
+    const params = {
+      datasetName: trainingDatasetForm.datasetName || null,
+      description: trainingDatasetForm.description || null,
+      startTime: trainingDatasetForm.timeRange?.[0] || null,
+      endTime: trainingDatasetForm.timeRange?.[1] || null,
+      minQualityScore: trainingDatasetForm.minQualityScore || null,
+      resizeToMNIST: trainingDatasetForm.resizeToMNIST,
+      exportFormat: trainingDatasetForm.exportFormat
+    }
+
+    const response = await generateTrainingDataset(params)
+    if (response.code === 200) {
+      ElMessage.success(`训练集生成成功！共 ${response.data.totalImages} 张图片`)
+      trainingDatasetVisible.value = false
+
+      // 显示下载链接
+      ElMessageBox.alert(
+          `<div>
+          <p><strong>训练集名称：</strong>${response.data.datasetName}</p>
+          <p><strong>图片总数：</strong>${response.data.totalImages}</p>
+          <p><strong>下载地址：</strong><a href="${response.data.downloadUrl}" target="_blank">${response.data.downloadUrl}</a></p>
+        </div>`,
+          '训练集生成完成',
+          {
+            dangerouslyUseHTMLString: true,
+            confirmButtonText: '确定'
+          }
+      )
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('生成训练集失败:', error)
+      ElMessage.error('生成训练集失败')
+    }
+  } finally {
+    generateLoading.value = false
+  }
+}
+
+// 计算分布百分比
+const getDistributionPercentage = (digit) => {
+  if (! trainingPreviewData.value || ! trainingPreviewData.value.distribution) {
+    return 0
+  }
+  const count = trainingPreviewData.value.distribution[digit] || 0
+  const total = trainingPreviewData.value.totalCount || 1
+  return Math.round((count / total) * 100)
 }
 
 // 确认审核
@@ -1041,6 +1288,37 @@ onMounted(() => {
   }
   50% {
     transform: translate(30px, -30px) scale(1.1);
+  }
+}
+
+.preview-card {
+  margin-top: 20px;
+  background: #f5f7fa;
+
+  .distribution-title {
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: #606266;
+  }
+
+  .distribution-bars {
+    .distribution-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+
+      .digit-label {
+        width: 30px;
+        font-weight: bold;
+        color: #409EFF;
+        text-align: center;
+      }
+
+      .el-progress {
+        flex: 1;
+        margin-left: 10px;
+      }
+    }
   }
 }
 </style>

@@ -6,10 +6,13 @@ import com.ihdrs.backend.common.Result;
 import com.ihdrs.backend.dto.request.BatchReviewRequest;
 import com.ihdrs.backend.dto.request.FeedbackRequest;
 import com.ihdrs.backend.dto.request.PageRequest;
+import com.ihdrs.backend.dto.request.TrainingDatasetRequest;
 import com.ihdrs.backend.dto.response.FeedbackResponse;
+import com.ihdrs.backend.dto.response.TrainingDatasetResponse;
 import com.ihdrs.backend.entity.FeedbackData;
 import com.ihdrs.backend.service.ExportService;
 import com.ihdrs.backend.service.FeedbackService;
+import com.ihdrs.backend.service.TrainingDatasetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,6 +23,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Tag(name = "用户反馈", description = "识别错误反馈相关接口")
 @RestController
@@ -30,6 +34,7 @@ public class FeedbackController {
 
     private final FeedbackService feedbackService;
     private final ExportService exportService;
+    private final TrainingDatasetService trainingDatasetService;
 
     @Operation(summary = "提交反馈", description = "用户提交识别错误反馈")
     @PostMapping
@@ -148,5 +153,20 @@ public class FeedbackController {
         }
 
         exportService.exportFeedback(response, format, scope, fields, current, size, feedbackStatus, type);
+    }
+
+    @Operation(summary = "预览训练集数据", description = "预览可用于生成训练集的反馈数据统计")
+    @PostMapping("/training-dataset/preview")
+    public Result<Map<String, Object>> previewTrainingData(
+            @RequestBody TrainingDatasetRequest request) {
+        return trainingDatasetService.previewTrainingData(request);
+    }
+
+    @Operation(summary = "生成训练集", description = "将已审核通过的单数字反馈图片生成训练集")
+    @PostMapping("/training-dataset/generate")
+    public Result<TrainingDatasetResponse> generateTrainingDataset(
+            @RequestBody TrainingDatasetRequest request,
+            @RequestAttribute("userId") Long operatorId) {
+        return trainingDatasetService.generateTrainingDataset(request, operatorId);
     }
 }

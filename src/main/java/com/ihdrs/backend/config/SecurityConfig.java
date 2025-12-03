@@ -46,6 +46,7 @@ public class SecurityConfig {
                                 "/health/**",
                                 "/test/**",
                                 "/uploads/**",
+                                "/downloads/**",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -68,7 +69,8 @@ public class SecurityConfig {
                                 "/admin/**",
                                 "/models/**",
                                 "/training/**",
-                                "/statistics/**"
+                                "/statistics/**",
+                                "/feedback/training-dataset/**"
                         ).hasRole("ADMIN")
 
                         // 其他所有请求都需要认证

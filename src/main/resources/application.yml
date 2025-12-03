@@ -25,6 +25,8 @@ file:
     allowed-types: image/png,image/jpeg,image/jpg
   model:
     path: ./models/
+  dataset:
+    path: ./downloads/
 
 # Flask 模型服务配置
 model-service:

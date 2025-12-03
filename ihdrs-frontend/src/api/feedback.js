@@ -63,3 +63,25 @@ export function exportFeedback(params, format = 'excel') {
     })
 }
 
+/**
+ * 预览训练集数据
+ */
+export function previewTrainingData(params) {
+    return request({
+        url: '/feedback/training-dataset/preview',
+        method: 'post',
+        data: params
+    })
+}
+
+/**
+ * 生成训练集
+ */
+export function generateTrainingDataset(params) {
+    return request({
+        url: '/feedback/training-dataset/generate',
+        method: 'post',
+        data: params
+    })
+}
+
