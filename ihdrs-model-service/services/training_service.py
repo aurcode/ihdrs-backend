@@ -230,7 +230,7 @@ class TrainingService:
         if scheduler_type == "exponential":
             # 指数衰减
             decay_rate = 0.96
-            decay_steps = epochs // 5
+            decay_steps = max(1, epochs // 5)  # 避免除零
             return keras.callbacks.LearningRateScheduler(
                 lambda epoch: initial_lr * (decay_rate ** (epoch // decay_steps))
             )

@@ -402,6 +402,17 @@ public class TrainingTaskService {
 
         Double finalAccuracy = (Double) resultData.get("finalAccuracy");
         Double finalLoss = (Double) resultData.get("finalLoss");
+        String modelType = "CNN"; // 默认值
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> trainingConfig = mapper.readValue(task.getTrainingConfig(), Map.class);
+            if (trainingConfig.containsKey("modeltype")) {
+                modelType = (String) trainingConfig.get("modeltype");
+            }
+        } catch (Exception e) {
+            log.warn("解析训练配置获取模型类型失败，使用默认值 CNN", e);
+        }
         String modelPath = (String) resultData.get("modelPath");
         Integer trainingSamples = resultData.get("trainingSamples") != null
                 ? ((Number) resultData.get("trainingSamples")).intValue() : null;
@@ -432,6 +443,7 @@ public class TrainingTaskService {
         model.setModelName(task.getTaskName());
         model.setModelVersion("v1.0.0");
         model.setModelPath(modelPath);
+        model.setModelType(modelType);
         model.setAccuracy(finalAccuracy != null ? BigDecimal.valueOf(finalAccuracy) : null);
         model.setLoss(finalLoss != null ? BigDecimal.valueOf(finalLoss) : null);
         model.setTrainingSamples(trainingSamples);

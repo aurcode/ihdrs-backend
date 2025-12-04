@@ -1,11 +1,12 @@
 -- init.sql - 数据库初始化脚本
--- 创建数据库W
+
+-- 1.数据库创建
 DROP DATABASE ihdrs;
 CREATE DATABASE IF NOT EXISTS ihdrs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE ihdrs;
 
--- 删除外键约束，重新创建表
+-- 2.删除外键约束，准备重新创建表
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- 删除已存在的表
@@ -20,7 +21,10 @@ DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS datasets;
 DROP TABLE IF EXISTS user_log;
 
--- 创建数据集表
+
+-- 3.创建表结构
+
+-- 3.1 数据集表
 CREATE TABLE `datasets` (
                             `dataset_id` bigint NOT NULL AUTO_INCREMENT COMMENT '数据集ID',
                             `dataset_name` varchar(100) NOT NULL COMMENT '数据集名称',
@@ -49,7 +53,7 @@ CREATE TABLE `datasets` (
                             KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据集表';
 
--- 创建用户表
+-- 3.2 用户表
 CREATE TABLE IF NOT EXISTS `users` (
                                        `user_id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
                                        `username` varchar(50) NOT NULL COMMENT '用户名',
@@ -70,7 +74,7 @@ CREATE TABLE IF NOT EXISTS `users` (
                                        KEY `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
--- 插入初始数据
+-- 插入初始用户数据
 INSERT INTO `users` (`username`, `password_hash`, `salt`, `role`, `email`, `status`) VALUES
     ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8ioctKi7X7L4NXMHpnsKp7x6GzwxK', 'default_salt', 'ADMIN', 'admin@ihdrs.com', 1)
 ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
@@ -79,6 +83,7 @@ INSERT INTO `users` (`username`, `password_hash`, `salt`, `role`, `email`, `stat
     ('user', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8ioctKi7X7L4NXMHpnsKp7x6GzwxK', 'default_salt', 'USER', 'test@ihdrs.com', 1)
 ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`);
 
+-- 3.3 用户行为日志表
 CREATE TABLE user_log (
                           log_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '日志ID',
                           user_id BIGINT NOT NULL COMMENT '用户ID',
@@ -86,24 +91,20 @@ CREATE TABLE user_log (
                           ip_address VARCHAR(50) DEFAULT NULL COMMENT 'IP地址',
                           user_agent VARCHAR(500) DEFAULT NULL COMMENT '浏览器UA',
                           create_time DATETIME NOT NULL COMMENT '创建时间',
-
                           INDEX idx_user_id (user_id),
                           INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户行为日志表';
 
+-- 插入用户日志示例数据
 INSERT INTO user_log (user_id, action, ip_address, user_agent, create_time)
 VALUES
     (1, 'LOGIN', '192.168.1.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2025-11-14 10:12:30'),
-
     (1, 'UPDATE_PROFILE', '192.168.1.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2025-11-14 10:20:15'),
-
     (2, 'LOGIN', '10.0.0.5', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', '2025-11-14 09:00:01'),
-
     (1, 'START_TRAINING', '192.168.1.10', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2025-11-14 11:05:44'),
-
     (2, 'DELETE_DATASET', '10.0.0.5', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', '2025-11-13 23:45:10');
 
--- 创建模型表
+-- 3.4 模型表
 CREATE TABLE IF NOT EXISTS `models` (
                                         `model_id` bigint NOT NULL AUTO_INCREMENT COMMENT '模型ID',
                                         `model_name` varchar(100) NOT NULL COMMENT '模型名称',
@@ -128,19 +129,14 @@ CREATE TABLE IF NOT EXISTS `models` (
                                         KEY `idx_accuracy` (`accuracy` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模型表';
 
+ALTER TABLE models ADD COLUMN deleted BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- 插入模型初始数据
 INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
-    ('DefaultCNN', 'v1.0.0', 'models/default_cnn_v2.0.0.h5', 'CNN', 0.9200, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1, 0.03, 1000000)
+    ('DefaultCNN', 'v2.0.0', 'models/default_cnn_v2.0.0.h5', 'CNN', 0.9999, 60000, 10000, 'ACTIVE', '默认卷积神经网络模型', 1, 0.03, 1000000)
 ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
 
-INSERT INTO `models` (`model_name`, `model_version`, `model_path`, `model_type`, `accuracy`, `training_samples`, `test_samples`, `status`, `description`, `creator_id`, `loss`, `model_size`) VALUES
-                                                                                                                                                                                                  ('ImageClassifier', 'v1.0.0', 'models/best_model_checkpoint.h5', 'CNN', 0.8500, 50000, 8000, 'COMPLETED', '图像分类模型', 2, 0.03, 1100000),
-                                                                                                                                                                                                  ('TextAnalyzer', 'v1.2.3', 'models/text_analyzer_v1.2.3.h5', 'RNN', 0.9100, 45000, 9000, 'COMPLETED', '文本分析模型', 2, 0.02, 1200000),
-                                                                                                                                                                                                  ('FaceDetector', 'v1.1.0', 'models/face_detector_v1.1.0.h5', 'CNN', 0.9500, 30000, 5000, 'DISABLED', '人脸检测模型', 1, 0.01, 1100000),
-                                                                                                                                                                                                  ('SentimentModel', 'v2.0.0', 'models/sentiment_model_v2.0.0.h5', 'LSTM', 0.8800, 40000, 10000, 'COMPLETED', '情感分析模型', 1, 0.05, 1000000),
-                                                                                                                                                                                                  ('SpeechRecognizer', 'v3.5.0', 'models/speech_recognizer_v3.5.0.h5', 'DNN', 0.9300, 70000, 15000, 'DISABLED', '语音识别模型', 2, 0.04, 900000)
-ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
-
--- 创建识别记录表
+-- 3.5 识别记录表
 CREATE TABLE IF NOT EXISTS `recognition_records` (
                                                      `record_id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
                                                      `user_id` bigint DEFAULT NULL COMMENT '用户ID（可为空，支持匿名识别）',
@@ -166,6 +162,7 @@ CREATE TABLE IF NOT EXISTS `recognition_records` (
                                                      KEY `idx_image_hash` (`image_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='识别记录表';
 
+-- 插入识别记录示例数据
 INSERT INTO recognition_records (
     user_id, model_id, recognition_result, confidence,
     image_data, image_path, image_hash, input_type,
@@ -173,20 +170,16 @@ INSERT INTO recognition_records (
 ) VALUES
       (3, 1, 7, 0.9845, NULL, '/api/uploads/digit7.png', 'a7b9c8d5e0f11223344556677889900a', 'UPLOAD', 132,
        JSON_OBJECT('device', 'Windows 10', 'browser', 'Edge', 'version', '142.0'), 1, 'session_001'),
-
-      (2, 2, 2, 0.8794, NULL, '/api/uploads/digit2.png', 'b8f5c9e3a1d04567bb123abc9d0e1f2a', 'CANVAS', 95,
+      (2, 1, 2, 0.8794, NULL, '/api/uploads/digit2.png', 'b8f5c9e3a1d04567bb123abc9d0e1f2a', 'CANVAS', 95,
        JSON_OBJECT('device', 'Android', 'app_version', '1.2.3'), 1, 'session_002'),
-
-      (1, 3, 9, 0.7563, NULL, '/api/uploads/digit9.png', 'd4a7b9f3e8c01234aabbccddeeff0011', 'CAMERA', 188,
+      (1, 1, 9, 0.7563, NULL, '/api/uploads/digit9.png', 'd4a7b9f3e8c01234aabbccddeeff0011', 'CAMERA', 188,
        JSON_OBJECT('device', 'iPhone 14', 'os', 'iOS 18'), 0, 'session_003'),
-
-      (3, 4, 0, 0.9931, NULL, '/api/uploads/digit0.png', 'aabbccddeeff00112233445566778899', 'CANVAS', 81,
+      (3, 1, 0, 0.9931, NULL, '/api/uploads/digit0.png', 'aabbccddeeff00112233445566778899', 'CANVAS', 81,
        JSON_OBJECT('device', 'Windows 11', 'browser', 'Chrome', 'version', '142.0.0'), 1, 'session_004'),
-
-      (3, 5, 5, 0.6238, NULL, '/api/uploads/digit5.png', '1234567890abcdef1234567890abcdef', 'UPLOAD', 142,
+      (3, 1, 5, 0.6238, NULL, '/api/uploads/digit5.png', '1234567890abcdef1234567890abcdef', 'UPLOAD', 142,
        JSON_OBJECT('device', 'MacBook Pro', 'os', 'macOS 15'), 1, 'session_005');
 
--- 创建训练任务表
+-- 3.6 训练任务表
 CREATE TABLE IF NOT EXISTS `training_tasks` (
                                                 `task_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务ID',
                                                 `task_name` varchar(100) NOT NULL COMMENT '任务名称',
@@ -213,11 +206,12 @@ CREATE TABLE IF NOT EXISTS `training_tasks` (
                                                 KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练任务表';
 
+-- 为训练任务表添加额外字段
 ALTER TABLE training_tasks
     ADD COLUMN confusion_matrix TEXT NULL,
     ADD COLUMN class_names TEXT NULL;
 
--- 创建反馈数据表
+-- 3.7 反馈数据表
 CREATE TABLE IF NOT EXISTS `feedback_data` (
                                                `feedback_id` bigint NOT NULL AUTO_INCREMENT COMMENT '反馈ID',
                                                `record_id` bigint NOT NULL COMMENT '关联的识别记录ID',
@@ -239,32 +233,17 @@ CREATE TABLE IF NOT EXISTS `feedback_data` (
                                                KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='反馈数据表';
 
+-- 插入反馈数据示例
 INSERT INTO `feedback_data`
 (`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
 VALUES
-    (1, 1, 3, 5, 'WRONG_RESULT', '识别结果偏差较大', 4, 'PENDING');
-
-INSERT INTO `feedback_data`
-(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
-VALUES
-    (2, 2, 7, 7, 'LOW_CONFIDENCE', '模型置信度很低，建议二次校验', 3, 'PENDING');
-
-INSERT INTO `feedback_data`
-(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
-VALUES
-    (3, 2, 9, 9, 'OTHER', '图像边缘模糊，可能需要增强处理', 2, 'PENDING');
-
-INSERT INTO `feedback_data`
-(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
-VALUES
-    (4, 1, 4, 1, 'WRONG_RESULT', '系统误识别为4', 5, 'PENDING');
-
-INSERT INTO `feedback_data`
-(`record_id`, `user_id`, `original_result`, `correct_result`, `feedback_type`, `feedback_reason`, `quality_score`, `status`)
-VALUES
+    (1, 1, 3, 5, 'WRONG_RESULT', '识别结果偏差较大', 4, 'PENDING'),
+    (2, 2, 7, 7, 'LOW_CONFIDENCE', '模型置信度很低，建议二次校验', 3, 'PENDING'),
+    (3, 2, 9, 9, 'OTHER', '图像边缘模糊，可能需要增强处理', 2, 'PENDING'),
+    (4, 1, 4, 1, 'WRONG_RESULT', '系统误识别为4', 5, 'PENDING'),
     (5, 2, 6, 6, 'LOW_CONFIDENCE', '识别置信度低于设定阈值', 3, 'PENDING');
 
--- 创建训练日志表
+-- 3.8 训练日志表
 CREATE TABLE IF NOT EXISTS `training_logs` (
                                                `log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志ID',
                                                `task_id` bigint NOT NULL COMMENT '训练任务ID',
@@ -283,7 +262,7 @@ CREATE TABLE IF NOT EXISTS `training_logs` (
                                                KEY `idx_timestamp` (`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='训练日志表';
 
--- 创建系统配置表
+-- 3.9 系统配置表
 CREATE TABLE IF NOT EXISTS `system_configs` (
                                                 `config_id` bigint NOT NULL AUTO_INCREMENT COMMENT '配置ID',
                                                 `config_key` varchar(100) NOT NULL COMMENT '配置键',
@@ -297,7 +276,7 @@ CREATE TABLE IF NOT EXISTS `system_configs` (
                                                 UNIQUE KEY `uk_config_key` (`config_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
 
--- 创建操作日志表
+-- 3.10 操作日志表
 CREATE TABLE IF NOT EXISTS `operation_logs` (
                                                 `log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志ID',
                                                 `user_id` bigint DEFAULT NULL COMMENT '操作用户ID',
@@ -316,21 +295,60 @@ CREATE TABLE IF NOT EXISTS `operation_logs` (
                                                 KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';
 
--- 添加外键约束
-ALTER TABLE `models` ADD CONSTRAINT `fk_models_creator` FOREIGN KEY (`creator_id`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `recognition_records` ADD CONSTRAINT `fk_records_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE `recognition_records` ADD CONSTRAINT `fk_records_model` FOREIGN KEY (`model_id`) REFERENCES `models` (`model_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `training_tasks` ADD CONSTRAINT `fk_tasks_creator` FOREIGN KEY (`creator_id`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `training_tasks` ADD CONSTRAINT `fk_tasks_model` FOREIGN KEY (`model_id`) REFERENCES `models` (`model_id`) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_record` FOREIGN KEY (`record_id`) REFERENCES `recognition_records` (`record_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `feedback_data` ADD CONSTRAINT `fk_feedback_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE `training_logs` ADD CONSTRAINT `fk_logs_task` FOREIGN KEY (`task_id`) REFERENCES `training_tasks` (`task_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `operation_logs` ADD CONSTRAINT `fk_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+-- 4.添加外键约束
+ALTER TABLE `models`
+    ADD CONSTRAINT `fk_models_creator`
+        FOREIGN KEY (`creator_id`) REFERENCES `users` (`user_id`)
+            ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE `recognition_records`
+    ADD CONSTRAINT `fk_records_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+            ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `recognition_records`
+    ADD CONSTRAINT `fk_records_model`
+        FOREIGN KEY (`model_id`) REFERENCES `models` (`model_id`)
+            ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE `training_tasks`
+    ADD CONSTRAINT `fk_tasks_creator`
+        FOREIGN KEY (`creator_id`) REFERENCES `users` (`user_id`)
+            ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE `training_tasks`
+    ADD CONSTRAINT `fk_tasks_model`
+        FOREIGN KEY (`model_id`) REFERENCES `models` (`model_id`)
+            ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `feedback_data`
+    ADD CONSTRAINT `fk_feedback_record`
+        FOREIGN KEY (`record_id`) REFERENCES `recognition_records` (`record_id`)
+            ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `feedback_data`
+    ADD CONSTRAINT `fk_feedback_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+            ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `feedback_data`
+    ADD CONSTRAINT `fk_feedback_reviewer`
+        FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`user_id`)
+            ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `training_logs`
+    ADD CONSTRAINT `fk_logs_task`
+        FOREIGN KEY (`task_id`) REFERENCES `training_tasks` (`task_id`)
+            ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `operation_logs`
+    ADD CONSTRAINT `fk_logs_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+            ON DELETE SET NULL ON UPDATE CASCADE;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- 插入系统配置
+-- 5.插入系统配置数据
 INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `description`, `is_public`) VALUES
                                                                                                            ('min_confidence_threshold', '0.8', 'NUMBER', '最小置信度阈值', 1),
                                                                                                            ('max_file_size', '5242880', 'NUMBER', '最大文件大小（字节）', 1),
@@ -340,8 +358,7 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `desc
                                                                                                            ('system_version', '1.0.0', 'STRING', '系统版本', 1)
 ON DUPLICATE KEY UPDATE `config_value` = VALUES(`config_value`);
 
-
--- 插入一个示例MNIST数据集
+-- 6.插入示例MNIST数据集
 INSERT INTO `datasets` (
     `dataset_name`,
     `dataset_type`,
@@ -372,6 +389,6 @@ INSERT INTO `datasets` (
              28,
              '["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]',
              'AVAILABLE',
-             1,  -- 设为公开
-             1   -- 假设用户ID为1
+             1,
+             1
          ) ON DUPLICATE KEY UPDATE dataset_id=dataset_id;  -- 避免重复插入

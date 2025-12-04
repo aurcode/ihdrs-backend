@@ -63,6 +63,8 @@ public class ModelManagementService {
         Specification<Model> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            predicates.add(cb.equal(root.get("deleted"), false));
+
             if (StringUtils.hasText(status)) {
                 predicates.add(cb.equal(root.get("status"), Model.ModelStatus.valueOf(status)));
             }
@@ -237,22 +239,22 @@ public class ModelManagementService {
             return Result.error(404, "模型不存在");
         }
 
+        // 检查模型是否已被删除
+        if (Boolean.TRUE.equals(model.getDeleted())) {
+            return Result.error(400, "模型已被删除");
+        }
+
         if (model.getStatus() == Model.ModelStatus.ACTIVE) {
             return Result.error(400, "当前活跃模型不能被删除");
         }
 
-        // 检查是否有识别记录使用该模型
-        Long recordCount = recognitionRecordRepository.countByModelId(modelId);
-        if (recordCount > 0) {
-            // 有识别记录，使用逻辑删除
-            model.setStatus(Model.ModelStatus.DISABLED);
-            modelRepository.save(model);
-            log.info("用户 {} 逻辑删除模型（有识别记录）: modelId={}", userId, modelId);
-        } else {
-            // 没有识别记录，可以物理删除
-            modelRepository.delete(model);
-            log.info("用户 {} 物理删除模型: modelId={}", userId, modelId);
-        }
+        // 执行逻辑删除：设置 deleted = true
+        model.setDeleted(true);
+        // 同时将状态改为 DISABLED
+        model.setStatus(Model.ModelStatus.DISABLED);
+        modelRepository.save(model);
+
+        log.info("用户 {} 逻辑删除模型: modelId={}", userId, modelId);
 
         return Result.success("模型已删除", null);
     }

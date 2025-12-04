@@ -104,10 +104,10 @@ const ImagePickerComponent = ({ onImageSelected }) => {
       ) : (
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.galleryButton} onPress={pickImageFromGallery}>
-            <Text style={styles.buttonText}>📁 Pick from Gallery</Text>
+            <Text style={styles.buttonText}>📁 相册</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
-            <Text style={styles.buttonText}>📷 Take Photo</Text>
+            <Text style={styles.buttonText}>📷 拍照</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -71,6 +71,9 @@ public class Model {
     @Column(name = "creator_id", nullable = false)
     private Long creatorId;
 
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
     @CreationTimestamp
     @Column(name = "create_time", nullable = false, updatable = false)
     private LocalDateTime createTime;

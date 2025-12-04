@@ -274,7 +274,7 @@ const HistoryScreen = ({ user, token, onCancel }) => {
                         <View style={styles.metaItem}>
                             <Text style={styles.metaLabel}>模型：</Text>
                             <Text style={styles.metaValue}>
-                                {record.modelName || 'N/A'} v{record.modelVersion || 'N/A'}
+                                {record.modelName || 'N/A'} {record.modelVersion || 'N/A'}
                             </Text>
                         </View>
                         <View style={styles.metaItem}>

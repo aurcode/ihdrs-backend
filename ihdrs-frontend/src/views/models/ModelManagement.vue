@@ -69,7 +69,8 @@
             >
               <el-option label="CNN" value="CNN"/>
               <el-option label="ResNet" value="ResNet"/>
-              <el-option label="LeNet" value="LeNet"/>
+              <el-option label="VGG" value="VGG"/>
+              <el-option label="MobileNet" value="MobileNet"/>
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -200,7 +201,7 @@
 
           <el-table-column prop="modelVersion" label="版本" width="120"/>
 
-          <el-table-column prop="modelType" label="类型" width="100"/>
+          <el-table-column prop="modelType" label="类型" width="120"/>
 
           <el-table-column prop="accuracy" label="准确率" width="120">
             <template #default="{ row }">
@@ -722,7 +723,7 @@ const viewDetail = (model) => {
 const activateModel = async (model) => {
   try {
     await ElMessageBox.confirm(
-        `确定要将模型 "${model.modelName} v${model.modelVersion}" 设置为活跃状态吗？`,
+        `确定要将模型 "${model.modelName} ${model.modelVersion}" 设置为活跃状态吗？`,
         '激活模型',
         {
           confirmButtonText: '确定',
@@ -748,7 +749,7 @@ const activateModel = async (model) => {
 const disableModel = async (model) => {
   try {
     await ElMessageBox.confirm(
-        `确定要停用模型 "${model.modelName} v${model.modelVersion}" 吗？`,
+        `确定要停用模型 "${model.modelName} ${model.modelVersion}" 吗？`,
         '停用模型',
         {
           confirmButtonText: '确定',
@@ -786,7 +787,7 @@ const enableModel = async (model) => {
 const deleteModel = async (model) => {
   try {
     await ElMessageBox.confirm(
-        `确定要删除模型 "${model.modelName} v${model.modelVersion}" 吗？此操作不可恢复！`,
+        `确定要删除模型 "${model.modelName} ${model.modelVersion}" 吗？此操作不可恢复！`,
         '删除模型',
         {
           confirmButtonText: '确定',
