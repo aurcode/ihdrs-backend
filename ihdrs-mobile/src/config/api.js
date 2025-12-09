@@ -3,10 +3,10 @@
 
 export const API_CONFIG = {
     // Java Backend URL (Spring Boot - Port 8080)
-    BACKEND_URL: 'http://192.168.193.1:8080/api',
+    BACKEND_URL: 'http://169.254.65.12:8080/api',
 
     // Python Model Service URL (Flask - Port 5000)
-    MODEL_SERVICE_URL: 'http://192.168.193.1:5000',
+    MODEL_SERVICE_URL: 'http://169.254.65.12:5000',
 
     // Endpoints
     ENDPOINTS: {
